@@ -2,11 +2,11 @@
 
 Перед выполнением задания внимательно прочитайте:
 
-- [О всех этапах проверки задания](https://github.com/urfu-2016/guides/blob/master/workflow/overall.md)
-- [Как отправить пулл](https://github.com/urfu-2016/guides/blob/master/workflow/pull.md)
-- [Как пройти тесты](https://github.com/urfu-2016/guides/blob/master/workflow/test.md)
-- Правила оформления [javascript](https://github.com/urfu-2016/guides/blob/master/codestyle/js.md), [HTML](https://github.com/urfu-2016/guides/blob/master/codestyle/html.md) и [CSS](https://github.com/urfu-2016/guides/blob/master/codestyle/css.md) кода
-- Лекцию [«Типы данных: продолжение»](https://urfu-2016.github.io/javascript-slides/03-types/#/)
+- [О всех этапах проверки задания](https://github.com/urfu-2017/guides/blob/master/workflow/overall.md)
+- [Как отправить пулл](https://github.com/urfu-2017/guides/blob/master/workflow/pull.md)
+- [Как пройти тесты](https://github.com/urfu-2017/guides/blob/master/workflow/test.md)
+- Правила оформления [javascript](https://github.com/urfu-2017/guides/blob/master/codestyle/js.md), [HTML](https://github.com/urfu-2017/guides/blob/master/codestyle/html.md) и [CSS](https://github.com/urfu-2017/guides/blob/master/codestyle/css.md) кода
+- Лекцию [«Типы данных: продолжение»](https://urfu-2017.github.io/javascript-slides/03-types/#/)
 
 ## Основное задание
 
@@ -68,7 +68,7 @@ __Дополнительные условия и ограничения:__
 
 ## Дополнительное задание (+16 к смекалке)
 
-> Перед выполнением внимательно прочитайте [про особенности](https://github.com/urfu-2016/guides/blob/master/workflow/extra.md)
+> Перед выполнением внимательно прочитайте [про особенности](https://github.com/urfu-2017/guides/blob/master/workflow/extra.md)
 
 Реализовать метод `.tryLater()`, который находит следующее подходящее время **через полчаса** от предыдущего. Если найти не получается, то время остается прежнее. Метод возращает true, если получилось найти и false, если нет.
 
