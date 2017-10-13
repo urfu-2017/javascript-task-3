@@ -16,19 +16,12 @@ exports.isStar = true;
  * @returns {Object}
  */
 
-var FORMAT_ROBBERY_TIME = /([А-Я]{2})\s*(\d{2}):(\d{2})\+(\d+)/;
-var FORMAT_BANK_TIME = /(\d{2}):(\d{2})\+(\d+)/;
-var NAMES = ['Danny', 'Rusty', 'Linus'];
+const DAYS_FOR_ATTACK = ['ПН', 'ВТ', 'СР'];
+const NAMES = ['Danny', 'Rusty', 'Linus'];
 const MS_IN_MINUTE = 60000;
 const HALF_HOUR = 30;
 const YEAR = 2018;
 const MONTH = 0;
-var DAYS_FOR_ATTACK = ['ПН', 'ВТ', 'СР'];
-const NUMBER_DAYS = {
-    'ПН': 1,
-    'ВТ': 2,
-    'СР': 3
-};
 
 
 function getRoberryTime(intervals, utc) {
@@ -48,7 +41,7 @@ function getInterval(time, utc) {
 }
 
 function createDate(day, hour, minute) {
-    let numberDay = NUMBER_DAYS[day];
+    let numberDay = DAYS_FOR_ATTACK.indexOf(day) + 1;
     if (hour > 23 || hour < 0) {
         var sign = hour > 23 ? 1 : -1;
         hour -= 24 * sign;
@@ -62,7 +55,7 @@ function getIntervalsClosedBank(workingHours) {
     var intervals = [];
     var startBankInterval = parseBankInterval(workingHours.from);
     var endBankInterval = parseBankInterval(workingHours.to);
-    Object.keys(NUMBER_DAYS).forEach(function (day) {
+    DAYS_FOR_ATTACK.forEach(function (day) {
         intervals.push (
             {
                 from: createDate(day, 0, 0),
@@ -101,7 +94,8 @@ function sortIntervals(robberyTime) {
     });
 }
 function parseRobberyInterval(time) {
-    let [, day = null, hour = null, minute = null, utc = null] = FORMAT_ROBBERY_TIME.exec(time);
+    let formatRobberyTime = /([А-Я]{2})\s(\d{2}):(\d{2})\+(\d+)/;
+    let [, day = null, hour = null, minute = null, utc = null] = formatRobberyTime.exec(time);
 
     return {
         day,
@@ -112,7 +106,8 @@ function parseRobberyInterval(time) {
 }
 
 function parseBankInterval(time) {
-    let [, hour = null, minute = null, utc = null] = FORMAT_BANK_TIME.exec(time);
+    let formatBankTime = /(\d{2}):(\d{2})\+(\d+)/;
+    let [, hour = null, minute = null, utc = null] = formatBankTime.exec(time);
 
     return {
         hour,
