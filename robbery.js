@@ -26,7 +26,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const gangSchedule = parseGangSchedule(schedule);
 
     const mergedSchedule = mergeSchedule(gangSchedule);
-    const gangFreeTime = getComplement({ from: utils.MONDAY, to: utils.THURSDAY }, mergedSchedule);
+    const gangFreeTime = getComplement({
+        from: utils.toUtcDate(utils.MONDAY, bankTimezone),
+        to: utils.toUtcDate(utils.THURSDAY, bankTimezone)
+    }, mergedSchedule);
     const robberyTimes = getRobberyTimes(gangFreeTime, bankSchedule, duration);
     // console.info(robberyTimes);
 
@@ -111,7 +114,6 @@ function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
 }
 
 function areIntervalsIntersected(one, other) {
-
     return isTimeInInterval(one.from, other) || isTimeInInterval(one.to, other) ||
            one.from < other.from && one.to > other.to;
 }
