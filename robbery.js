@@ -6,6 +6,10 @@
  */
 exports.isStar = true;
 
+var MIN_PER_DAY = 1440;
+var MIN_PER_HOUR = 60;
+var DAYS = ['ПН', 'ВТ', 'СР'];
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -15,9 +19,6 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-
-    var MIN_PER_DAY = 1440;
-    var MIN_PER_HOUR = 60;
 
     var answerArray = getAnswerArray();
 
@@ -97,14 +98,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return timeArray;
     }
 
-    function sortArray(array) {
-        return array.sort(function compareArrays(a, b) {
+    function mergeRange(array) {
+        var sortedArray = array.sort(function (a, b) {
             return a[0] - b[0];
         });
-    }
-
-    function mergeRange(array) {
-        var sortedArray = sortArray(array);
         var resultArray = [];
         var prevStart = sortedArray[0][0];
         var prevFinish = sortedArray[0][1];
@@ -120,13 +117,22 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         resultArray.push([prevStart, prevFinish]);
 
         return resultArray;
-
     }
 
+    /**
+     * Извлекает из строки со временим значение часового пояса
+     * @param {String} stringTime строка формата 'ПН 12:00+5'
+     * @returns {Number}
+     */
     function getUTC(stringTime) {
         return Number(stringTime.substring(stringTime.length - 1));
     }
 
+    /**
+     * Получает из записи типа 'ПН 09:00+3' колличество минут // todo заменить всё регуляркой
+     * @param {String} stringTime
+     * @returns {Number} колличество минут
+     */
     function getTimestamp(stringTime) {
         var mainUTC = getUTC(workingHours.from);
         if (stringTime.length === 7) {
@@ -141,12 +147,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         } else if (stringTime.substring(0, 2) === 'СР') {
             day = MIN_PER_DAY * 2;
         }
-        var UTC = Number(stringTime.substring(stringTime.length - 1));
+        var UTC = getUTC(stringTime);
         var hours = Number(stringTime.substring(3, 5));
         var minuts = Number(stringTime.substring(6, 8));
 
         return minuts + MIN_PER_HOUR * hours + MIN_PER_HOUR * (mainUTC - UTC) + day;
-
     }
 
     return {
@@ -174,8 +179,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var hours = Math.floor((answer - day * MIN_PER_DAY) / MIN_PER_HOUR);
             var minutes = answer - day * MIN_PER_DAY - hours * MIN_PER_HOUR;
 
-            var days = ['ПН', 'ВТ', 'СР'];
-            var dayStr = days[day];
+            var dayStr = DAYS[day];
 
             if (minutes < 10) {
                 minutes = '0' + minutes;
