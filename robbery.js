@@ -27,11 +27,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     const mergedSchedule = mergeSchedule(gangSchedule);
     const gangFreeTime = getComplement({
-        from: utils.createDate(ROBBERY_DAYS.indexOf('ПН'), 0, 0, bankTimezone),
-        to: utils.createDate(ROBBERY_DAYS.indexOf('СР'), 23, 59, bankTimezone)
+        from: utils.createDate(ROBBERY_DAYS.indexOf('ПН') + 1, 0, 0, bankTimezone),
+        to: utils.createDate(ROBBERY_DAYS.indexOf('СР') + 1, 23, 59, bankTimezone)
     }, mergedSchedule);
     const robberyTimes = getRobberyTimes(gangFreeTime, bankSchedule, duration);
-    // console.info(robberyTimes);
+    console.info(robberyTimes);
 
     return {
 
@@ -63,9 +63,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 robberyTimes[0].from, utils.hoursToMinutes(bankTimezone));
 
             return template
-                .replace('%HH', utils.formatTime(robberyTime.getUTCHours()))
-                .replace('%MM', utils.formatTime(robberyTime.getUTCMinutes()))
-                .replace('%DD', ROBBERY_DAYS[robberyTime.getUTCDay() - 1]);
+                .replace('%HH', utils.formatTime(robberyTime.getHours()))
+                .replace('%MM', utils.formatTime(robberyTime.getMinutes()))
+                .replace('%DD', ROBBERY_DAYS[robberyTime.getDay() - 1]);
         },
 
         /**

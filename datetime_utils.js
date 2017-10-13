@@ -5,7 +5,7 @@ const MINUTES_IN_HOUR = 60;
 
 function createDate(day, hours, minutes, utcOffset = 0) {
     //  June, 1970 starts with Monday
-    return new Date(Date.UTC(1970, 5, day, hours - utcOffset, minutes));
+    return new Date(1970, 5, day, hours - utcOffset, minutes);
 }
 
 exports.createDate = createDate;
