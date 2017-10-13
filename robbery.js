@@ -31,7 +31,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         to: utils.createDate(ROBBERY_DAYS.indexOf('СР') + 1, 23, 59, bankTimezone)
     }, mergedSchedule);
     const robberyTimes = getRobberyTimes(gangFreeTime, bankSchedule, duration);
-    console.info(robberyTimes);
 
     return {
 
@@ -185,7 +184,7 @@ function mergeIntervals(intervals) {
     for (let i = 1; i < intervals.length; i++) {
         let current = intervals[i];
         if (isTimeInInterval(current.from, previous)) {
-            previous.to = current.to;
+            previous.to = new Date(Math.max(previous.to, current.to));
         } else {
             result.push(previous);
             previous = current;
