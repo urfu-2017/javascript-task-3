@@ -58,3 +58,5 @@ if (robbery.isStar) {
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
 }
+
+moment = robbery.getAppropriateMoment({}, { from: '10:30+5', to: '10:30+5' });

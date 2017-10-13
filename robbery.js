@@ -6,6 +6,9 @@
  */
 exports.isStar = true;
 
+const step = 30 * 60 * 1000;
+const oneHour = 60 * 60 * 1000;
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -64,7 +67,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             if (freeIntervals[0].end - freeIntervals[0].start - 30 * 60 * 1000 >= duration) {
-                freeIntervals[0].start -= -30 * 60 * 1000;
+                freeIntervals[0].start -= -step;
                 freeIntervals[0].start = new Date(freeIntervals[0].start);
 
                 return true;
@@ -179,7 +182,7 @@ function timeToInterval(intervals, time, bankZone) {
 function getDateByTime(time, bankZone) {
     let { day, hours, minutes, zone } = getParsedTime(time);
     let date = getNewDate(hours, minutes, day, 10, 2017);
-    date = new Date(date - 1000 * 3600 * (zone - bankZone));
+    date = new Date(date - oneHour * (zone - bankZone));
 
     return date;
 }
@@ -209,12 +212,5 @@ function dayToNumber(day) {
 }
 
 function sortMethod(a, b) {
-    if (a.start > b.start) {
-        return 1;
-    }
-    if (a.start < b.start) {
-        return -1;
-    }
-
-    return 0;
+    return a.start - b.start;
 }
