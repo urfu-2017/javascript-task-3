@@ -1,7 +1,10 @@
 'use strict';
 
+const utils = require('./datetime_utils');
+
 const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
-const DATE_PATTERN = /(ПН|ВТ|СР)? ?(\d\d):(\d\d)\+(\d+)/;
+const DATE_REGEX = /(ПН|ВТ|СР)? ?(\d\d):(\d\d)\+(\d+)/;
+const TIMEZONE_REGEX = /.*\+(\d+)/;
 
 /**
  * Сделано задание на звездочку
@@ -18,15 +21,12 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    const [, bankTimezone] = /.*\+(\d+)/.exec(workingHours.from);
-    const bankSchedule = getBankSchedule(workingHours);
-    const gangSchedule = getGangSchedule(schedule);
+    const [, bankTimezone] = TIMEZONE_REGEX.exec(workingHours.from);
+    const bankSchedule = parseBankSchedule(workingHours);
+    const gangSchedule = parseGangSchedule(schedule);
+
     const mergedSchedule = mergeSchedule(gangSchedule);
-    let interval = [
-        new Date(Date.UTC(1970, 5, 1, 0, 0)),
-        new Date(Date.UTC(1970, 5, 4, 0, 0))
-    ];
-    const gangFreeTime = getComplementTo(...interval, mergedSchedule);
+    const gangFreeTime = getComplement({ from: utils.MONDAY, to: utils.THURSDAY }, mergedSchedule);
     const robberyTimes = getRobberyTimes(gangFreeTime, bankSchedule, duration);
     // console.info(robberyTimes);
 
@@ -56,11 +56,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            const robberyTime = getLaterDate(robberyTimes[0].from, bankTimezone * 60);
+            const robberyTime = utils.getLaterDate(
+                robberyTimes[0].from, utils.hoursToMinutes(bankTimezone));
 
             return template
-                .replace('%HH', robberyTime.getUTCHours())
-                .replace('%MM', robberyTime.getUTCMinutes())
+                .replace('%HH', utils.formatTime(robberyTime.getUTCHours()))
+                .replace('%MM', utils.formatTime(robberyTime.getUTCMinutes()))
                 .replace('%DD', ROBBERY_DAYS[robberyTime.getUTCDay() - 1]);
         },
 
@@ -72,19 +73,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             if (this.exists()) {
                 const appropriateInterval = robberyTimes[0];
-                const newStartTime = getLaterDate(robberyTimes[0].from, 30);
-                const newEndTime = getLaterDate(newStartTime, duration);
+                const newStartTime = utils.getLaterDate(appropriateInterval.from, 30);
+                const newEndTime = utils.getLaterDate(newStartTime, duration);
                 if (isTimeInInterval(newEndTime, appropriateInterval)) {
                     appropriateInterval.from = newStartTime;
 
                     return true;
-                }
-            } else if (robberyTimes.length > 1) {
-                robberyTimes.shift();
+                } else if (robberyTimes.length > 1) {
+                    robberyTimes.shift();
 
-                return true;
+                    return true;
+                }
             }
-            console.info('false');
 
             return false;
         }
@@ -101,7 +101,7 @@ function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
                 return;
             }
 
-            if (isTimeInInterval(getLaterDate(intersection.from, duration), intersection)) {
+            if (isTimeInInterval(utils.getLaterDate(intersection.from, duration), intersection)) {
                 result.push(intersection);
             }
         });
@@ -127,7 +127,7 @@ function getIntersection(one, other) {
     };
 }
 
-function getComplementTo(start, end, otherIntervals) {
+function getComplement({ from: start, to: end }, otherIntervals) {
     const result = [];
     let interval = { from: start };
 
@@ -142,7 +142,7 @@ function getComplementTo(start, end, otherIntervals) {
     return result;
 }
 
-function getBankSchedule(workingHours) {
+function parseBankSchedule(workingHours) {
     return ROBBERY_DAYS
         .map(day => {
             return {
@@ -153,7 +153,7 @@ function getBankSchedule(workingHours) {
         .map(parseInterval);
 }
 
-function getGangSchedule(gangSchedule) {
+function parseGangSchedule(gangSchedule) {
     return Object.values(gangSchedule)
         .map(banditSchedule => {
             return banditSchedule.map(parseInterval);
@@ -162,8 +162,8 @@ function getGangSchedule(gangSchedule) {
 
 function parseInterval(interval) {
     return {
-        from: getDate(interval.from),
-        to: getDate(interval.to)
+        from: parseDate(interval.from),
+        to: parseDate(interval.to)
     };
 }
 
@@ -198,22 +198,9 @@ function isTimeInInterval(time, interval) {
     return interval.from <= time && time <= interval.to;
 }
 
-function getDate(date) {
-    const match = DATE_PATTERN.exec(date);
+function parseDate(date) {
+    const match = DATE_REGEX.exec(date);
     const [, day, hours, minutes, timezone] = match;
 
-    return createDate(ROBBERY_DAYS.indexOf(day) + 1, hours, minutes, timezone);
-}
-
-function createDate(day, hours, minutes, utcOffset = 0) {
-    //  June, 1970 starts with Monday
-    return new Date(Date.UTC(1970, 5, day, hours - utcOffset, minutes));
-}
-
-function getLaterDate(date, shift) {
-    return new Date(date.getTime() + getMsFromMinutes(shift));
-}
-
-function getMsFromMinutes(minutes) {
-    return minutes * 60 * 1000;
+    return utils.createDate(ROBBERY_DAYS.indexOf(day) + 1, hours, minutes, timezone);
 }
