@@ -15,7 +15,139 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+
+    var MIN_PER_DAY = 1440;
+    var MIN_PER_HOUR = 60;
+
+    var answerArray = getAnswerArray();
+
+    var answer = answerArray.length === 0 ? -1 : answerArray[0][0];
+
+    var arrayOfGoodTime = getArrOfGoodTime();
+
+    var tryLaterCounter = 0;
+
+    function getArrOfGoodTime() {
+        if (answer < 0) {
+            return [];
+        }
+        var resultArray = [];
+        var arr = answerArray;
+        var ans = answer;
+        for (var i = 0; i < arr.length; i ++) {
+            ans = arr[i][0];
+            while (ans + duration <= arr[i][1]) {
+                resultArray.push(ans);
+                ans += 30;
+            }
+        }
+        resultArray.splice(0, 1);
+
+        return resultArray;
+    }
+
+    function getBusyIntervals() {
+
+        var arrIntervals = [];
+
+        for (var friend in schedule) {
+            if ({}.hasOwnProperty.call(schedule, friend)) {
+                arrIntervals = arrIntervals.concat(getArrayOfBusyInterval(schedule[friend]));
+            }
+        }
+
+        var bankStartWork = getTimestamp(workingHours.from);
+        var bankFinishWork = getTimestamp(workingHours.to);
+        arrIntervals.push([0, bankStartWork], [bankFinishWork, bankStartWork + MIN_PER_DAY],
+            [bankFinishWork + MIN_PER_DAY, bankStartWork + MIN_PER_DAY * 2],
+            [bankFinishWork + MIN_PER_DAY * 2, MIN_PER_DAY * 3 - 1]);
+
+        return arrIntervals;
+    }
+
+    function getAnswerArray() {
+        var busyIntervals = getBusyIntervals();
+
+        var sortAndMergeArray = mergeRange(busyIntervals);
+
+        var start = sortAndMergeArray[0][1];
+        var finish = 0;
+        var resArray = [];
+        for (var i = 1; i < sortAndMergeArray.length; i++) {
+            finish = sortAndMergeArray[i][0];
+            if (finish - start >= duration) {
+                resArray.push([start, finish]);
+            }
+            start = sortAndMergeArray[i][1];
+        }
+
+        return resArray;
+    }
+
+
+    function getArrayOfBusyInterval(scheduleArray) {
+        var timeArray = [];
+        for (var i = 0; i < scheduleArray.length; i++) {
+            timeArray.push(
+                [getTimestamp(scheduleArray[i].from),
+                    getTimestamp(scheduleArray[i].to)
+                ]);
+        }
+
+        return timeArray;
+    }
+
+    function sortArray(array) {
+        return array.sort(function compareArrays(a, b) {
+            return a[0] - b[0];
+        });
+    }
+
+    function mergeRange(array) {
+        var sortedArray = sortArray(array);
+        var resultArray = [];
+        var prevStart = sortedArray[0][0];
+        var prevFinish = sortedArray[0][1];
+        for (var i = 1; i < sortedArray.length; i++) {
+            if (sortedArray[i][0] <= prevFinish) {
+                prevFinish = Math.max(sortedArray[i][1], prevFinish);
+            } else {
+                resultArray.push([prevStart, prevFinish]);
+                prevStart = sortedArray[i][0];
+                prevFinish = sortedArray[i][1];
+            }
+        }
+        resultArray.push([prevStart, prevFinish]);
+
+        return resultArray;
+
+    }
+
+    function getUTC(stringTime) {
+        return Number(stringTime.substring(stringTime.length - 1));
+    }
+
+    function getTimestamp(stringTime) {
+        var mainUTC = getUTC(workingHours.from);
+        if (stringTime.length === 7) {
+            var h = Number(stringTime.substring(0, 2));
+            var m = Number(stringTime.substring(3, 5));
+
+            return m + MIN_PER_HOUR * h;
+        }
+        var day = 0;
+        if (stringTime.substring(0, 2) === 'ВТ') {
+            day = MIN_PER_DAY;
+        } else if (stringTime.substring(0, 2) === 'СР') {
+            day = MIN_PER_DAY * 2;
+        }
+        var UTC = Number(stringTime.substring(stringTime.length - 1));
+        var hours = Number(stringTime.substring(3, 5));
+        var minuts = Number(stringTime.substring(6, 8));
+
+        return minuts + MIN_PER_HOUR * hours + MIN_PER_HOUR * (mainUTC - UTC) + day;
+
+    }
 
     return {
 
@@ -24,7 +156,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return answer >= 0;
         },
 
         /**
@@ -35,7 +167,26 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (!this.exists()) {
+                return '';
+            }
+            var day = Math.floor(answer / MIN_PER_DAY);
+            var hours = Math.floor((answer - day * MIN_PER_DAY) / MIN_PER_HOUR);
+            var minutes = answer - day * MIN_PER_DAY - hours * MIN_PER_HOUR;
+
+            var days = ['ПН', 'ВТ', 'СР'];
+            var dayStr = days[day];
+
+            if (minutes < 10) {
+                minutes = '0' + minutes;
+            }
+            if (hours < 10) {
+                hours = '0' + hours;
+            }
+
+            return template.replace(/%DD/, dayStr)
+                .replace(/%HH/, hours)
+                .replace(/%MM/, minutes);
         },
 
         /**
@@ -44,7 +195,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            if (!this.exists() || arrayOfGoodTime.length === tryLaterCounter) {
+                return false;
+            }
+            answer = arrayOfGoodTime[tryLaterCounter];
+            tryLaterCounter++;
+
+            return true;
         }
     };
 };
