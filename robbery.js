@@ -132,7 +132,9 @@ function getAvailableIntervals(badIntervals, globalStart, globalEnd) {
             break;
         }
     }
-    lastChecks(result, globalStart, globalEnd);
+    if (result.length) {
+        lastChecks(result, globalStart, globalEnd);
+    }
 
     return result;
 }
