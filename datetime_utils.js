@@ -3,18 +3,6 @@
 const MS_IN_MINUTE = 60 * 1000;
 const MINUTES_IN_HOUR = 60;
 
-const MONDAY = new Date(Date.UTC(1970, 5, 1, 0, 0));
-const THURSDAY = new Date(Date.UTC(1970, 5, 3, 23, 59));
-
-exports.MONDAY = MONDAY;
-exports.THURSDAY = THURSDAY;
-
-function toUtcDate(date, timezone) {
-    return new Date(date.getTime() - hoursToMs(timezone));
-}
-
-exports.toUtcDate = toUtcDate;
-
 function createDate(day, hours, minutes, utcOffset = 0) {
     //  June, 1970 starts with Monday
     return new Date(Date.UTC(1970, 5, day, hours - utcOffset, minutes));

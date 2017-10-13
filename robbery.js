@@ -27,8 +27,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     const mergedSchedule = mergeSchedule(gangSchedule);
     const gangFreeTime = getComplement({
-        from: utils.toUtcDate(utils.MONDAY, bankTimezone),
-        to: utils.toUtcDate(utils.THURSDAY, bankTimezone)
+        from: utils.createDate(ROBBERY_DAYS.indexOf('ПН'), 0, 0, bankTimezone),
+        to: utils.createDate(ROBBERY_DAYS.indexOf('СР'), 23, 59, bankTimezone)
     }, mergedSchedule);
     const robberyTimes = getRobberyTimes(gangFreeTime, bankSchedule, duration);
     // console.info(robberyTimes);
