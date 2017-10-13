@@ -1,7 +1,7 @@
 'use strict';
 
 const MONDAY = new Date(Date.UTC(1970, 5, 1, 0, 0));
-const THURSDAY = new Date(Date.UTC(1970, 5, 4, 0, 0));
+const THURSDAY = new Date(Date.UTC(1970, 5, 3, 23, 59));
 
 exports.MONDAY = MONDAY;
 exports.THURSDAY = THURSDAY;
