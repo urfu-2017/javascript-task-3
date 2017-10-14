@@ -66,6 +66,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (freeIntervals.length == 0) {
+                return false;
+            } 
             if (freeIntervals[0].end - freeIntervals[0].start - 30 * 60 * 1000 >= duration) {
                 freeIntervals[0].start -= -step;
                 freeIntervals[0].start = new Date(freeIntervals[0].start);
