@@ -187,12 +187,12 @@ function findInterval() {
         let minTo = freeTime.Bank[i].to;
         let length = freeTime.Danny.length + freeTime.Rusty.length + freeTime.Linus.length;
         for (let j = 0; j < length; j++) {
-            maxFrom = findAndaddInterval(maxFrom, minTo, freeTime, i);
+            maxFrom = findAndaddInterval(maxFrom, minTo, i);
         }
     }
 }
 
-function findAndaddInterval(maxFrom, minTo, freeTime, i){
+function findAndaddInterval(maxFrom, minTo, i) {
     let inter = Object.create(intervalTime);
     inter = findOptInterval(maxFrom, minTo, freeTime.Danny, inter);
     inter = findOptInterval(inter.from, inter.to, freeTime.Rusty, inter);
@@ -209,7 +209,7 @@ function findAndaddInterval(maxFrom, minTo, freeTime, i){
 
     return maxFrom;
 }
-//упростить
+
 function findOptInterval(left, right, freeTimePeople, intervalFind) {
     if (left === undefined) {
         return intervalFind;
@@ -241,7 +241,9 @@ function conditionFind(arg) {
     if (timePeople.to <= arg.left || timePeople.from >= arg.right) {
         arg.k++;
     }
-    if (arg.left <= timePeople.from && timePeople.from < arg.optFrom && timePeople.from < arg.right) {
+    if (arg.left <= timePeople.from 
+        && timePeople.from < arg.optFrom 
+        && timePeople.from < arg.right) {
         arg.optFrom = timePeople.from;
         arg.left = arg.optFrom;
     }
