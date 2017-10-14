@@ -241,9 +241,9 @@ function conditionFind(arg) {
     if (timePeople.to <= arg.left || timePeople.from >= arg.right) {
         arg.k++;
     }
-    if (arg.left <= timePeople.from 
-        && timePeople.from < arg.optFrom 
-        && timePeople.from < arg.right) {
+    if (arg.left <= timePeople.from &&
+        timePeople.from < arg.optFrom &&
+        timePeople.from < arg.right) {
         arg.optFrom = timePeople.from;
         arg.left = arg.optFrom;
     }
