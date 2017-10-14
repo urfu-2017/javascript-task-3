@@ -9,6 +9,7 @@ exports.isStar = true;
 const TIME_FORMAT = /^([А-Я][А-Я])[\s]([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])[+]([0-9])$/;
 const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '05', 'СБ': '06', 'ВС': '07' };
 const MIN_IN_MILLIS = 60 * 1000;
+const HOUR_IN_MILLIS = 60 * MIN_IN_MILLIS;
 const LATER_IN_MILLIS = 30 * MIN_IN_MILLIS;
 
 /**
@@ -42,6 +43,7 @@ class TimeInterval {
         const [, df, hf, mf, zf] = TIME_FORMAT.exec(start);
         const [, dt, ht, mt, zt] = TIME_FORMAT.exec(end);
 
+        this.timezone = parseInt(zt);
         this.dayStart = df;
         this.dayEnd = dt;
 
@@ -102,14 +104,6 @@ class Response {
     }
 
     /**
-     * @param {String} field - start или end
-     * @returns {Date}
-     */
-    getDate(field) {
-        return new Date(this.currentInterval[field]);
-    }
-
-    /**
      * Возвращает отформатированную строку с часами для ограбления
      * Например, "Начинаем в %HH:%MM (%DD)" -> "Начинаем в 14:59 (СР)"
      * @param {String} template
@@ -117,8 +111,12 @@ class Response {
      */
     format(template) {
         if (this.exists()) {
-            return template.replace('%HH', ('0' + this.getDate('start').getHours()).slice(-2))
-                .replace('%MM', ('0' + this.getDate('start').getMinutes()).slice(-2))
+            let date = new Date(
+                this.currentInterval.start + this.currentInterval.timezone * HOUR_IN_MILLIS
+            );
+
+            return template.replace('%HH', ('0' + date.getHours()).slice(-2))
+                .replace('%MM', ('0' + date.getMinutes()).slice(-2))
                 .replace('%DD', this.currentInterval.dayStart);
         }
 
@@ -179,7 +177,8 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
 
     return new Response(worksIntervals.reduce((previous, time) => {
         for (let i = time.start; i <= time.end - (duration * MIN_IN_MILLIS); i += MIN_IN_MILLIS) {
-            let interval = new TimeInterval(i, i + (duration * 60000));
+            let interval = new TimeInterval(i, i + (duration * MIN_IN_MILLIS));
+            interval.timezone = time.timezone;
             interval.dayStart = time.dayStart;
             if (array.every((value) => !value.intersect(interval))) {
                 previous.push(interval);
