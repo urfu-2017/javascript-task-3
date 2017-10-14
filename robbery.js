@@ -154,10 +154,10 @@ function getIntervalsIntersection(bankIntervals, disjointSortedIntervals) {
     let intervalsIntersections = [];
     for (var i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
-        let findedInterval = sortedIntervals.find(x=>x.start <= current.end &&
+        let findedInterval = sortedIntervals.find(x=>x.start < current.end &&
             current.start < x.end && x !== current);
-        let start = findedInterval.start > current.start ? findedInterval.start : current.start;
-        let end = current.end < findedInterval.end ? current.end : findedInterval.end;
+        let start = Math.max(findedInterval.start, current.start);
+        let end = Math.min(findedInterval.end, current.end);
 
         intervalsIntersections.push({ start, end });
     }
