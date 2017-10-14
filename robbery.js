@@ -167,9 +167,12 @@ function parseThiefIntervals(schedule, baseTimezone) {
         for (var interval of schedule[thiefIntervals]) {
             let [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
             let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
-            let timeDifference = baseTimezone >= timezone
+
+            /* let timeDifference = baseTimezone >= timezone
                 ? baseTimezone - timezone
-                : timezone - baseTimezone;
+                : timezone - baseTimezone; */
+
+            let timeDifference = baseTimezone - timezone;
             let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
             let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
             intervals.push({ start: UTCStart, end: UTCEnds });
