@@ -16,22 +16,23 @@ exports.isStar = false;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // Создаю расписание из schedule в удобной для работы форме
-    let rasp = createRasp(schedule, workingHours);
-    // Создаю массив из свободных/занятых "получасов"
-    let timeMap = createTimeMap(rasp);
-    // Создаю массив интервалов, когда все свободны(включая открытый банк)
-    let timeToWorkArray = findMoment(timeMap);
-    // Узнаю, сколько "получасов" необходимо для ограбления
-    let halfHours = parseInt(duration / 30);
-    halfHours += (duration % 30 !== 0 ? 1 : 0);
-    // Нахожу все точные даты старта ограбления в исходной форме
-    let timeToStart = [];
-    timeToWorkArray.forEach((interval) => {
-        if (interval.length >= halfHours) {
-            timeToStart.push(toMainViewDate(interval[0] / 2, // Количество часов
-                Number(workingHours.from.split('+')[1]))); // Часовой пояс банка
+    let GMT = workingHours.from.split('+')[1];
+    let rasp = createRasp(schedule, GMT, workingHours);
+    console.info(schedule);
+    console.info(rasp);
+
+    let freeTime = [];
+    for (let i = 0; i < (72 * 60); i += 1) {
+        if (elementInInterval(i, rasp.Danny) === false &&
+            elementInInterval(i, rasp.Rusty) === false &&
+            elementInInterval(i, rasp.Linus) === false &&
+            elementInInterval(i, rasp.Bank) === true) {
+
+            freeTime.push(i);
         }
-    });
+    }
+    let groupFreeTimes = groupMinutes(freeTime);
+    let startTimes = findTimeToStart(groupFreeTimes, duration);
 
     return {
 
@@ -40,8 +41,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            // Если в массиве начал ограблений есть запись
-            if (timeToStart.length) {
+            if (startTimes.length) {
                 return true;
             }
 
@@ -56,15 +56,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            // Если в массиве начал ограблений есть запись
-            if (timeToStart.length) {
-                // Заменяю в шаблоне данные
-                template = template.replace('%HH', timeToStart[0][1]);
-                if (timeToStart[0][2] === 0) {
-                    timeToStart[0][2] = '00';
+            if (startTimes.length) {
+                template = template.replace('%HH', startTimes[0][1]);
+                if (startTimes[0][2] === 0) {
+                    startTimes[0][2] = '00';
                 }
-                template = template.replace('%MM', timeToStart[0][2]);
-                template = template.replace('%DD', timeToStart[0][0]);
+                template = template.replace('%MM', startTimes[0][2]);
+                template = template.replace('%DD', startTimes[0][0]);
 
                 return template;
             }
@@ -83,141 +81,121 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 // Создаю удобное расписание из schedule
-function createRasp(schedule, workingHours) {
+function createRasp(schedule, GMT, workingHours) {
     let rasp = {};
-    // Перебираю каждую запись-человека в объекте и добавляю удобное
-    // Время старта, привденное к +0 часовому поясу и
-    // Если учесть, что на ограбление 3 дня, значит
-    // Всего 72 часа в сумме, расмотрим их как 0-72 часы начала
-    // Пример: ВТ 11:00+5 станет => ВТ 6:00+0 => 30:00
     for (const person in schedule) {
         if (person) {
             rasp[person] = [];
             schedule[person].forEach((info) => {
-                rasp[person].push([prettyDate(info.from), prettyDate(info.to)]);
+                let fromData = info.from.match(/\d+/g);
+                let toData = info.to.match(/\d+/g);
+                let delta = Number(GMT) - Number(fromData[2]);
+
+                let fromDay = info.from.split(' ')[0];
+                let toDay = info.to.split(' ')[0];
+
+                let fromDataToTime = minuteCounter(fromData, delta, fromDay);
+                let toDataToTime = minuteCounter(toData, delta, toDay);
+
+                rasp[person].push([fromDataToTime, toDataToTime]);
             });
         }
     }
-    // Отдельно часы работы банка, зацикленные на каждый день
-    rasp.Bank = [];
-    for (let i = 0; i < 3; i++) {
-        rasp.Bank.push([prettyDate(workingHours.from) + 24 * i,
-            prettyDate(workingHours.to) + 24 * i]);
-    }
+
+    addBankToRasp(rasp, workingHours, GMT);
+
 
     return rasp;
 }
-// К рабочему виду
-function prettyDate(timeString) {
-    let returnTimeInHours = 0;
-    let dayOfWeek = timeString.match(/[А-Я]+/g);
-    let timeStringValues = timeString.match(/\d+/g);
-    if (dayOfWeek && dayOfWeek[0] === 'ПН') {
-        returnTimeInHours += 0;
-    }
-    if (dayOfWeek && dayOfWeek[0] === 'ВТ') {
-        returnTimeInHours += 24;
-    }
-    if (dayOfWeek && dayOfWeek[0] === 'СР') {
-        returnTimeInHours += 48;
-    }
-    returnTimeInHours += (Number(timeStringValues[0]) - Number(timeStringValues[2]));
-    returnTimeInHours += (Number(timeStringValues[1]) !== 0 ? 0.5 : 0);
 
-    return returnTimeInHours;
-}
-// Принимая время работы создаем массив из 144 получасов в 72 часах
-function createTimeArrayPerson(time) {
-    let timeArray = [];
-    for (let i = 0; i < 144; i++) {
-        timeArray.push(' ');
+function minuteCounter(timeData, delta, Day) {
+    if (timeData[0] === '23' && timeData[1] === '59') {
+        timeData[0] = '24';
+        timeData[1] = '00';
     }
-    time.forEach((interval) => {
-        let start = interval[0];
-        let end = interval[1];
-        for (let i = start; i < end; i += 0.5) { // Шагая по получасу, добавляем в ячейки
-            timeArray[i * 2] = 1;
+    let time = Number((Number(timeData[0]) + delta) * 60 + Number(timeData[1]));
+    if (Day === 'ВТ') {
+        time += (24 * 60);
+    }
+    if (Day === 'СР') {
+        time += (48 * 60);
+    }
+
+    if (time <= 0) {
+        time = 0;
+    }
+
+    if (time >= (72 * 60)) {
+        time = 72 * 60;
+    }
+
+    return time;
+}
+
+function addBankToRasp(rasp, workingHours, GMT) {
+    rasp.Bank = [];
+    let fromData = workingHours.from.match(/\d+/g);
+    let toData = workingHours.to.match(/\d+/g);
+    let delta = Number(GMT) - Number(fromData[2]);
+    let fromDataToTime = minuteCounter(fromData, delta, 'ПН');
+    let toDataToTime = minuteCounter(toData, delta, 'ПН');
+
+    if (fromDataToTime !== toDataToTime) {
+        rasp.Bank.push([fromDataToTime, toDataToTime]);
+        rasp.Bank.push([fromDataToTime + (24 * 60), toDataToTime + (24 * 60)]);
+        rasp.Bank.push([fromDataToTime + (48 * 60), toDataToTime + (48 * 60)]);
+    }
+
+    return true;
+}
+
+function elementInInterval(el, intervals) {
+    let booleanReturn = false;
+    intervals.forEach((interval) => {
+        if (el >= interval[0] && el < interval[1]) {
+            booleanReturn = true;
         }
     });
 
-    return timeArray;
+    return booleanReturn;
 }
-// Банк аналогичен, только в часы работы он свободен(инверсия человеку)
-function createTimeArrayBank(time) {
-    let timeArray = [];
-    for (let i = 0; i < 144; i++) {
-        timeArray.push(1);
-    }
-    time.forEach((interval) => {
-        let start = interval[0];
-        let end = interval[1];
-        for (let i = start; i < end; i += 0.5) {
-            timeArray[i * 2] = ' ';
-        }
-    });
 
-    return timeArray;
-}
-// Создаю массивы свободности человека по получасам
-// Т.е. [0,0,0,1,1,1,1...] Значит, что человек свободен с 01:30 и т.д.
-// Для банка отдельно(инверсия занятости)
-function createTimeMap(rasp) {
-    let timeMap = [];
-    for (const person in rasp) {
-        if (person !== 'Bank') {
-            timeMap.push(createTimeArrayPerson(rasp[person]));
-        } else {
-            timeMap.push(createTimeArrayBank(rasp[person]));
-        }
-    }
-
-    return timeMap;
-}
-// Находим нужные моменты как сравнение свободности всех
-// Троих участников и банка в каждый получас, и сохраняем 
-// Порядковый номер этого получаса
-function findMoment(timeMap) {
-    let findArray = [];
-    for (let i = 0; i < 144; i++) {
-        if (timeMap[0][i] === timeMap[1][i] &&
-            timeMap[1][i] === timeMap[2][i] &&
-            timeMap[2][i] === timeMap[3][i] &&
-            timeMap[3][i] === ' ') {
-            findArray.push(i);
-        }
-    }
-    // Группируем получасы, котоыре идут подряд, в один интервал
+function groupMinutes(freeTime) {
     let findGroupArray = [];
-    for (let i = 0; i < findArray.length;) {
+    for (let i = 0; i < freeTime.length;) {
         let arr = [];
         do {
-            arr.push(findArray[i]);
+            arr.push(freeTime[i]);
             i += 1;
-        } while (findArray[i - 1] + 1 === findArray[i]);
+        } while (freeTime[i - 1] + 1 === freeTime[i]);
         findGroupArray.push(arr);
     }
 
     return findGroupArray;
 }
-// Приводим дату к исходному виду, учитывая часовой пояс банка
-function toMainViewDate(hours, GMT) {
-    let mainDate = [];
-    let dayOfWeek = parseInt(hours / 24);
-    if (dayOfWeek === 0) {
-        mainDate.push('ПН');
-        mainDate.push(hours - 0 - (hours % 1) + GMT);
-        mainDate.push(hours % 1 * 60);
-    }
-    if (dayOfWeek === 1) {
-        mainDate.push('ВТ');
-        mainDate.push(hours - 24 - (hours % 1) + GMT);
-        mainDate.push(hours % 1 * 60);
-    }
-    if (dayOfWeek === 2) {
-        mainDate.push('СР');
-        mainDate.push(hours - 48 - (hours % 1) + GMT);
-        mainDate.push(hours % 1 * 60);
-    }
 
-    return mainDate;
+function findTimeToStart(groupFreeTime, duration) {
+    let startArray = [];
+    groupFreeTime.forEach((interval) => {
+        if (duration <= interval.length) {
+            startArray.push(interval[0]);
+        }
+    });
+
+    startArray.forEach((time) => {
+        let hour = parseInt(time / 60);
+        let minute = time % 60;
+        let day = 'ПН';
+        if (hour > 24 && hour < 48) {
+            hour -= 24;
+            day = 'ВТ';
+        }
+        if (hour >= 48 && hour <= 72) {
+            hour -= 48;
+            day = 'СР';
+        }
+        startArray[startArray.indexOf(time)] = [day, hour, minute];
+    });
+
+    return startArray;
 }
