@@ -111,9 +111,9 @@ class Response {
      */
     format(template) {
         if (this.exists()) {
-            let date = new Date(
-                this.currentInterval.start + this.currentInterval.timezone * HOUR_IN_MILLIS
-            );
+            let date = new Date(this.currentInterval.start);
+            let timezone = this.currentInterval.timezone + date.getTimezoneOffset() / 60;
+            date.setTime(this.currentInterval.start + timezone * HOUR_IN_MILLIS);
 
             return template.replace('%HH', ('0' + date.getHours()).slice(-2))
                 .replace('%MM', ('0' + date.getMinutes()).slice(-2))
