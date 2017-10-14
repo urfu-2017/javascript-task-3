@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 let timeConverter = require('./timeConverter.js');
 let segmentHelper = require('./segmentHelper.js');
 
