@@ -5,7 +5,7 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = true;
-const weekDays = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+const WEEKDAYS = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
 let data = {};
 
 /**
@@ -57,7 +57,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let minutes = time - days * 24 * 60 - hours * 60;
 
             return template
-                .replace(/%DD/, Object.keys(weekDays).find(key => weekDays[key] === days))
+                .replace(/%DD/, Object.keys(WEEKDAYS).find(key => WEEKDAYS[key] === days))
                 .replace(/%HH/, hours.toLocaleString(undefined, { minimumIntegerDigits: 2 }))
                 .replace(/%MM/, minutes.toLocaleString(undefined, { minimumIntegerDigits: 2 }));
         },
@@ -82,6 +82,37 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
+function parseBankOpenIntervals(workingHours) {
+    let intervals = [];
+    let [hoursFrom, minutesFrom, bankTimezone] = parseTime(workingHours.from);
+    let [hoursTo, minutesTo] = parseTime(workingHours.to);
+    for (var weekDayNumber = 0; weekDayNumber < 3; weekDayNumber++) {
+        let UTCStartTime = (hoursFrom + 24 * weekDayNumber) * 60 + minutesFrom;
+        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo;
+        intervals.push({ start: UTCStartTime, end: UTCEndsTime });
+    }
+
+    return [intervals, bankTimezone];
+}
+
+function parseThiefIntervals(schedule, baseTimezone) {
+    let intervals = [];
+    for (var thiefIntervals in schedule) {
+        if (!schedule[thiefIntervals]) {
+            continue;
+        }
+        for (var interval of schedule[thiefIntervals]) {
+            let [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
+            let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
+            let timeDifference = baseTimezone - timezone;
+            let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
+            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
+            intervals.push({ start: UTCStart, end: UTCEnds });
+        }
+    }
+
+    return intervals;
+}
 
 // обьединяем пересекающиеся интервалы
 function combineIntervals(intervals) {
@@ -90,8 +121,8 @@ function combineIntervals(intervals) {
     for (var i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
         let overlappingIntervals = sortedIntervals
-            .filter(x=>x.start <= current.end && x.start >= current.start);
-        var intervalsBorder = overlappingIntervals.sort((a, b) => a.end > b.end).slice(-1)[0].end;
+            .filter(x=> current.start <= x.start && x.start <= current.end);
+        var intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
         combinedIntervals.push({ start: current.start, end: intervalsBorder });
         i += overlappingIntervals.length - 1;
     }
@@ -113,7 +144,7 @@ function invertTimeIntervals(disjoinedSortedIntervals) {
     }
     invertedIntervals.push({ start: previousStartPos, end: maxValue });
 
-    return combineIntervals(invertedIntervals);
+    return invertedIntervals;
 }
 
 // пересечение интервалов
@@ -141,43 +172,6 @@ function parseTime(string) {
     let [, hours, minutes, timeZone] = time.match(expr).map(Number);
 
     return dayOfWeek
-        ? [weekDays[dayOfWeek], hours, minutes, timeZone]
+        ? [WEEKDAYS[dayOfWeek], hours, minutes, timeZone]
         : [hours, minutes, timeZone];
-}
-
-function parseBankOpenIntervals(workingHours) {
-    let intervals = [];
-    let [hoursFrom, minutesFrom, bankTimezone] = parseTime(workingHours.from);
-    let [hoursTo, minutesTo] = parseTime(workingHours.to);
-    for (var weekDayNumber = 0; weekDayNumber < 3; weekDayNumber++) {
-        let UTCStartTime = (hoursFrom + 24 * weekDayNumber) * 60 + minutesFrom;
-        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo;
-        intervals.push({ start: UTCStartTime, end: UTCEndsTime });
-    }
-
-    return [intervals, bankTimezone];
-}
-
-function parseThiefIntervals(schedule, baseTimezone) {
-    let intervals = [];
-    for (var thiefIntervals in schedule) {
-        if (!schedule[thiefIntervals]) {
-            continue;
-        }
-        for (var interval of schedule[thiefIntervals]) {
-            let [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
-            let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
-
-            /* let timeDifference = baseTimezone >= timezone
-                ? baseTimezone - timezone
-                : timezone - baseTimezone; */
-
-            let timeDifference = baseTimezone - timezone;
-            let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
-            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
-            intervals.push({ start: UTCStart, end: UTCEnds });
-        }
-    }
-
-    return intervals;
 }
