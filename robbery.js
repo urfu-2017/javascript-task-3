@@ -22,9 +22,17 @@ let freeTime = {
     Linus: []
 };
 
+let busyTime = {
+    Danny: [],
+    Rusty: [],
+    Linus: []
+};
+
 let arrayAllIntervals = [];
 
 let arrayIntervals = [];
+
+let arrForTry = [];
 
 let interval = {
     timeNoForm: undefined,
@@ -33,7 +41,7 @@ let interval = {
     dayWeek: undefined
 };
 
-let tryL = 0;
+let tryL;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -44,13 +52,18 @@ let tryL = 0;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+    tryL = 0;
+    let metka;
     freeTime.Bank = [];
     freeTime.Danny = [];
     freeTime.Rusty = [];
     freeTime.Linus = [];
+    busyTime.Danny = [];
+    busyTime.Rusty = [];
+    busyTime.Linus = [];
     arrayIntervals = [];
     arrayAllIntervals = [];
+    arrForTry = [];
     parseData(schedule, workingHours);
     arrayAllIntervals.sort(function (a, b) {
 
@@ -58,6 +71,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     });
     findInterval();
     let intervals = selection(duration);
+    if (intervals.length !== 0) {
+        ifCalltryLater(intervals, duration);
+    }
 
     return {
 
@@ -66,14 +82,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            for (let i = 0; i < arrayIntervals.length; i++) {
-                if (duration <= arrayIntervals[i].duration) {
+            tryL = 0;
+            metka = false;
 
-                    return true;
-                }
-            }
-
-            return false;
+            return intervals.length !== 0;
         },
 
         /**
@@ -84,10 +96,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (intervals.length > tryL) {
-                template = template.replace(/%DD/, intervals[tryL].time.dayWeek);
-                template = template.replace(/%HH/, intervals[tryL].time.hour);
-                template = template.replace(/%MM/, intervals[tryL].time.min);
+            if (intervals.length > tryL && !metka) {
+                template = template.replace(/%DD/, intervals[0].time.dayWeek);
+                template = template.replace(/%HH/, intervals[0].time.hour);
+                template = template.replace(/%MM/, intervals[0].time.min);
+
+                return template;
+            }
+            if (metka && tryL < arrForTry.length) {
+                template = template.replace(/%DD/, arrForTry[tryL].dayWeek);
+                template = template.replace(/%HH/, arrForTry[tryL].hour);
+                template = template.replace(/%MM/, arrForTry[tryL].min);
+                metka = false;
 
                 return template;
             }
@@ -102,18 +122,34 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             tryL++;
-            for (let i = tryL - 1; i < intervals.length - 1; i++) {
-                let next = intervals[i].timeNoForm.to - intervals[i + 1].timeNoForm.from;
-                if (next >= 30) {
+            metka = true;
 
-                    return true;
-                }
-            }
 
-            return false;
+            return arrForTry.length === 0;
         }
     };
 };
+
+function ifCalltryLater(intervals, duration) {
+    findTry(intervals, duration, -1);
+    for (let i = 0; i < intervals.length - 1; i++) {
+        let next = intervals[i + 1].timeNoForm.to - intervals[i].timeNoForm.from;
+        if (next >= 30) {
+            findTry(intervals, duration, i);
+        }
+    }
+}
+
+function findTry(intervals, duration, i) {
+    arrForTry.push(intervals[i + 1].time);
+    let dur = 30;
+    while (intervals[i + 1].duration - dur >= duration) {
+        let inter = {};
+        inter.from = intervals[i + 1].timeNoForm.from + dur;
+        arrForTry.push(answer(inter, intervals[i + 1].dayWeek));
+        dur += 30;
+    }
+}
 
 function parseData(schedule, workingHours) {
     let fromBank = parseTime(workingHours.from, 'bank');
@@ -127,16 +163,27 @@ function parseData(schedule, workingHours) {
     parseSchedule(schedule.Danny, 'Danny');
     parseSchedule(schedule.Rusty, 'Rusty');
     parseSchedule(schedule.Linus, 'Linus');
+    interpretatorIntervals('Danny');
+    interpretatorIntervals('Rusty');
+    interpretatorIntervals('Linus');
 }
 
 function parseTime(time, flag) {
     let assHour = time.split(':');
     let assMin = assHour[1].split('+');
     let newTime = Number(assHour[0]) * 60 + Number(assMin[0]);
-    if (flag === 'bank') {
-        timeZone = Number(assMin[1]);
-    } else {
-        newTime += (timeZone - Number(assMin[1])) * 60;
+    switch (flag) {
+        case 'bank':
+            timeZone = Number(assMin[1]);
+        break;
+        case 'from':
+            newTime += (timeZone - Number(assMin[1])) * 60;
+        break;
+        case 'to':
+            newTime += (timeZone - Number(assMin[1])) * 60;
+        break;
+        default:
+        break;
     }
 
     return newTime;
@@ -148,8 +195,8 @@ function parseSchedule(schedulePeople, namePeople) {
         let dayWeekTo = schedulePeople[i].to.split(' ');
         let timeFrom;
         let timeTo;
-        timeFrom = parseTime(dayWeekFrom[1], '');
-        timeTo = parseTime(dayWeekTo[1], '');
+        timeFrom = parseTime(dayWeekFrom[1], 'from');
+        timeTo = parseTime(dayWeekTo[1], 'to');
         timeFrom = timeWithWeek(timeFrom, dayWeekFrom[0]);
         timeTo = timeWithWeek(timeTo, dayWeekTo[0]);
         linkage(timeFrom, timeTo, namePeople);
@@ -176,9 +223,38 @@ function linkage(timeFrom, timeTo, name) {
     let intervalTimePeople = Object.create(intervalTime);
     intervalTimePeople.from = timeFrom;
     intervalTimePeople.to = timeTo;
-    freeTime[name].push(intervalTimePeople);
-    arrayAllIntervals.push(timeFrom);
-    arrayAllIntervals.push(timeTo);
+    busyTime[name].push(intervalTimePeople);
+}
+
+function interpretatorIntervals(name) {
+    let iPeople = busyTime[name].sort(function (a, b) {
+        return a.from - b.from;
+    });
+    let to;
+    let from;
+    let parseInter = Object.create(intervalTime);
+    if (iPeople[0].from !== 0) {
+        addNormInterval(0, iPeople[0].from, name);
+    }
+    for (let i = 1; i < iPeople.length; i++) {
+        addNormInterval(iPeople[i - 1].to, iPeople[i].from, name);
+    }
+    if (iPeople[iPeople.length - 1].to < 168 * 60 - 1) {
+        addNormInterval(iPeople[iPeople.length - 1]. to, 168 * 60 - 1, name);
+    }
+}
+
+function addNormInterval(from, to, name) {
+    let parseInter = Object.create(intervalTime);
+    parseInter.from = from;
+    parseInter.to = to;
+    freeTime[name].push(parseInter);
+    if (arrayAllIntervals.indexOf(from) === -1) {
+        arrayAllIntervals.push(from);
+    }
+    if (arrayAllIntervals.indexOf(to) === -1) {
+        arrayAllIntervals.push(to);
+    }
 }
 
 function findInterval() {
@@ -186,25 +262,41 @@ function findInterval() {
         let maxFrom = freeTime.Bank[i].from;
         let minTo = freeTime.Bank[i].to;
         let length = freeTime.Danny.length + freeTime.Rusty.length + freeTime.Linus.length;
+        let arg = {
+            arrWasTo: [],
+            allTo: []
+        }
         for (let j = 0; j < length; j++) {
-            maxFrom = findAndaddInterval(maxFrom, minTo, i);
+            
+            maxFrom = findAndaddInterval(maxFrom, minTo, i, arg);
         }
     }
 }
 
-function findAndaddInterval(maxFrom, minTo, i) {
+function findAndaddInterval(maxFrom, minTo, i, arg) {
     let inter = Object.create(intervalTime);
+    arg.allTo.push(maxFrom);
     inter = findOptInterval(maxFrom, minTo, freeTime.Danny, inter);
+    arg.allTo.push(inter.to);
     inter = findOptInterval(inter.from, inter.to, freeTime.Rusty, inter);
+    arg.allTo.push(inter.to);
     inter = findOptInterval(inter.from, inter.to, freeTime.Linus, inter);
     if (inter.from !== undefined && (inter.to - inter.from) !== 0) {
-        let newInterval = Object.create(interval);
-        newInterval.timeNoForm = inter;
-        newInterval.dayWeek = i;
-        newInterval.duration = inter.to - inter.from;
-        newInterval.time = answer(inter, i);
-        arrayIntervals.push(newInterval);
-        maxFrom = findStartNext(inter.to);
+        if (arg.arrWasTo.indexOf(inter.to) === -1) {
+            let newInterval = Object.create(interval);
+            newInterval.timeNoForm = inter;
+            newInterval.dayWeek = i;
+            newInterval.duration = inter.to - inter.from;
+            newInterval.time = answer(inter, i);
+            arrayIntervals.push(newInterval);
+            maxFrom = findStartNext(inter.to, arg.arrWasTo);
+            arg.arrWasTo.push(inter.to);
+            arg.arrWasTo.push(maxFrom);
+        }
+    } else {
+        let ind = arg.allTo.indexOf(undefined);
+        maxFrom = findStartNext(arg.allTo[ind - 1], arg.arrWasTo);
+        arg.arrWasTo.push(arg.allTo[ind - 1]);
     }
 
     return maxFrom;
@@ -254,10 +346,10 @@ function conditionFind(arg) {
     return arg;
 }
 
-function findStartNext(to) {
+function findStartNext(to, arrWasTo) {
     let i = 0;
     while (i < arrayAllIntervals.length) {
-        if (arrayAllIntervals[i] > to) {
+        if (arrayAllIntervals[i] > to && arrWasTo.indexOf(arrayAllIntervals[i]) === -1) {
             return arrayAllIntervals[i];
         }
         i++;
