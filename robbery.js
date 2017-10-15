@@ -50,9 +50,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (robberyRanges.length === 0) {
                 return '';
             }
-            let minutes = robberyRanges[0].from.getMinutes();
-            let hours = robberyRanges[0].from.getHours() - banksTimeZone;
-            const day = robberyRanges[0].from.getDate();
+            const date = new Date(robberyRanges[0].from);
+            let minutes = date.getUTCMinutes();
+            let hours = date.getUTCHours();
+            const day = date.getUTCDate();
             hours = hours < 10 ? '0' + hours : hours;
             minutes = minutes < 10 ? '0' + minutes : minutes;
 
@@ -157,44 +158,21 @@ function getRobbersTime(schedule, banksTimeZone) {
 }
 
 function makeDateObj(time, banksTimeZone) {
-    let timeDate = new Date();
-    const day = time.split(' ')[0];
+    const day = getWeekDay(time.split(' ')[0]);
     const hrsAndMins = time.split(' ')[1];
     const currentTimeZone = time.split('+')[1];
-    timeDate.setDate(getWeekDay(day));
-    timeDate.setHours(getHours(hrsAndMins));
-    timeDate.setMinutes(getMinutes(hrsAndMins));
-    timeDate.setHours(toBanksTimeZone(timeDate, currentTimeZone, banksTimeZone));
 
-    return timeDate;
+    return Date.UTC(1970, 0, day, getHours(hrsAndMins), getMinutes(hrsAndMins)) -
+    currentTimeZone * 60 * 60000 + banksTimeZone * 60 * 60000;
 }
 
-function toBanksTimeZone(date, current, bank) {
-    const oldHours = date.getHours() + 5;
-    if (current === bank) {
-        return oldHours;
-    }
-
-    return oldHours + Number(bank) - Number(current);
-
-}
 
 function getMinutes(time) {
-    const toNumber = Number(time.split(':')[1].split('+')[0]);
-    if (toNumber < 10) {
-        return '0' + toNumber;
-    }
-
-    return toNumber;
+    return Number(time.split(':')[1].split('+')[0]);
 }
 
 function getHours(time) {
-    const toNumber = Number(time.split(':')[0]);
-    if (toNumber < 10) {
-        return '0' + toNumber;
-    }
-
-    return toNumber;
+    return Number(time.split(':')[0]);
 }
 
 function getWeekDay(currentDay) {
@@ -205,14 +183,8 @@ function getWeekDay(currentDay) {
     }
 }
 
-function createDateForBank(day, hours, minutes, timeZone) {
-    let date = new Date();
-    date.setDate(day);
-    date.setHours(hours);
-    date.setMinutes(minutes);
-    date.setHours(toBanksTimeZone(date, timeZone, timeZone));
-
-    return date;
+function createDateForBank(day, hours, minutes) {
+    return Date.UTC(1970, 0, day, hours, minutes);
 }
 
 function getDatesForBank(workingHours, timeZone) {
