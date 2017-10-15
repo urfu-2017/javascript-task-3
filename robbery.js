@@ -106,10 +106,6 @@ function createRasp(schedule, GMT, workingHours) {
 }
 
 function minuteCounter(timeData, delta, Day) {
-    if (timeData[0] === '23' && timeData[1] === '59') {
-        timeData[0] = '24';
-        timeData[1] = '00';
-    }
     let time = Number((Number(timeData[0]) + delta) * 60 + Number(timeData[1]));
     if (Day === 'ВТ') {
         time += (24 * 60);
