@@ -26,8 +26,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let thiefReadinessIntervals = invertTimeIntervals(disjointThiefIntervals);
 
     data.possibleIntervals = getIntervalsIntersection(bankOpenIntervals, thiefReadinessIntervals);
-    data.satisfyingIntervals = data.possibleIntervals.filter(x=>x.end - x.start >= duration);
-    data.intervalIndex = data.satisfyingIntervals.findIndex(x=>x.end - x.start >= duration);
+    data.satisfyingIntervals = data.possibleIntervals.filter(x=>x.end - x.start + 1 >= duration);
+    data.intervalIndex = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
 
     return {
 
@@ -69,9 +69,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             data.satisfyingIntervals[data.intervalIndex].start += 30;
-            let nextItemIndex = data.satisfyingIntervals.findIndex(x=>x.end - x.start >= duration);
-            if (nextItemIndex >= 0) {
-                data.intervalIndex = nextItemIndex;
+            let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
+            if (nextItem >= 0) {
+                data.intervalIndex = nextItem;
 
                 return true;
             }
@@ -88,7 +88,7 @@ function parseBankOpenIntervals(workingHours) {
     let [hoursTo, minutesTo] = parseTime(workingHours.to);
     for (var weekDayNumber = 0; weekDayNumber < 3; weekDayNumber++) {
         let UTCStartTime = (hoursFrom + 24 * weekDayNumber) * 60 + minutesFrom;
-        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo + 1;
+        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo - 1;
         intervals.push({ start: UTCStartTime, end: UTCEndsTime });
     }
 
@@ -106,7 +106,7 @@ function parseThiefIntervals(schedule, baseTimezone) {
             let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
             let timeDifference = baseTimezone - timezone;
             let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
-            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo + 1;
+            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
             intervals.push({ start: UTCStart, end: UTCEnds });
         }
     }
@@ -116,12 +116,12 @@ function parseThiefIntervals(schedule, baseTimezone) {
 
 // обьединяем пересекающиеся интервалы
 function combineIntervals(intervals) {
-    let sortedIntervals = intervals.sort((a, b) => a.start > b.start);
+    let sortedIntervals = sortIntervals(intervals);
     let combinedIntervals = [];
     for (var i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
         let overlappingIntervals = sortedIntervals
-            .filter(x=> current.start <= x.start && x.start <= current.end);
+            .filter(x=> current.start <= x.start && x.start <= current.end + 1);
         var intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
         combinedIntervals.push({ start: current.start, end: intervalsBorder });
         i += overlappingIntervals.length - 1;
@@ -130,40 +130,63 @@ function combineIntervals(intervals) {
     return combinedIntervals;
 }
 
-// инвертация интервалов
+// инвертация временных интервалов
 function invertTimeIntervals(disjoinedSortedIntervals) {
     const minValue = Number.MIN_SAFE_INTEGER;
     const maxValue = Number.MAX_SAFE_INTEGER;
     var invertedIntervals = [];
-    let previousStartPos = minValue;
+    let previousEndPos = minValue;
     for (var i = 0; i < disjoinedSortedIntervals.length; i++) {
         var interval = disjoinedSortedIntervals[i];
-        let invertedInterval = { start: previousStartPos, end: interval.start };
-        previousStartPos = interval.end;
+
+        let invertedInterval = { start: previousEndPos, end: interval.start - 1 };
+        previousEndPos = interval.end;
         invertedIntervals.push(invertedInterval);
     }
-    invertedIntervals.push({ start: previousStartPos, end: maxValue });
+    invertedIntervals.push({ start: previousEndPos, end: maxValue });
 
     return invertedIntervals;
 }
 
-// пересечение интервалов
-function getIntervalsIntersection(bankIntervals, disjointSortedIntervals) {
-    let intervals = bankIntervals.concat(disjointSortedIntervals);
-    let sortedIntervals = intervals.sort((a, b) => a.start > b.start);
-    let intervalsIntersections = [];
-    for (var i = 0; i < sortedIntervals.length; i++) {
-        let current = sortedIntervals[i];
-        let findedInterval = sortedIntervals.find(x=>x.start < current.end &&
-            current.start < x.end && x !== current);
-        let start = Math.max(findedInterval.start, current.start);
-        let end = Math.min(findedInterval.end, current.end);
+function sortIntervals(intervals) {
+    return intervals.sort(function (a, b) {
+        if (a.start > b.start) {
+            return 1;
+        }
+        if (a.start < b.start) {
+            return -1;
+        }
+        let al = a.start - a.end;
+        let bl = b.start - b.end;
 
-        intervalsIntersections.push({ start, end });
+        return -(al - bl);
+    });
+}
+
+// пересечение интервалов
+function getIntervalsIntersection(bankIntervals, thiefIntervals) {
+    let intervalsIntersections = [];
+    for (let bankInterval of bankIntervals) {
+        let localIntersections = findIntersections(bankInterval, thiefIntervals);
+        intervalsIntersections = intervalsIntersections.concat(localIntersections);
     }
 
     return combineIntervals(intervalsIntersections);
+}
 
+function findIntersections(baseInterval, intervals) {
+    let intersections = [];
+    for (let interval of intervals) {
+        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
+            baseInterval.end < interval.start && baseInterval.end < interval.end) {
+            continue;
+        }
+        let start = Math.max(baseInterval.start, interval.start);
+        let end = Math.min(baseInterval.end, interval.end);
+        intersections.push({ start, end });
+    }
+
+    return intersections;
 }
 
 function parseTime(string) {
