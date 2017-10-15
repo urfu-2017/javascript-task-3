@@ -99,6 +99,7 @@ function getFreeTimespans(workingHours, timespans) {
             return timespan && timespan.to.total < end && timespan.to.total > start;
         });
         if (thatDayTimespans.length === 0) {
+            result.push(new timeModule.Timespan({ from: start, to: end }, 0));
             continue;
         }
         pushFirst(thatDayTimespans, result, start);
@@ -174,7 +175,7 @@ function enlargeCurrent(timespans, currentIndex) {
         if (timespan.to.total === otherTimespan.from.total) {
             timespans[otherIndex] = undefined;
         }
-        if (timespan.to.total > otherTimespan.from.total) {
+        if (timespan.to.total >= otherTimespan.from.total) {
             timespan.to.fromTotal(otherTimespan.to.total, otherTimespan.to.offset);
             timespans[otherIndex] = undefined;
         }

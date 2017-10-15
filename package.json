@@ -3,7 +3,8 @@
   "main": "robbery.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "eslint . && mocha *.spec.js"
+    "test": "eslint . && mocha *.spec.js",
+    "testtime": "mocha timemodule.test.js"
   },
   "dependencies": {
     "eslint": "4.8.0",
