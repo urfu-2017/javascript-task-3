@@ -80,7 +80,7 @@ class TimeInterval {
      * @returns {Boolean}
      */
     intersect(interval) {
-        return this.include(interval) ||
+        return this.include(interval) || interval.include(this) ||
             (this.start < interval.start && this.end > interval.start) ||
             (this.end > interval.end && this.start < interval.end);
     }
