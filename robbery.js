@@ -3,6 +3,10 @@
 let TIME_FORMAT = /^(\d{2}):(\d{2})\+(\d+)$/;
 let WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 let ROBBER_NAMES = ['Danny', 'Rusty', 'Linus'];
+let MINUTES_IN_HOUR = 60;
+let HOURS_IN_DAY = 24;
+let MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
+let DAYS_FOR_ROBBERY_COUNT = 3;
 
 /**
  * Сделано задание на звездочку
@@ -62,7 +66,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            let newRobberyTime = findRobberyTime(events, duration, robberyTime + 30);
+            let newRobberyTime =
+                findRobberyTime(events, duration, robberyTime + MINUTES_IN_HOUR / 2);
             if (newRobberyTime) {
                 robberyTime = newRobberyTime;
 
@@ -125,7 +130,7 @@ function dateToTotalMinutes(date, timeZone = 0) {
     }
     let totalHours = date.hours - date.timeZone + timeZone;
     if ('day' in date) {
-        totalHours += WEEK_DAYS.indexOf(date.day) * 24;
+        totalHours += WEEK_DAYS.indexOf(date.day) * HOURS_IN_DAY;
     }
 
     return totalHours * 60 + date.minutes;
@@ -133,10 +138,10 @@ function dateToTotalMinutes(date, timeZone = 0) {
 
 
 function minutesToDate(minutes) {
-    let day = WEEK_DAYS[Math.floor(minutes / (24 * 60))];
-    minutes = minutes % (24 * 60);
-    let hours = Math.floor(minutes / 60);
-    minutes = minutes % 60;
+    let day = WEEK_DAYS[Math.floor(minutes / MINUTES_IN_DAY)];
+    minutes = minutes % MINUTES_IN_DAY;
+    let hours = Math.floor(minutes / MINUTES_IN_HOUR);
+    minutes = minutes % MINUTES_IN_HOUR;
 
     return {
         day: day,
@@ -171,11 +176,11 @@ function generateEventsList(schedule, workingTime) {
             });
         });
     });
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < DAYS_FOR_ROBBERY_COUNT; i++) {
         let minutesFrom =
-            dateToTotalMinutes(workingTime.from, workingTime.from.timeZone) + 24 * 60 * i;
+            dateToTotalMinutes(workingTime.from, workingTime.from.timeZone) + MINUTES_IN_DAY * i;
         let minutesTo =
-            dateToTotalMinutes(workingTime.to, workingTime.to.timeZone) + 24 * 60 * i;
+            dateToTotalMinutes(workingTime.to, workingTime.to.timeZone) + MINUTES_IN_DAY * i;
         events.push({
             totalMinutes: minutesFrom,
             type: 1
