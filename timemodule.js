@@ -41,6 +41,8 @@ function Time(time, offset) {
     return this;
 }
 
+let minuteInDay = 24 * 60;
+
 Time.prototype.getTotal = function () {
     return (this.day * 24 + this.hours - this.offset) * 60 + this.minutes;
 };
@@ -48,11 +50,13 @@ Time.prototype.getTotal = function () {
 Time.prototype.fromTotal = function (total, offset) {
     this.total = total;
     this.offset = offset;
+    total += minuteInDay;
     this.minutes = total % 60;
-    let minuteInDay = 24 * 60;
-    this.day = Math.floor(total / minuteInDay);
+    this.day = Math.floor(total / minuteInDay) - 1;
     total = total % minuteInDay;
     this.hours = Math.floor(total / 60) + offset;
+    this.day += Math.floor(this.hours / 24);
+    this.hours %= 24;
 };
 
 /**
@@ -61,6 +65,7 @@ Time.prototype.fromTotal = function (total, offset) {
  * @returns {String}
  */
 Time.prototype.format = function (template, offset) {
+    this.fromTotal(this.total, offset);
     let result = template.replace('%DD', days[this.day]);
     let minutes = this.minutes.toLocaleString('arab', { minimumIntegerDigits: 2 });
     let hoursOffset = this.hours + offset - this.offset;
