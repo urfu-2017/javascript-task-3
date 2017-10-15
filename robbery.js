@@ -94,18 +94,20 @@ function parseShedule(schedule) {
 let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 function parseTime(time) {
-    let day = days.indexOf(time.substring(0, 2));
-    let hours = Number(time.substring(3, 5));
-    let minutes = Number(time.substring(6, 8));
-    let offset = Number(time.substring(9));
+    let result = /(..) (\d\d):(\d\d)\+(\d+)/.exec(time);
+    let day = days.indexOf(result[1]);
+    let hours = Number(result[2]);
+    let minutes = Number(result[3]);
+    let offset = Number(result[4]);
 
     return Date.UTC(2017, 9, 16 + day, hours - offset, minutes);
 }
 
 function parseWorkTime(time, day = 0) {
-    let hours = Number(time.substring(0, 2));
-    let minutes = Number(time.substring(3, 5));
-    let offset = Number(time.substring(6));
+    let result = /(\d\d):(\d\d)\+(\d+)/.exec(time);
+    let hours = Number(result[1]);
+    let minutes = Number(result[2]);
+    let offset = Number(result[3]);
 
     return Date.UTC(2017, 9, 16 + day, hours - offset, minutes);
 }
