@@ -172,7 +172,8 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
         new TimeInterval('СР ' + workingHours.from, 'СР ' + workingHours.to)
     ];
 
-    const array = approximate(schedule.Danny.concat(schedule.Rusty).concat(schedule.Linus)
+    const array = approximate(Object.values(schedule)
+        .reduce((result, current) => result.concat(current), [])
         .map(interval => new TimeInterval(interval.from, interval.to)));
 
     return new Response(worksIntervals.reduce((previous, time) => {
