@@ -177,8 +177,8 @@ function getIntervalsIntersection(bankIntervals, thiefIntervals) {
 function findIntersections(baseInterval, intervals) {
     let intersections = [];
     for (let interval of intervals) {
-        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
-            baseInterval.end < interval.start && baseInterval.end < interval.end) {
+        if (baseInterval.start >= interval.end && baseInterval.start >= interval.start ||
+            baseInterval.end <= interval.start && baseInterval.end <= interval.end) {
             continue;
         }
         let start = Math.max(baseInterval.start, interval.start);
