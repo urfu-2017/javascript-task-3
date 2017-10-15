@@ -80,14 +80,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return false;
             }
             var newRobberyTime = getEarliest(intersectedIntervals, duration);
-            console.info(intersectedIntervals);
-            if (newRobberyTime) {
-                robberyMinutesTime = newRobberyTime;
+            if (!newRobberyTime || lastRobberyInterval === 0) {
 
-                return true;
+                return false;
             }
+            robberyMinutesTime = newRobberyTime;
 
-            return false;
+            return true;
         }
     };
 };
