@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Сделано задание на звездочку *
+ * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
 exports.isStar = true;
@@ -64,6 +64,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         Rusty: [],
         Linus: []
     };
+    tryL = 0;
     parseData(schedule, workingHours);
     arrayAllIntervals.sort(function (a, b) {
 
