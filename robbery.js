@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -15,24 +15,24 @@ exports.isStar = false;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+    let GMT = workingHours.from.split('+')[1]; // Создаю базовый часовой пояс - пояс банка
     // Создаю расписание из schedule в удобной для работы форме
-    let GMT = workingHours.from.split('+')[1];
     let rasp = createRasp(schedule, GMT, workingHours);
-    console.info(schedule);
-    console.info(rasp);
 
-    let freeTime = [];
-    for (let i = 0; i < (72 * 60); i += 1) {
+    let freeTime = []; // Массив свободны минут (!)
+    for (let i = 0; i < (72 * 60); i += 1) { // Заполняю массив, сверяя свободность каждой минуты
         if (elementInInterval(i, rasp.Danny) === false &&
             elementInInterval(i, rasp.Rusty) === false &&
             elementInInterval(i, rasp.Linus) === false &&
             elementInInterval(i, rasp.Bank) === true) {
 
-            freeTime.push(i);
+            freeTime.push(i); // Пушу минуту в массив, если свободна
         }
     }
-    let groupFreeTimes = groupMinutes(freeTime);
-    let startTimes = findTimeToStart(groupFreeTimes, duration);
+    let groupFreeTimes = groupMinutes(freeTime); // Группирую свободные минуты в интервалы(массивы)
+    let startTimes = findTimeToStart(groupFreeTimes, duration); // Массив стартовых минут
+
+    let MEGACOUNTER = 0;
 
     return {
 
@@ -57,9 +57,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             if (startTimes.length) {
-                template = template.replace('%HH', startTimes[0][1]);
-                template = template.replace('%MM', startTimes[0][2]);
-                template = template.replace('%DD', startTimes[0][0]);
+                template = template.replace('%HH', startTimes[MEGACOUNTER][1]);
+                template = template.replace('%MM', startTimes[MEGACOUNTER][2]);
+                template = template.replace('%DD', startTimes[MEGACOUNTER][0]);
 
                 return template;
             }
@@ -73,6 +73,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (startTimes[MEGACOUNTER + 1]) {
+                MEGACOUNTER += 1;
+
+                return true;
+            }
+
             return false;
         }
     };
@@ -84,28 +90,29 @@ function createRasp(schedule, GMT, workingHours) {
         if (person) {
             rasp[person] = [];
             schedule[person].forEach((info) => {
-                let fromData = info.from.match(/\d+/g);
+                let fromData = info.from.match(/\d+/g); // Пример ['12', '30', '5']
                 let toData = info.to.match(/\d+/g);
-                let delta = Number(GMT) - Number(fromData[2]);
+                let delta = Number(GMT) - Number(fromData[2]); // Считаю разницу в часовых поясах
 
-                let fromDay = info.from.split(' ')[0];
+                let fromDay = info.from.split(' ')[0]; // Пример 'ПН'
                 let toDay = info.to.split(' ')[0];
 
-                let fromDataToTime = minuteCounter(fromData, delta, fromDay);
-                let toDataToTime = minuteCounter(toData, delta, toDay);
+                let fromDataToTime = minuteCounter(fromData, delta, fromDay); // Перевожу в минуты
+                let toDataToTime = minuteCounter(toData, delta, toDay); // Перевожу в минуты
 
-                rasp[person].push([fromDataToTime, toDataToTime]);
+                rasp[person].push([fromDataToTime, toDataToTime]); // Пушу новый ОТиДО
             });
         }
     }
 
-    addBankToRasp(rasp, workingHours, GMT);
+    addBankToRasp(rasp, workingHours, GMT); // Отдельно добавляю банк
 
 
     return rasp;
 }
 
 function minuteCounter(timeData, delta, Day) {
+    // 
     let time = Number((Number(timeData[0]) + delta) * 60 + Number(timeData[1]));
     if (Day === 'ВТ') {
         time += (24 * 60);
@@ -173,8 +180,14 @@ function findTimeToStart(groupFreeTime, duration) {
         if (duration <= interval.length) {
             startArray.push(interval[0]);
         }
+        let extraDuration = duration + 30;
+        let extraCounter = 1;
+        while (extraDuration <= interval.length) {
+            startArray.push(interval[0 + (extraCounter * 30)]);
+            extraDuration = extraDuration + 30;
+            extraCounter += 1;
+        }
     });
-
     startArray.forEach((time) => {
         let hour = parseInt(time / 60);
         let minute = time % 60;
