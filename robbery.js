@@ -88,7 +88,7 @@ function parseBankOpenIntervals(workingHours) {
     let [hoursTo, minutesTo] = parseTime(workingHours.to);
     for (var weekDayNumber = 0; weekDayNumber < 3; weekDayNumber++) {
         let UTCStartTime = (hoursFrom + 24 * weekDayNumber) * 60 + minutesFrom;
-        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo;
+        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo + 1;
         intervals.push({ start: UTCStartTime, end: UTCEndsTime });
     }
 
@@ -106,7 +106,7 @@ function parseThiefIntervals(schedule, baseTimezone) {
             let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
             let timeDifference = baseTimezone - timezone;
             let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
-            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
+            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo + 1;
             intervals.push({ start: UTCStart, end: UTCEnds });
         }
     }
