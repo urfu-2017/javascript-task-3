@@ -31,7 +31,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
     let changeGoodTime = function (nextGoodTime) {
-        if (nextGoodTime.total + duration <= freeTimespans[indexTimespan].to.total) {
+        if (freeTimespans[indexTimespan] &&
+            nextGoodTime.total >= freeTimespans[indexTimespan].from.total &&
+            nextGoodTime.total + duration <= freeTimespans[indexTimespan].to.total
+        ) {
             goodTime = nextGoodTime;
 
             return true;
@@ -68,17 +71,19 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             let nextTotal = goodTime.total + 30;
             let nextGoodTime = new timeModule.Time(nextTotal, bankOffset);
-            if (changeGoodTime(nextGoodTime)) {
-                return true;
-            }
-            indexTimespan++;
+            let count = 0;
             while (indexTimespan < freeTimespans.length) {
-                nextTotal = freeTimespans[indexTimespan].from.total;
-                nextGoodTime.fromTotal(nextTotal, bankOffset);
+                if (count >= 2) {
+                    nextTotal = freeTimespans[indexTimespan].from.total;
+                    nextGoodTime.fromTotal(nextTotal, bankOffset);
+                }
                 if (changeGoodTime(nextGoodTime)) {
                     return true;
                 }
-                indexTimespan++;
+                if (count !== 1) {
+                    indexTimespan++;
+                }
+                count++;
             }
 
             return false;
@@ -113,8 +118,8 @@ function getFreeTimespans(workingHours, timespans) {
 }
 function pushFullDay(timespans, result, start, end) {
     if (!timespans.some(timespan => {
-        return timespan.from.total <= start &&
-        timespan.to.total >= end;
+        return timespan && (timespan.from.total <= start &&
+        timespan.to.total >= end);
     })) {
         result.push(new timeModule.Timespan({ from: start, to: end }, 0));
     }

@@ -101,36 +101,6 @@ describe('Мои тесты для robbery.', function () {
         );
         assert.ok(!moment.exists());
     });
-
-    it('Danny не может', function () {
-        var moment = robbery.getAppropriateMoment(
-            {
-                Danny: [
-                    { from: 'ПН 00:00+5', to: 'ЧТ 00:00+5' }
-                ],
-                Rusty: [],
-                Linus: []
-            },
-            10,
-            { from: '12:00+5', to: '23:59+5' }
-        );
-        assert.ok(!moment.exists());
-    });
-
-    it('Danny не может', function () {
-        var moment = robbery.getAppropriateMoment(
-            {
-                Danny: [
-                    { from: 'ПН 00:00+5', to: 'ЧТ 00:00+5' }
-                ],
-                Rusty: [],
-                Linus: []
-            },
-            10,
-            { from: '12:00+5', to: '23:59+5' }
-        );
-        assert.ok(!moment.exists());
-    });
     it('Danny может только перед дедлайном', function () {
         var moment = robbery.getAppropriateMoment(
             {
@@ -147,6 +117,49 @@ describe('Мои тесты для robbery.', function () {
         assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 23:49');
         assert.ok(!moment.tryLater());
         assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 23:49');
+    });
+    it('Danny занят когда работает банк', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 12:00+5', to: 'ПН 14:00+5' },
+                    { from: 'ВТ 12:00+5', to: 'ВТ 14:00+5' },
+                    { from: 'СР 12:00+5', to: 'СР 14:00+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '12:00+5', to: '14:00+5' }
+        );
+        assert.ok(!moment.exists());
+    });
+    it('Linus часто занят [*]', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                ],
+                Rusty: [
+                    { from: 'ПН 00:00+5', to: 'ПН 23:59+5' },
+                    { from: 'СР 00:00+5', to: 'СР 11:00+5' }
+                ],
+                Linus: [
+                    { from: 'ВТ 10:30+5', to: 'ВТ 10:44+5' },
+                    { from: 'ВТ 10:45+5', to: 'ВТ 11:50+5' },
+                    { from: 'ВТ 11:50+5', to: 'ВТ 12:00+5' },
+                    { from: 'ВТ 12:09+5', to: 'ВТ 12:20+5' },
+                    { from: 'ВТ 12:30+5', to: 'ВТ 12:40+5' }
+                ]
+            },
+            10,
+            { from: '10:35+5', to: '13:00+5' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 12:20');
+        assert.ok(moment.tryLater());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 12:50');
+        assert.ok(moment.tryLater());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 11:00');
     });
 
 });
