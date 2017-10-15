@@ -162,7 +162,7 @@ function getEarliest(busyTimeList, duration) {
             newList = busyTimeList;
             newList[i - 1].end = newTime;
 
-            return getIntersection(newList, duration, i);
+            return getIntersection(unionOfIntervals(newList), duration, i);
         }
     }
 
