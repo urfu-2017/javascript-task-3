@@ -32,7 +32,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let groupFreeTimes = groupMinutes(freeTime); // Группирую свободные минуты в интервалы(массивы)
     let startTimes = findTimeToStart(groupFreeTimes, duration); // Массив стартовых минут
 
-    let MEGACOUNTER = 0;
+    let MEGACOUNTER = 0; // Счетчик для вывода нужного стартового времени(Смотри методы ниже)
 
     return {
 
@@ -41,7 +41,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (startTimes.length) {
+            if (startTimes.length) { // Если существует хоть одна запись
                 return true;
             }
 
@@ -73,6 +73,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            // Если существует следующий элемент, то значит альтернатива
+            // Есть и счетчик стартовыхВремен ++ 
             if (startTimes[MEGACOUNTER + 1]) {
                 MEGACOUNTER += 1;
 
@@ -112,15 +114,15 @@ function createRasp(schedule, GMT, workingHours) {
 }
 
 function minuteCounter(timeData, delta, Day) {
-    // 
+    // Формирю время в минутах как (ЧАСЫ + дельтаЧасовыхПоясов) * на 60 минут + минуты
     let time = Number((Number(timeData[0]) + delta) * 60 + Number(timeData[1]));
-    if (Day === 'ВТ') {
+    if (Day === 'ВТ') { // Если день вторник, то накинуть ко времени еще сутки(в минутах)
         time += (24 * 60);
     }
-    if (Day === 'СР') {
+    if (Day === 'СР') { // Аналогично
         time += (48 * 60);
     }
-
+    // Обрабатываю, если вышло за грани начшего часового пояса, то ставить границу
     if (time < 0) {
         time = 0;
     }
@@ -137,10 +139,11 @@ function addBankToRasp(rasp, workingHours, GMT) {
     let fromData = workingHours.from.match(/\d+/g);
     let toData = workingHours.to.match(/\d+/g);
     let delta = Number(GMT) - Number(fromData[2]);
-    let fromDataToTime = minuteCounter(fromData, delta, 'ПН');
+    let fromDataToTime = minuteCounter(fromData, delta, 'ПН'); // Т.к. банк ежедневный -> ПН пойдет
     let toDataToTime = minuteCounter(toData, delta, 'ПН');
 
     if (fromDataToTime !== toDataToTime) {
+        // Добавляю свободные часы банка на каждый день
         rasp.Bank.push([fromDataToTime, toDataToTime]);
         rasp.Bank.push([fromDataToTime + (24 * 60), toDataToTime + (24 * 60)]);
         rasp.Bank.push([fromDataToTime + (48 * 60), toDataToTime + (48 * 60)]);
@@ -150,6 +153,7 @@ function addBankToRasp(rasp, workingHours, GMT) {
 }
 
 function elementInInterval(el, intervals) {
+    // Есть ли минута(ее номер) в заданом интервале [от;до)
     let booleanReturn = false;
     intervals.forEach((interval) => {
         if (el >= interval[0] && el < interval[1]) {
@@ -161,6 +165,8 @@ function elementInInterval(el, intervals) {
 }
 
 function groupMinutes(freeTime) {
+    // Группирую минуты в массиве минут
+    // Из [0,1,2,3,23,24,994,995,996] -> [[0,1,2],[23,23],[994,995,996]]
     let findGroupArray = [];
     for (let i = 0; i < freeTime.length;) {
         let arr = [];
@@ -175,11 +181,16 @@ function groupMinutes(freeTime) {
 }
 
 function findTimeToStart(groupFreeTime, duration) {
+    // Ищу подходящее время для старта, если кол-во минут в интервале
+    // Мнеьше или равно времени ограбления
+    // Также шагаю по полчаса для нахождения соседнего времени
+    // В одном и том же интервале(Это для допЗадания)
     let startArray = [];
     groupFreeTime.forEach((interval) => {
         if (duration <= interval.length) {
             startArray.push(interval[0]);
         }
+
         let extraDuration = duration + 30;
         let extraCounter = 1;
         while (extraDuration <= interval.length) {
@@ -188,6 +199,7 @@ function findTimeToStart(groupFreeTime, duration) {
             extraCounter += 1;
         }
     });
+    // Привожу в минуты в вид [День, Час, Минута]
     startArray.forEach((time) => {
         let hour = parseInt(time / 60);
         let minute = time % 60;
@@ -209,6 +221,7 @@ function findTimeToStart(groupFreeTime, duration) {
 }
 
 function timeToPretty(hourMinute) {
+    // Обрабатываю числа 0-9 в вид 00-09
     if (hourMinute >= 0 && hourMinute < 10) {
         return ('0' + hourMinute);
     }
