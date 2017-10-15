@@ -102,4 +102,51 @@ describe('Мои тесты для robbery.', function () {
         assert.ok(!moment.exists());
     });
 
+    it('Danny не может', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+5', to: 'ЧТ 00:00+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '12:00+5', to: '23:59+5' }
+        );
+        assert.ok(!moment.exists());
+    });
+
+    it('Danny не может', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+5', to: 'ЧТ 00:00+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '12:00+5', to: '23:59+5' }
+        );
+        assert.ok(!moment.exists());
+    });
+    it('Danny может только перед дедлайном', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+5', to: 'СР 23:49+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '12:00+5', to: '23:59+5' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 23:49');
+        assert.ok(!moment.tryLater());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 23:49');
+    });
+
 });

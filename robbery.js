@@ -96,7 +96,9 @@ function getFreeTimespans(workingHours, timespans) {
         let start = workLimits[day].start;
         let end = workLimits[day].end;
         let thatDayTimespans = timespans.filter(timespan => {
-            return timespan && timespan.to.total < end && timespan.to.total > start;
+            return timespan && (
+                timespan.from.total < end && timespan.from.total > start ||
+                timespan.to.total < end && timespan.to.total > start);
         });
         if (thatDayTimespans.length === 0) {
             pushFullDay(timespans, result, start, end);
@@ -138,9 +140,11 @@ function pushMiddle(thatDayTimespans, result) {
 
 function pushLast(thatDayTimespans, result, endDay) {
     let endLast = thatDayTimespans[thatDayTimespans.length - 1].to.total;
-    result.push(new timeModule.Timespan({
-        from: endLast, to: endDay
-    }, 0));
+    if (endLast < endDay) {
+        result.push(new timeModule.Timespan({
+            from: endLast, to: endDay
+        }, 0));
+    }
 }
 
 function prepareData(schedule) {
