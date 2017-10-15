@@ -1,9 +1,9 @@
 'use strict';
 
-const utils = require('./datetime_utils');
+const utils = require('./datetime-utils');
 
 const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
-const DATE_REGEX = /(ПН|ВТ|СР)? ?(\d\d):(\d\d)\+(\d+)/;
+const DATE_REGEX = /(ПН|ВТ|СР) (\d\d):(\d\d)\+(\d+)/;
 const TIMEZONE_REGEX = /.*\+(\d+)/;
 
 /**
@@ -26,7 +26,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const gangSchedule = parseGangSchedule(schedule);
 
     const mergedSchedule = mergeSchedule(gangSchedule);
-    const gangFreeTime = getComplement({
+    const gangFreeTime = getGangFreeTime({
         from: utils.createDate(ROBBERY_DAYS.indexOf('ПН') + 1, 0, 0, bankTimezone),
         to: utils.createDate(ROBBERY_DAYS.indexOf('СР') + 1, 23, 59, bankTimezone)
     }, mergedSchedule);
@@ -39,11 +39,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (!robberyTimes[0]) {
-                return false;
-            }
-
-            return true;
+            return Boolean(robberyTimes[0]);
         },
 
         /**
@@ -58,7 +54,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            const robberyTime = utils.getLaterDate(
+            const robberyTime = utils.addMinutesToDate(
                 robberyTimes[0].from, utils.hoursToMinutes(bankTimezone));
 
             return template
@@ -73,25 +69,88 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (this.exists()) {
-                const appropriateInterval = robberyTimes[0];
-                const newStartTime = utils.getLaterDate(appropriateInterval.from, 30);
-                const newEndTime = utils.getLaterDate(newStartTime, duration);
-                if (isTimeInInterval(newEndTime, appropriateInterval)) {
-                    appropriateInterval.from = newStartTime;
+            if (!this.exists()) {
+                return false;
+            }
 
-                    return true;
-                } else if (robberyTimes.length > 1) {
-                    robberyTimes.shift();
+            const appropriateInterval = robberyTimes[0];
+            const newStartTime = utils.addMinutesToDate(appropriateInterval.from, 30);
+            const newEndTime = utils.addMinutesToDate(newStartTime, duration);
+            if (isTimeInInterval(newEndTime, appropriateInterval)) {
+                appropriateInterval.from = newStartTime;
 
-                    return true;
-                }
+                return true;
+            } else if (robberyTimes.length > 1) {
+                robberyTimes.shift();
+
+                return true;
             }
 
             return false;
         }
     };
 };
+
+function parseBankSchedule(workingHours) {
+    return ROBBERY_DAYS
+        .map(day => parseInterval({
+            from: `${day} ${workingHours.from}`,
+            to: `${day} ${workingHours.to}`
+        }));
+}
+
+function parseGangSchedule(gangSchedule) {
+    return Object.values(gangSchedule)
+        .map(banditSchedule => banditSchedule.map(parseInterval));
+}
+
+function parseInterval(interval) {
+    return {
+        from: parseDate(interval.from),
+        to: parseDate(interval.to)
+    };
+}
+
+function parseDate(date) {
+    const [, day, hours, minutes, timezone] = DATE_REGEX.exec(date);
+
+    return utils.createDate(ROBBERY_DAYS.indexOf(day) + 1, hours, minutes, timezone);
+}
+
+function mergeSchedule(schedule) {
+    const sortedIntervals = schedule
+        .reduce((result, personalSchedule) => result.concat(personalSchedule))
+        .sort((one, other) => one.from - other.from);
+
+    const result = [];
+    let previous = sortedIntervals.shift();
+    for (const current of sortedIntervals) {
+        if (isTimeInInterval(current.from, previous)) {
+            previous.to = new Date(Math.max(previous.to, current.to));
+        } else {
+            result.push(previous);
+            previous = current;
+        }
+    }
+    result.push(previous);
+
+    return result;
+}
+
+function getGangFreeTime({ from, to }, mergedSchedule) {
+    const result = [];
+    let interval = { from };
+
+    for (const current of mergedSchedule) {
+        interval.to = current.from;
+        result.push(interval);
+        interval = { from: current.to };
+    }
+    interval.to = to;
+    result.push(interval);
+
+    return result;
+}
 
 function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
     const result = [];
@@ -103,18 +162,15 @@ function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
                 return;
             }
 
-            if (isTimeInInterval(utils.getLaterDate(intersection.from, duration), intersection)) {
+            if (isTimeInInterval(
+                utils.addMinutesToDate(intersection.from, duration), intersection
+            )) {
                 result.push(intersection);
             }
         });
     });
 
     return result;
-}
-
-function areIntervalsIntersected(one, other) {
-    return isTimeInInterval(one.from, other) || isTimeInInterval(one.to, other) ||
-           one.from < other.from && one.to > other.to;
 }
 
 function getIntersection(one, other) {
@@ -128,80 +184,11 @@ function getIntersection(one, other) {
     };
 }
 
-function getComplement({ from: start, to: end }, otherIntervals) {
-    const result = [];
-    let interval = { from: start };
-
-    for (const current of otherIntervals) {
-        interval.to = current.from;
-        result.push(interval);
-        interval = { from: current.to };
-    }
-    interval.to = end;
-    result.push(interval);
-
-    return result;
-}
-
-function parseBankSchedule(workingHours) {
-    return ROBBERY_DAYS
-        .map(day => {
-            return {
-                from: `${day} ${workingHours.from}`,
-                to: `${day} ${workingHours.to}`
-            };
-        })
-        .map(parseInterval);
-}
-
-function parseGangSchedule(gangSchedule) {
-    return Object.values(gangSchedule)
-        .map(banditSchedule => {
-            return banditSchedule.map(parseInterval);
-        });
-}
-
-function parseInterval(interval) {
-    return {
-        from: parseDate(interval.from),
-        to: parseDate(interval.to)
-    };
-}
-
-function mergeSchedule(schedule) {
-    const sortedIntervals = schedule
-        .reduce((generalSchedule, personalSchedule) => {
-            return generalSchedule.concat(personalSchedule);
-        })
-        .sort((one, other) => one.from - other.from);
-
-    return mergeIntervals(sortedIntervals);
-}
-
-function mergeIntervals(intervals) {
-    const result = [];
-    let previous = intervals[0];
-    for (let i = 1; i < intervals.length; i++) {
-        let current = intervals[i];
-        if (isTimeInInterval(current.from, previous)) {
-            previous.to = new Date(Math.max(previous.to, current.to));
-        } else {
-            result.push(previous);
-            previous = current;
-        }
-    }
-    result.push(previous);
-
-    return result;
+function areIntervalsIntersected(one, other) {
+    return isTimeInInterval(one.from, other) || isTimeInInterval(one.to, other) ||
+           one.from < other.from && one.to > other.to;
 }
 
 function isTimeInInterval(time, interval) {
     return interval.from <= time && time <= interval.to;
-}
-
-function parseDate(date) {
-    const match = DATE_REGEX.exec(date);
-    const [, day, hours, minutes, timezone] = match;
-
-    return utils.createDate(ROBBERY_DAYS.indexOf(day) + 1, hours, minutes, timezone);
 }
