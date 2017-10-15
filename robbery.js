@@ -53,10 +53,18 @@ let metka;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    freeTime.Bank = [];
-    freeTime.Danny = [];
-    freeTime.Rusty = [];
-    freeTime.Linus = [];
+    let freeTime = {
+        Bank: [],
+        Danny: [],
+        Rusty: [],
+        Linus: []
+    };
+    
+    let busyTime = {
+        Danny: [],
+        Rusty: [],
+        Linus: []
+    };
     parseData(schedule, workingHours);
     arrayAllIntervals.sort(function (a, b) {
 
@@ -118,6 +126,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             metka = true;
             if (arrForTry[tryL] !== undefined) {
                 metka = true;
+
                 return true;
             }
             tryL--;
@@ -149,9 +158,6 @@ function findTry(intervals, duration, i) {
 }
 
 function parseData(schedule, workingHours) {
-    busyTime.Danny = [];
-    busyTime.Rusty = [];
-    busyTime.Linus = [];
     arrayAllIntervals = [];
     let fromBank = parseTime(workingHours.from, 'bank');
     let toBank = parseTime(workingHours.to, 'bank');
