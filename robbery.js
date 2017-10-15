@@ -58,9 +58,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         format: function (template) {
             if (startTimes.length) {
                 template = template.replace('%HH', startTimes[0][1]);
-                if (startTimes[0][2] === 0) {
-                    startTimes[0][2] = '00';
-                }
                 template = template.replace('%MM', startTimes[0][2]);
                 template = template.replace('%DD', startTimes[0][0]);
 
@@ -194,8 +191,18 @@ function findTimeToStart(groupFreeTime, duration) {
             hour -= 48;
             day = 'СР';
         }
+        hour = timeToPretty(hour);
+        minute = timeToPretty(minute);
         startArray[startArray.indexOf(time)] = [day, hour, minute];
     });
 
     return startArray;
+}
+
+function timeToPretty(hourMinute) {
+    if (hourMinute >= 0 && hourMinute < 10) {
+        return ('0' + hourMinute);
+    }
+
+    return hourMinute;
 }
