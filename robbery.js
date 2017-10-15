@@ -121,7 +121,7 @@ function combineIntervals(intervals) {
     for (var i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
         let overlappingIntervals = sortedIntervals
-            .filter(x=> current.start <= x.start && x.start < current.end);
+            .filter(x=> current.start <= x.start && x.start <= current.end + 1);
         var intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
         combinedIntervals.push({ start: current.start, end: intervalsBorder });
         i += overlappingIntervals.length - 1;
