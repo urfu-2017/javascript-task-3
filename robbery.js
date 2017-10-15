@@ -6,7 +6,10 @@
  */
 exports.isStar = false;
 
-
+const YEAR = 1970;
+const MONTH = 0;
+const MINUTES_TO_MILLISECONDS = 60000;
+const HOURS_IN_MILLISECONDS = 60 * 60000;
 const weekDays = ['ПН', 'ВТ', 'СР'];
 
 
@@ -77,7 +80,7 @@ function findRangesForRobbery(available, duration) {
     let rangesForRobbery = [];
     for (let range of available) {
         let difference = range.to - range.from;
-        if (difference >= (duration * 60000)) {
+        if (difference >= (duration * MINUTES_TO_MILLISECONDS)) {
             rangesForRobbery.push(range);
         }
     }
@@ -162,8 +165,8 @@ function makeDateObj(time, banksTimeZone) {
     const hrsAndMins = time.split(' ')[1];
     const currentTimeZone = time.split('+')[1];
 
-    return Date.UTC(1970, 0, day, getHours(hrsAndMins), getMinutes(hrsAndMins)) -
-    currentTimeZone * 60 * 60000 + banksTimeZone * 60 * 60000;
+    return Date.UTC(YEAR, MONTH, day, getHours(hrsAndMins), getMinutes(hrsAndMins)) -
+    currentTimeZone * HOURS_IN_MILLISECONDS + banksTimeZone * HOURS_IN_MILLISECONDS;
 }
 
 
@@ -184,7 +187,7 @@ function getWeekDay(currentDay) {
 }
 
 function createDateForBank(day, hours, minutes) {
-    return Date.UTC(1970, 0, day, hours, minutes);
+    return Date.UTC(YEAR, MONTH, day, hours, minutes);
 }
 
 function getDatesForBank(workingHours, timeZone) {
