@@ -73,8 +73,8 @@ function parseBankSchedule(bankTime) {
     Object.keys(DAYS_TO_INT).forEach((day) => {
         to.day = day;
         from.day = day;
-        bankSchedule.push({ time: convertToMinutes(from), person: 3, isSegmentStart: true });
-        bankSchedule.push({ time: convertToMinutes(to), person: 3, isSegmentStart: false });
+        bankSchedule.push({ time: convertToMinutes(from), person: 3, canRobBank: true });
+        bankSchedule.push({ time: convertToMinutes(to), person: 3, canRobBank: false });
     });
 
     return bankSchedule;
@@ -87,8 +87,8 @@ function unionRobbersSchedules(schedule, bankTimeZone) {
             schedule[name].forEach(function (time) {
                 let parsedTime = parseRobbersTime(time, bankTimeZone);
                 let personIndex = SCHEDULES_INDEXES[name];
-                res.push({ time: parsedTime.from, person: personIndex, isSegmentStart: false });
-                res.push({ time: parsedTime.to, person: personIndex, isSegmentStart: true });
+                res.push({ time: parsedTime.from, person: personIndex, canRobBank: false });
+                res.push({ time: parsedTime.to, person: personIndex, canRobBank: true });
             });
         });
 
@@ -110,8 +110,8 @@ function getAllRobberiesTimes(sortedSchedule, duration) {
     let robberies = [];
     let currentRobbery = { start: 0 };
     sortedSchedule.forEach((segmentPart) => {
-        personAvailable[segmentPart.person] = segmentPart.isSegmentStart;
-        if (currentRobbery.start !== 0 && !segmentPart.isSegmentStart) {
+        personAvailable[segmentPart.person] = segmentPart.canRobBank;
+        if (currentRobbery.start !== 0 && !segmentPart.canRobBank) {
             if (segmentPart.time - currentRobbery.start >= duration) {
                 currentRobbery.end = segmentPart.time;
                 robberies.push(currentRobbery);
@@ -207,7 +207,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             let nextRobberyStart = filteredRobberies[0].start + 30;
             let postponedRobberies = filteredRobberies.filter((robbery) => {
-                return nextRobberyStart + duration <= robbery.end;
+                let postponedRobberyEnd = nextRobberyStart + duration;
+
+                return postponedRobberyEnd <= robbery.end &&
+                    DAYS_TO_ROBBER.includes(convertToTime(postponedRobberyEnd).day);
             });
             if (postponedRobberies.length !== 0) {
                 filteredRobberies = postponedRobberies;
