@@ -6,7 +6,7 @@
  */
 exports.isStar = true;
 
-const TIME_FORMAT = /^([А-Я][А-Я])[\s]([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])[+]([0-9])$/;
+const TIME_FORMAT = /^([А-Я][А-Я])[\s]([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])[+]([0-9]?[0-9])$/;
 const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '05', 'СБ': '06', 'ВС': '07' };
 const MIN_IN_MILLIS = 60 * 1000;
 const HOUR_IN_MILLIS = 60 * MIN_IN_MILLIS;
@@ -40,16 +40,16 @@ class TimeInterval {
      * @param {TimeInterval} end - переданный интервал
      */
     parse(start, end) {
-        const [, df, hf, mf, zf] = TIME_FORMAT.exec(start);
-        const [, dt, ht, mt, zt] = TIME_FORMAT.exec(end);
+        const [, df, hf, mf] = TIME_FORMAT.exec(start);
+        const [, dt, ht, mt, zone] = TIME_FORMAT.exec(end);
 
-        this.timezone = parseInt(zt);
+        this.timezone = parseInt(zone);
         this.dayStart = df;
         this.dayEnd = dt;
 
         this.init(
-            Date.parse(`${DAYS[this.dayStart]} Jan 2017 ${hf}:${mf}:00 GMT+0${zf}00`),
-            Date.parse(`${DAYS[this.dayEnd]} Jan 2017 ${ht}:${mt}:00 GMT+0${zt}00`)
+            Date.parse(`${DAYS[this.dayStart]} Jan 2017 ${hf}:${mf}:00 GMT+${this.timezone}`),
+            Date.parse(`${DAYS[this.dayEnd]} Jan 2017 ${ht}:${mt}:00 GMT+${this.timezone}`)
         );
     }
 
