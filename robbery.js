@@ -5,8 +5,9 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = true;
-const WEEKDAYS = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
-let data = {};
+const DAY_TO_INT = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+const TRY_LATER_TIME = 30;
+
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -19,9 +20,10 @@ let data = {};
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
+    let data = {};
 
     let [bankOpenIntervals, baseTimezone] = parseBankOpenIntervals(workingHours);
-    let thiefBusyIntervals = parseThiefIntervals(schedule, baseTimezone);
+    let thiefBusyIntervals = parseThiefBusyIntervals(schedule, baseTimezone);
     let disjointThiefIntervals = combineIntervals(thiefBusyIntervals);
     let thiefReadinessIntervals = invertTimeIntervals(disjointThiefIntervals);
 
@@ -57,7 +59,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let minutes = time - days * 24 * 60 - hours * 60;
 
             return template
-                .replace(/%DD/, Object.keys(WEEKDAYS).find(key => WEEKDAYS[key] === days))
+                .replace(/%DD/, Object.keys(DAY_TO_INT).find(key => DAY_TO_INT[key] === days))
                 .replace(/%HH/, hours.toLocaleString(undefined, { minimumIntegerDigits: 2 }))
                 .replace(/%MM/, minutes.toLocaleString(undefined, { minimumIntegerDigits: 2 }));
         },
@@ -71,20 +73,26 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (data.intervalIndex < 0) {
                 return false;
             }
-            data.satisfyingIntervals[data.intervalIndex].start += 30;
+            data.satisfyingIntervals[data.intervalIndex].start += TRY_LATER_TIME;
             let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
             if (nextItem >= 0) {
                 data.intervalIndex = nextItem;
 
                 return true;
             }
-            data.satisfyingIntervals[data.intervalIndex].start -= 30;
+            data.satisfyingIntervals[data.intervalIndex].start -= TRY_LATER_TIME;
 
             return false;
         }
     };
 };
 
+/**
+ * Возвращает интервалы работы банка и его временную зону
+ * @param {Array} workingHours
+ * @returns {Array} - интервалы работы банка
+ * @returns {Number} - временная зона банка
+ */
 function parseBankOpenIntervals(workingHours) {
     let intervals = [];
     let [hoursFrom, minutesFrom, bankTimezone] = parseTime(workingHours.from);
@@ -98,7 +106,13 @@ function parseBankOpenIntervals(workingHours) {
     return [intervals, bankTimezone];
 }
 
-function parseThiefIntervals(schedule, baseTimezone) {
+/**
+ * Возвращает интервалы занятости грабителей приведенные к базовой временной зоне
+ * @param {Array} schedule
+ * @param {Number} baseTimezone
+ * @returns {Array} - интервалы занятости грабителей
+ */
+function parseThiefBusyIntervals(schedule, baseTimezone) {
     let intervals = [];
     for (var thiefIntervals in schedule) {
         if (!schedule[thiefIntervals]) {
@@ -117,15 +131,19 @@ function parseThiefIntervals(schedule, baseTimezone) {
     return intervals;
 }
 
-// обьединяем пересекающиеся интервалы
+/**
+ * Склеивает пересекающиеся интервалы
+ * @param {Array} intervals
+ * @returns {Array} - склеенные интервалы
+ */
 function combineIntervals(intervals) {
     let sortedIntervals = sortIntervals(intervals);
     let combinedIntervals = [];
-    for (var i = 0; i < sortedIntervals.length; i++) {
+    for (let i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
         let overlappingIntervals = sortedIntervals
             .filter(x=> current.start <= x.start && x.start <= current.end + 1);
-        var intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
+        let intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
         combinedIntervals.push({ start: current.start, end: intervalsBorder });
         i += overlappingIntervals.length - 1;
     }
@@ -133,15 +151,18 @@ function combineIntervals(intervals) {
     return combinedIntervals;
 }
 
-// инвертация временных интервалов
-function invertTimeIntervals(disjoinedSortedIntervals) {
+/**
+ * Инвертирует интервалы
+ * @param {Array} intervals
+ * @returns {Array}
+ */
+function invertTimeIntervals(intervals) {
     const minValue = Number.MIN_SAFE_INTEGER;
     const maxValue = Number.MAX_SAFE_INTEGER;
-    var invertedIntervals = [];
+    let invertedIntervals = [];
     let previousEndPos = minValue;
-    for (var i = 0; i < disjoinedSortedIntervals.length; i++) {
-        var interval = disjoinedSortedIntervals[i];
-
+    for (let i = 0; i < intervals.length; i++) {
+        let interval = intervals[i];
         let invertedInterval = { start: previousEndPos, end: interval.start - 1 };
         previousEndPos = interval.end;
         invertedIntervals.push(invertedInterval);
@@ -149,6 +170,43 @@ function invertTimeIntervals(disjoinedSortedIntervals) {
     invertedIntervals.push({ start: previousEndPos, end: maxValue });
 
     return invertedIntervals;
+}
+
+/**
+ * Получение пересечения интервалов работы банка и незанятости воров
+ * @param {Array} bankIntervals
+ * @param {Array} thiefIntervals
+ * @returns {Array}
+ */
+function getIntervalsIntersection(bankIntervals, thiefIntervals) {
+    let intervalsIntersections = [];
+    for (let bankInterval of bankIntervals) {
+        let localIntersections = findIntersections(bankInterval, thiefIntervals);
+        intervalsIntersections = intervalsIntersections.concat(localIntersections);
+    }
+
+    return combineIntervals(intervalsIntersections);
+}
+
+/**
+ * Получение пересечения интервала с множеством интервалов
+ * @param {Interval} baseInterval
+ * @param {Array} intervals
+ * @returns {Array}
+ */
+function findIntersections(baseInterval, intervals) {
+    let intersections = [];
+    for (let interval of intervals) {
+        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
+            baseInterval.end < interval.start && baseInterval.end < interval.end) {
+            continue;
+        }
+        let start = Math.max(baseInterval.start, interval.start);
+        let end = Math.min(baseInterval.end, interval.end);
+        intersections.push({ start, end });
+    }
+
+    return intersections;
 }
 
 function sortIntervals(intervals) {
@@ -166,38 +224,12 @@ function sortIntervals(intervals) {
     });
 }
 
-// пересечение интервалов
-function getIntervalsIntersection(bankIntervals, thiefIntervals) {
-    let intervalsIntersections = [];
-    for (let bankInterval of bankIntervals) {
-        let localIntersections = findIntersections(bankInterval, thiefIntervals);
-        intervalsIntersections = intervalsIntersections.concat(localIntersections);
-    }
-
-    return combineIntervals(intervalsIntersections);
-}
-
-function findIntersections(baseInterval, intervals) {
-    let intersections = [];
-    for (let interval of intervals) {
-        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
-            baseInterval.end < interval.start && baseInterval.end < interval.end) {
-            continue;
-        }
-        let start = Math.max(baseInterval.start, interval.start);
-        let end = Math.min(baseInterval.end, interval.end);
-        intersections.push({ start, end });
-    }
-
-    return intersections;
-}
-
 function parseTime(string) {
     let [time, dayOfWeek] = string.split(' ').reverse();
     let expr = /^([01]\d|2[0-3]):([0-5]\d)\+(\d)$/;
     let [, hours, minutes, timeZone] = time.match(expr).map(Number);
 
     return dayOfWeek
-        ? [WEEKDAYS[dayOfWeek], hours, minutes, timeZone]
+        ? [DAY_TO_INT[dayOfWeek], hours, minutes, timeZone]
         : [hours, minutes, timeZone];
 }
