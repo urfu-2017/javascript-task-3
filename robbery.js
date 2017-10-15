@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 const YEAR = 1970;
 const MONTH = 0;
@@ -30,7 +30,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let available = reverseRanges(notAvailable, banksWorkingHous[0].from,
         banksWorkingHous[2].to);
     const timeForRobbery = intersectWithBanksTime(available, banksWorkingHous);
-    const robberyRanges = findRangesForRobbery(timeForRobbery, duration);
+    let robberyRanges = findRangesForRobbery(timeForRobbery, duration);
 
     return {
 
@@ -71,6 +71,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (robberyRanges.length === 0) {
+                return false;
+            }
+            robberyRanges[0].from += 30 * MINUTES_TO_MILLISECONDS;
+            let newRobbery = findRangesForRobbery(robberyRanges, duration);
+            if (newRobbery.length > 0) {
+                robberyRanges = newRobbery;
+
+                return true;
+            }
+            robberyRanges[0].from -= 30 * MINUTES_TO_MILLISECONDS;
+
             return false;
         }
     };
