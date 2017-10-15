@@ -114,11 +114,11 @@ function minuteCounter(timeData, delta, Day) {
         time += (48 * 60);
     }
 
-    if (time <= 0) {
+    if (time < 0) {
         time = 0;
     }
 
-    if (time >= (72 * 60)) {
+    if (time > (72 * 60)) {
         time = 72 * 60;
     }
 
@@ -179,7 +179,7 @@ function findTimeToStart(groupFreeTime, duration) {
         let hour = parseInt(time / 60);
         let minute = time % 60;
         let day = 'ПН';
-        if (hour > 24 && hour < 48) {
+        if (hour >= 24 && hour < 48) {
             hour -= 24;
             day = 'ВТ';
         }
