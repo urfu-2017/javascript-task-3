@@ -68,6 +68,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (data.intervalIndex < 0) {
+                return false;
+            }
             data.satisfyingIntervals[data.intervalIndex].start += 30;
             let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
             if (nextItem >= 0) {
