@@ -22,7 +22,7 @@ exports.mergeIntervals = function (intervals) {
     return result;
 };
 
-exports.cutBeginning = function (mergedIntervals, beginning) {
+function cutBeginning(mergedIntervals, beginning) {
     let length = mergedIntervals.length;
     for (let i = 0; i < length; i++) {
         if (mergedIntervals[i].to < beginning) {
@@ -37,9 +37,9 @@ exports.cutBeginning = function (mergedIntervals, beginning) {
         }
         break;
     }
-};
+}
 
-exports.cutEnd = function (mergedIntervals, end) {
+function cutEnd(mergedIntervals, end) {
     for (let i = mergedIntervals.length - 1; i >= 0; i--) {
         if (mergedIntervals[i].from > end) {
             mergedIntervals.pop();
@@ -51,11 +51,11 @@ exports.cutEnd = function (mergedIntervals, end) {
         }
         break;
     }
-};
+}
 
 exports.cutEnds = function (mergedIntervals, beginning, end) {
-    exports.cutBeginning(mergedIntervals, beginning);
-    exports.cutEnd(mergedIntervals, end);
+    cutBeginning(mergedIntervals, beginning);
+    cutEnd(mergedIntervals, end);
     if (mergedIntervals.length === 0) {
         mergedIntervals.unshift({ from: beginning, to: beginning });
         mergedIntervals.push({ from: end, to: end });
