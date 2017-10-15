@@ -68,14 +68,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (data.intervalIndex < 0) {
-                return false;
-            }
-
             data.satisfyingIntervals[data.intervalIndex].start += 30;
-            let index = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
-            if (index >= 0) {
-                data.intervalIndex = index;
+            let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
+            if (nextItem >= 0) {
+                data.intervalIndex = nextItem;
 
                 return true;
             }
@@ -125,7 +121,7 @@ function combineIntervals(intervals) {
     for (var i = 0; i < sortedIntervals.length; i++) {
         let current = sortedIntervals[i];
         let overlappingIntervals = sortedIntervals
-            .filter(x=> current.start <= x.start && x.start < current.end);
+            .filter(x=> current.start <= x.start && x.start < current.end + 1);
         var intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
         combinedIntervals.push({ start: current.start, end: intervalsBorder });
         i += overlappingIntervals.length - 1;
