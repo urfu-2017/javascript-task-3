@@ -19,7 +19,7 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    var workingTime = {
+    let workingTime = {
         from: parseTime(workingHours.from),
         to: parseTime(workingHours.to)
     };
@@ -95,8 +95,8 @@ function findRobberyTime(events, duration, startMinute = 0) {
 }
 
 function parseDate(date) {
-    var day = date.slice(0, 2);
-    var time = parseTime(date.slice(3));
+    let day = date.slice(0, 2);
+    let time = parseTime(date.slice(3));
     if (time && WEEK_DAYS.indexOf(day) !== -1) {
         time.day = day;
 
@@ -107,7 +107,7 @@ function parseDate(date) {
 }
 
 function parseTime(time) {
-    var parseResult = time.match(TIME_FORMAT);
+    let parseResult = time.match(TIME_FORMAT);
     if (parseResult) {
         return {
             hours: parseInt(parseResult[1]),
@@ -123,7 +123,7 @@ function dateToTotalMinutes(date, timeZone = 0) {
     if (!date) {
         return null;
     }
-    var totalHours = date.hours - date.timeZone + timeZone;
+    let totalHours = date.hours - date.timeZone + timeZone;
     if ('day' in date) {
         totalHours += WEEK_DAYS.indexOf(date.day) * 24;
     }
@@ -146,15 +146,15 @@ function minutesToDate(minutes) {
 }
 
 function generateEventsList(schedule, workingTime) {
-    var events = [];
+    let events = [];
     ROBBER_NAMES.forEach(name => {
         if (!(name in schedule)) {
             throw Error(`no schedule for ${name}`);
         }
         schedule[name].forEach(busyTime => {
-            var minutesFrom =
+            let minutesFrom =
                 dateToTotalMinutes(parseDate(busyTime.from), workingTime.from.timeZone);
-            var minutesTo =
+            let minutesTo =
                 dateToTotalMinutes(parseDate(busyTime.to), workingTime.to.timeZone);
             if (minutesFrom > minutesTo) {
                 throw Error(
@@ -171,10 +171,10 @@ function generateEventsList(schedule, workingTime) {
             });
         });
     });
-    for (var i = 0; i < 3; i++) {
-        var minutesFrom =
+    for (let i = 0; i < 3; i++) {
+        let minutesFrom =
             dateToTotalMinutes(workingTime.from, workingTime.from.timeZone) + 24 * 60 * i;
-        var minutesTo =
+        let minutesTo =
             dateToTotalMinutes(workingTime.to, workingTime.to.timeZone) + 24 * 60 * i;
         events.push({
             totalMinutes: minutesFrom,
