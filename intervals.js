@@ -22,21 +22,6 @@ exports.mergeIntervals = function (intervals) {
     return result;
 };
 
-exports.cutEnds = function (mergedIntervals, beginning, end) {
-    cutBeginning(mergedIntervals, beginning);
-    cutEnd(mergedIntervals, end);
-    if (mergedIntervals.length === 0) {
-        mergedIntervals.unshift({ from: beginning, to: beginning });
-        mergedIntervals.push({ from: end, to: end });
-    }
-    if (mergedIntervals[0].from > beginning) {
-        mergedIntervals.unshift({ from: beginning, to: beginning });
-    }
-    if (mergedIntervals[mergedIntervals.length - 1].to < end) {
-        mergedIntervals.push({ from: end, to: end });
-    }
-};
-
 function cutBeginning(mergedIntervals, beginning) {
     let length = mergedIntervals.length;
     for (let i = 0; i < length; i++) {
@@ -67,3 +52,18 @@ function cutEnd(mergedIntervals, end) {
         break;
     }
 }
+
+exports.cutEnds = function (mergedIntervals, beginning, end) {
+    cutBeginning(mergedIntervals, beginning);
+    cutEnd(mergedIntervals, end);
+    if (mergedIntervals.length === 0) {
+        mergedIntervals.unshift({ from: beginning, to: beginning });
+        mergedIntervals.push({ from: end, to: end });
+    }
+    if (mergedIntervals[0].from > beginning) {
+        mergedIntervals.unshift({ from: beginning, to: beginning });
+    }
+    if (mergedIntervals[mergedIntervals.length - 1].to < end) {
+        mergedIntervals.push({ from: end, to: end });
+    }
+};

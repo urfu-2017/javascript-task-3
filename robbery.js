@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 var timelib = require('./timelib');
 var intervals = require('./intervals');
@@ -23,8 +23,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let workingHoursParsed = parseWorkingHours(workingHours);
     convertScheduleToTimezone(scheduleCopy, workingHoursParsed.timezone);
     parseSchedule(scheduleCopy);
-    let start = { day: 'ПН', time: workingHoursParsed.start };
-    let suitableTime = findRobberyTime(scheduleCopy, duration, workingHoursParsed, start);
+    let suitableTime = findRobberyTime(scheduleCopy, duration, workingHoursParsed);
 
     return {
 
@@ -54,51 +53,21 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template.replace('%HH', hours)
                 .replace('%MM', minutes)
                 .replace('%DD', day);
-        },
-
-        /**
-         * Попробовать найти часы для ограбления позже [*]
-         * @star
-         * @returns {Boolean}
-         */
-        tryLater: function () {
-            let newStartTime = timelib.convertToMinutes(suitableTime) + 30;
-            let newAsString = timelib.convertMinutesToTime(newStartTime,
-                timelib.getDay(suitableTime), timelib.getTimezone(suitableTime));
-            newAsString = timelib.normilizeTime(newAsString);
-            let newStart = { day: timelib.getDay(newAsString),
-                time: timelib.convertToMinutes(newAsString) };
-            let newSuitableTime = findRobberyTime(scheduleCopy, duration,
-                workingHoursParsed, newStart);
-            if (newSuitableTime) {
-                suitableTime = newSuitableTime;
-
-                return true;
-            }
-
-            return false;
         }
     };
 };
 
-function findRobberyTime(schedule, duration, workingHours, start) {
+function findRobberyTime(schedule, duration, workingHours) {
     let suitableTime = null;
-    let startIndex = DAYS_OF_ROBBERY.indexOf(start.day);
-    if (startIndex === -1) {
-        return null;
-    }
-    for (let i = startIndex; i < DAYS_OF_ROBBERY.length; i++) {
-        let allIntervals = concatRobbersBusyIntervals(schedule, DAYS_OF_ROBBERY[i]);
+    for (let day of DAYS_OF_ROBBERY) {
+        let allIntervals = concatRobbersBusyIntervals(schedule, day);
         let merged = intervals.mergeIntervals(allIntervals);
-        intervals.cutEnds(merged, start.time, workingHours.end);
+        intervals.cutEnds(merged, workingHours.start, workingHours.end);
         let suitableInterval = findSuitableInterval(merged, duration);
         if (suitableInterval) {
-            suitableTime = timelib.convertMinutesToTime(suitableInterval.from,
-                DAYS_OF_ROBBERY[i], workingHours.timezone);
+            suitableTime = timelib
+                .convertMinutesToTime(suitableInterval.from, day, workingHours.timezone);
             break;
-        }
-        if (DAYS_OF_ROBBERY[i] === start.day) {
-            start.time = workingHours.start;
         }
     }
 
