@@ -7,6 +7,8 @@ let MINUTES_IN_HOUR = 60;
 let HOURS_IN_DAY = 24;
 let MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 let DAYS_FOR_ROBBERY_COUNT = 3;
+let EVENT_OF_CAPTURE = 1;
+let EVENT_OF_RELEASE = 2;
 
 /**
  * Сделано задание на звездочку
@@ -80,16 +82,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 function findRobberyTime(events, duration, startMinute = 0) {
-    let counter = -2;
+    let capturedEntityCount = 2;
     let timeLine = events.slice();
     timeLine.push({
         totalMinutes: startMinute,
-        type: 1
+        eventType: EVENT_OF_RELEASE
     });
     timeLine.sort((a, b) => a.totalMinutes - b.totalMinutes);
     for (var i = 0; i < timeLine.length - 1; i++) {
-        counter += timeLine[i].type;
-        if (counter === 0 &&
+        if (timeLine[i].eventType === EVENT_OF_CAPTURE) {
+            capturedEntityCount++;
+        } else {
+            capturedEntityCount--;
+        }
+        if (capturedEntityCount === 0 &&
             timeLine[i + 1].totalMinutes - timeLine[i].totalMinutes >= duration
         ) {
             return timeLine[i].totalMinutes;
@@ -168,11 +174,11 @@ function generateEventsList(schedule, workingTime) {
             }
             events.push({
                 totalMinutes: minutesFrom,
-                type: -1
+                eventType: EVENT_OF_CAPTURE
             });
             events.push({
                 totalMinutes: minutesTo,
-                type: 1
+                eventType: EVENT_OF_RELEASE
             });
         });
     });
@@ -183,11 +189,11 @@ function generateEventsList(schedule, workingTime) {
             dateToTotalMinutes(workingTime.to, workingTime.to.timeZone) + MINUTES_IN_DAY * i;
         events.push({
             totalMinutes: minutesFrom,
-            type: 1
+            eventType: EVENT_OF_RELEASE
         });
         events.push({
             totalMinutes: minutesTo,
-            type: -1
+            eventType: EVENT_OF_CAPTURE
         });
     }
 
