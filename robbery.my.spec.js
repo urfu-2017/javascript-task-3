@@ -72,6 +72,7 @@ describe('Мои тесты для robbery.', function () {
         assert.ok(moment.tryLater());
         assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 11:00');
     });
+
     it('Все свободны в любое время', function () {
         var moment = robbery.getAppropriateMoment(
             {
@@ -84,6 +85,21 @@ describe('Мои тесты для robbery.', function () {
         );
         assert.ok(moment.exists());
         assert.strictEqual(moment.format('%DD %HH:%MM'), 'ПН 12:00');
+    });
+
+    it('Danny не может', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+5', to: 'ЧТ 00:00+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '12:00+5', to: '23:59+5' }
+        );
+        assert.ok(!moment.exists());
     });
 
 });

@@ -99,7 +99,7 @@ function getFreeTimespans(workingHours, timespans) {
             return timespan && timespan.to.total < end && timespan.to.total > start;
         });
         if (thatDayTimespans.length === 0) {
-            result.push(new timeModule.Timespan({ from: start, to: end }, 0));
+            pushFullDay(timespans, result, start, end);
             continue;
         }
         pushFirst(thatDayTimespans, result, start);
@@ -109,7 +109,14 @@ function getFreeTimespans(workingHours, timespans) {
 
     return result;
 }
-
+function pushFullDay(timespans, result, start, end) {
+    if (!timespans.some(timespan => {
+        return timespan.from.total <= start &&
+        timespan.to.total >= end;
+    })) {
+        result.push(new timeModule.Timespan({ from: start, to: end }, 0));
+    }
+}
 function pushFirst(thatDayTimespans, result, startDay) {
     let startFirst = thatDayTimespans[0].from.total;
     if (startFirst > startDay) {
