@@ -37,5 +37,11 @@ describe('Time tests', () => {
         let timeFromTotal = new timeModule.Time(time.getTotal(), 0);
         assert.strictEqual(timeFromTotal.format('%DD %HH:%MM', 1), 'ЧТ 00:56');
     });
+
+    it ('ВС 23:59', function () {
+        let time = new timeModule.Time('ВС 22:59+0');
+        let timeFromTotal = new timeModule.Time(time.getTotal(), 0);
+        assert.strictEqual(timeFromTotal.format('%DD %HH:%MM', 1), 'ВС 23:59');
+    });
 });
 

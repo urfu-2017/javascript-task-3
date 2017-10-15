@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 let timeModule = require('./timemodule.js');
 
@@ -188,10 +188,8 @@ function enlargeCurrent(timespans, currentIndex) {
         if (otherTimespan === undefined) {
             continue;
         }
-        if (timespan.to.total === otherTimespan.from.total) {
-            timespans[otherIndex] = undefined;
-        }
-        if (timespan.to.total >= otherTimespan.from.total) {
+        if (timespan.to.total === otherTimespan.from.total ||
+            timespan.to.total >= otherTimespan.from.total) {
             timespan.to.fromTotal(otherTimespan.to.total, otherTimespan.to.offset);
             timespans[otherIndex] = undefined;
         }

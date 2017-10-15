@@ -161,5 +161,88 @@ describe('Мои тесты для robbery.', function () {
         assert.ok(moment.tryLater());
         assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 11:00');
     });
+    it('Danny в гринвиче', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+0', to: 'ПН 23:59+0' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '04:51+5', to: '23:59+5' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 04:59');
+    });
+    it('Банк в гринвиче', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 04:00+5', to: 'ПН 23:59+5' }
+                ],
+                Rusty: [],
+                Linus: []
+            },
+            10,
+            { from: '00:00+0', to: '23:59+0' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ПН 18:59');
+    });
+    it('Заняты один за другим', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 08:00+5', to: 'ПН 10:30+5' }
+                ],
+                Rusty: [
+                    { from: 'ПН 10:30+5', to: 'ПН 11:30+5' }
+                ],
+                Linus: [
+                    { from: 'ПН 11:30+5', to: 'ПН 12:00+5' }
+                ]
+            },
+            1,
+            { from: '08:00+5', to: '12:00+5' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 08:00');
+    });
+    it('Заняты один за другим, но есть промежуток в 1 минуту', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 08:00+5', to: 'ПН 10:30+5' }
+                ],
+                Rusty: [
+                    { from: 'ПН 10:31+5', to: 'ПН 11:29+5' }
+                ],
+                Linus: [
+                    { from: 'ПН 11:30+5', to: 'ПН 12:00+5' }
+                ]
+            },
+            1,
+            { from: '08:00+5', to: '12:00+5' }
+        );
+        assert.ok(moment.exists());
+        assert.strictEqual(moment.format('%DD %HH:%MM'), 'ПН 10:30');
+        moment.tryLater();
+        // assert.ok(!moment.tryLater());
+        // assert.strictEqual(moment.format('%DD %HH:%MM'), 'ПН 10:30');
+    });
+    it('Danny занят всю неделю', function () {
+        var moment = robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+0', to: 'ВС 23:59+0' }
+                ]
+            },
+            1,
+            { from: '00:00+0', to: '12:00+0' }
+        );
+        assert.ok(!moment.exists());
+    });
 
 });
