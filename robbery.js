@@ -82,7 +82,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var newRobberyTime = getEarliest(intersectedIntervals, duration);
             if (!newRobberyTime) {
 
-                return newRobberyTime;
+                return false;
             }
             robberyMinutesTime = newRobberyTime;
 
