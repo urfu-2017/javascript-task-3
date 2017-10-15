@@ -68,10 +68,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (data.intervalIndex < 0) {
+                return false;
+            }
+
             data.satisfyingIntervals[data.intervalIndex].start += 30;
-            let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
-            if (nextItem >= 0) {
-                data.intervalIndex = nextItem;
+            let index = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
+            if (index >= 0) {
+                data.intervalIndex = index;
 
                 return true;
             }
@@ -177,8 +181,8 @@ function getIntervalsIntersection(bankIntervals, thiefIntervals) {
 function findIntersections(baseInterval, intervals) {
     let intersections = [];
     for (let interval of intervals) {
-        if (baseInterval.start >= interval.end && baseInterval.start >= interval.start ||
-            baseInterval.end <= interval.start && baseInterval.end <= interval.end) {
+        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
+            baseInterval.end < interval.start && baseInterval.end < interval.end) {
             continue;
         }
         let start = Math.max(baseInterval.start, interval.start);
