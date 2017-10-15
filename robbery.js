@@ -53,14 +53,13 @@ let metka;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let freeTime = {
+    freeTime = {
         Bank: [],
         Danny: [],
         Rusty: [],
         Linus: []
     };
-    
-    let busyTime = {
+    busyTime = {
         Danny: [],
         Rusty: [],
         Linus: []
