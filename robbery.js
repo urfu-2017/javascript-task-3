@@ -1,7 +1,7 @@
 'use strict';
 
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-const MINUTES_IN_DAY = 24 * 60 - 1;
+const MINUTES_IN_DAY = 24 * 60;
 
 function parseTime(time, withDay = false) {
     if (withDay) {
@@ -25,8 +25,8 @@ function toMinutes(time) {
 }
 
 function timeFrom(minutes) {
-    if (minutes < 0 || minutes > MINUTES_IN_DAY) {
-        throw new RangeError(`value out of [0..${MINUTES_IN_DAY}]`);
+    if (minutes < 0 || minutes > MINUTES_IN_DAY - 1) {
+        throw new RangeError(`value out of [0..${MINUTES_IN_DAY - 1}]`);
     }
 
     let hours = Math.floor(minutes / 60);
