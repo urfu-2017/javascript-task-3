@@ -23,9 +23,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [bankOpenIntervals, baseTimezone] = parseBankOpenIntervals(workingHours);
     let thiefBusyIntervals = parseThiefIntervals(schedule, baseTimezone);
     let disjointThiefIntervals = combineIntervals(thiefBusyIntervals);
-    let readinessIntervals = invertTimeIntervals(disjointThiefIntervals);
+    let thiefReadinessIntervals = invertTimeIntervals(disjointThiefIntervals);
 
-    data.possibleIntervals = getIntervalsIntersection(bankOpenIntervals, readinessIntervals);
+    data.possibleIntervals = getIntervalsIntersection(bankOpenIntervals, thiefReadinessIntervals);
     data.satisfyingIntervals = data.possibleIntervals.filter(x=>x.end - x.start >= duration);
     data.intervalIndex = data.satisfyingIntervals.findIndex(x=>x.end - x.start >= duration);
 
