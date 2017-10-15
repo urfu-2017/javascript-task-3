@@ -41,14 +41,14 @@ exports.convertToTimeZone = function (time, timezone) {
     time = exports.getDay(time) + ' ' + numberToTimeString(newHours) +
         ':' + exports.getMinutes(time) + timezone;
 
-    return normilizeTime(time);
+    return exports.normilizeTime(time);
 };
 
 function numberToTimeString(value) {
     return value < 10 ? '0' + value : value;
 }
 
-function normilizeTime(time) {
+exports.normilizeTime = function (time) {
     let hours = exports.getHours(time);
     let dayIndex = exports.DAYS_OF_THE_WEEK.indexOf(exports.getDay(time));
     if (hours > 23) {
@@ -65,4 +65,4 @@ function normilizeTime(time) {
     }
 
     return time;
-}
+};
