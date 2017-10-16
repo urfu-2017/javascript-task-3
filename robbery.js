@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -14,6 +14,7 @@ exports.isStar = false;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
+const MILLIS_IN_MINUTE = 60 * 1000;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
     let bankOffset = getBankOffset(workingHours.from);
@@ -21,7 +22,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     unionTimespans(timespans);
     let infos = getInfos(timespans, workingHours);
     fillFree(infos);
-    let goodTime = searchStart(infos, duration * 60 * 1000);
+    let durationInMillis = duration * MILLIS_IN_MINUTE;
+    let goodTime = searchStart(infos, durationInMillis);
 
     return {
 
@@ -50,11 +52,75 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            let frees = getFrees(infos);
+            if (frees.length === 0) {
+                return false;
+            }
+
+            let nextPossible = goodTime + 30 * MILLIS_IN_MINUTE;
+            if (checkPossible(frees, nextPossible)) {
+                goodTime = nextPossible;
+
+                return true;
+            }
+            let timeInOtherFree = getTimeInOtherFree(frees, nextPossible);
+            if (timeInOtherFree) {
+                goodTime = timeInOtherFree;
+
+                return true;
+            }
+
             return false;
         }
     };
+
+    function getTimeInOtherFree(frees, time) {
+        for (let free of frees) {
+            if (free.from < time) {
+                continue;
+            }
+            if (free.from + durationInMillis <= free.to) {
+                return free.from;
+            }
+        }
+
+        return false;
+    }
+
+    function checkPossible(frees, nextPossible) {
+        let nextIndex = getIndex(frees, nextPossible);
+        if (nextIndex === false) {
+            return false;
+        }
+        if (nextPossible + durationInMillis <= frees[nextIndex].to) {
+            return nextPossible;
+        }
+
+        return false;
+    }
 };
 
+
+function getFrees(infos) {
+    let frees = [];
+    infos.forEach(function (currentDay) {
+        frees = frees.concat(currentDay.free);
+    });
+
+    return frees;
+}
+
+function getIndex(frees, time) {
+    let indexFree = 0;
+    while (time < frees[indexFree].from || time > frees[indexFree].to) {
+        indexFree++;
+        if (indexFree >= frees.length) {
+            return false;
+        }
+    }
+
+    return indexFree;
+}
 
 function getInfos(timespans, workingHours) {
     let infoOnDay = [];
@@ -188,7 +254,7 @@ function getPoints(currentDay) {
         points.push(currentDay.start);
         points.push(crosses[0].from);
     }
-    for (let i = 0; i + 1 < crosses.length; i += 2) {
+    for (let i = 0; i + 1 < crosses.length; i++) {
         points.push(crosses[i].to);
         points.push(crosses[i + 1].from);
     }
