@@ -96,8 +96,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 function findRangesForRobbery(available, duration) {
+    let difference;
     let rangesForRobbery = available.filter((range) => {
-        let difference = range.to - range.from;
+        difference = range.to - range.from;
 
         return difference >= (duration * MINUTES_TO_MILLISECONDS);
     });
@@ -106,13 +107,13 @@ function findRangesForRobbery(available, duration) {
 }
 
 function intersectWithBanksTime(available, banksWorkingHours) {
-    let intersected = [];
     const combinedRanges = available.concat(banksWorkingHours)
         .sort((firstDate, secondDate) => {
             return firstDate.from - secondDate.from;
         });
+    let intersected = [];
     let top = combinedRanges[0];
-    // currently have no idea how to rewrite this for cycle, later
+
     combinedRanges.slice(1).forEach((range, i) => {
         if (!areIntersected(top, combinedRanges[i])) {
             top = combinedRanges[i];
@@ -136,9 +137,10 @@ function intersectWithBanksTime(available, banksWorkingHours) {
 function reverseRanges(ranges, from, to) {
     let reversed = [];
     let start = from;
+    let reversedRange;
 
     ranges.forEach((range) => {
-        let reversedRange = { from: start, to: range.from };
+        reversedRange = { from: start, to: range.from };
         start = range.to;
         reversed.push(reversedRange);
     });
@@ -149,6 +151,8 @@ function reverseRanges(ranges, from, to) {
 
 function mergeRanges(ranges) {
     let result = [];
+    let top;
+
     ranges.sort((firstDate, secondDate) => {
         return firstDate.from - secondDate.from;
     });
@@ -157,7 +161,7 @@ function mergeRanges(ranges) {
         to: ranges[0].to
     });
     ranges.slice(1).forEach((range) => {
-        let top = result[result.length - 1];
+        top = result[result.length - 1];
         if (!areIntersected(top, range)) {
             result.push(range);
         } else if (top.to < range.to) {
@@ -210,7 +214,9 @@ function getWeekDay(currentDay) {
     //         return weekDays.indexOf(currentDay) + 1;
     //     }
     // });
-    for (let weekDay of weekDays) {
+    let weekDay;
+
+    for (weekDay of weekDays) {
         if (currentDay === weekDay) {
             return weekDays.indexOf(currentDay) + 1;
         }
@@ -219,12 +225,16 @@ function getWeekDay(currentDay) {
 
 
 function getDatesForBank(workingHours, timeZone) {
+    let dateFrom;
+    let dateTo;
+    let date;
+
     let datesArray = weekDays.map((day, idx) => {
-        let dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
+        dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
             getMinutes(workingHours.from), timeZone);
-        let dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
+        dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
             getMinutes(workingHours.to), timeZone);
-        const date = { from: dateFrom, to: dateTo };
+        date = { from: dateFrom, to: dateTo };
 
         return date;
     });
