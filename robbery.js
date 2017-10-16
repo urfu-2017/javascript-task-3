@@ -196,7 +196,10 @@ function makeDateObj(time, banksTimeZone) {
 
 
 function getMinutes(time) {
-    return Number(time.split(':')[1].split('+')[0]);
+    const minsAndZone = time.split(':')[1];
+    const minutes = minsAndZone.split('+')[0];
+
+    return Number(minutes);
 }
 
 
