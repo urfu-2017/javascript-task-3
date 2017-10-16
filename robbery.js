@@ -137,14 +137,16 @@ function getGoodIntervalsForOneDay(gangSchedule, bankDay) {
     let goodTo = bankDay.to;
 
     for (let i = 0; i < gangSchedule.length; i++) {
-        if (isIntersectionFrom(gangSchedule[i], goodFrom, goodTo)) {
+        if (isIntersectionFrom(gangSchedule[i], goodFrom, goodTo) &&
+            goodFrom !== gangSchedule[i].from) {
             goodIntervalsForOneDay.push({
                 from: goodFrom,
                 to: gangSchedule[i].from
             });
         } else if (isIntersectionTo(gangSchedule[i], goodFrom, goodTo)) {
             goodFrom = gangSchedule[i].to;
-        } else if (isIntersectionFull(gangSchedule[i], goodFrom, goodTo)) {
+        } else if (isIntersectionFull(gangSchedule[i], goodFrom, goodTo) &&
+            goodFrom !== gangSchedule[i].from) {
             goodIntervalsForOneDay.push({
                 from: goodFrom,
                 to: gangSchedule[i].from
