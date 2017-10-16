@@ -156,8 +156,8 @@ function getPossibleIntervals(workingHours, robberyInterval) {
  * @returns {Array} - интервалы занятости грабителей
  */
 function getThiefBusyIntervals(schedule, baseTimezone) {
-    let thiefBusyIntervals = Object.keys(schedule)
-        .map(name => schedule[name].map(function (interval) {
+    let thiefsBusyIntervals = Object.keys(schedule).reduce(function (intervals, name) {
+        let thiefBusyIntervals = schedule[name].map(function (interval) {
             const [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
             const [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
             const timeDifference = baseTimezone - timezone;
@@ -165,10 +165,12 @@ function getThiefBusyIntervals(schedule, baseTimezone) {
             const to = timeToMinutes(weekDayNumberTo, hoursTo + timeDifference, minutesTo);
 
             return { from, to };
-        }))
-        .reduce((intervals, currentThiefIntervals) => intervals.concat(currentThiefIntervals));
+        });
 
-    return combineIntervals(thiefBusyIntervals);
+        return intervals.concat(thiefBusyIntervals);
+    }, []);
+
+    return combineIntervals(thiefsBusyIntervals);
 }
 
 function timeToMinutes(days, hours, minutes) {
@@ -245,33 +247,23 @@ function getIntervalsIntersection(bankIntervals, thiefIntervals) {
  * @returns {Array}
  */
 function findIntersections(baseInterval, intervals) {
-    let intersections = [];
-    for (let interval of intervals) {
-        if (baseInterval.from > interval.to && baseInterval.from > interval.from ||
-            baseInterval.to < interval.from && baseInterval.to < interval.to) {
-            continue;
+    return intervals.reduce(function (intersections, interval) {
+        if (!(baseInterval.from > interval.to && baseInterval.from > interval.from ||
+            baseInterval.to < interval.from && baseInterval.to < interval.to)) {
+            intersections.push({
+                from: Math.max(baseInterval.from, interval.from),
+                to: Math.min(baseInterval.to, interval.to)
+            });
         }
-        const from = Math.max(baseInterval.from, interval.from);
-        const to = Math.min(baseInterval.to, interval.to);
-        intersections.push({ from, to });
-    }
 
-    return intersections;
+        return intersections;
+    }, []);
 }
 
 function sortIntervals(intervals) {
-    return intervals.sort(function (a, b) {
-        if (a.from > b.from) {
-            return 1;
-        }
-        if (a.from < b.from) {
-            return -1;
-        }
-        const al = a.from - a.to;
-        const bl = b.from - b.to;
+    const duration = interval => interval.from - interval.to;
 
-        return -(al - bl);
-    });
+    return intervals.sort((a, b) => a.from - b.from || duration(b) - duration(a));
 }
 
 function parseTime(string) {
