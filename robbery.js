@@ -1,21 +1,156 @@
 'use strict';
 
-/**
- * Сделано задание на звездочку
- * Реализовано оба метода и tryLater
- */
-exports.isStar = true;
-
 const YEAR = 1970;
 const MONTH = 0;
 const MINUTES_TO_MILLISECONDS = 60000;
 const HOURS_IN_MILLISECONDS = 60 * 60000;
-const weekDays = ['ПН', 'ВТ', 'СР'];
-const areIntersected = (firstRange, secondRange) => firstRange.to >= secondRange.from;
+const WEEK_DAYS = ['ПН', 'ВТ', 'СР'];
+
+
 const getBanksTimeZone = banksTime => banksTime.split('+')[1];
-const createDateForBank = (day, hours, minutes) => Date.UTC(YEAR, MONTH, day, hours, minutes);
+
 const getHours = (time) => Number(time.split(':')[0]);
 
+function getMinutes(time) {
+    const minsAndZone = time.split(':')[1];
+    const minutes = minsAndZone.split('+')[0];
+
+    return Number(minutes);
+}
+
+const createDateForBank = (day, hours, minutes) => Date.UTC(YEAR, MONTH, day, hours, minutes);
+
+function getDatesForBank(workingHours, timeZone) {
+    let dateFrom;
+    let dateTo;
+    let date;
+
+    let datesArray = WEEK_DAYS.map((day, idx) => {
+        dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
+            getMinutes(workingHours.from), timeZone);
+        dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
+            getMinutes(workingHours.to), timeZone);
+        date = { from: dateFrom, to: dateTo };
+
+        return date;
+    });
+
+    return datesArray;
+}
+
+function getWeekDay(currentDay) {
+    let weekDay;
+    for (weekDay of WEEK_DAYS) {
+        if (currentDay === weekDay) {
+            return WEEK_DAYS.indexOf(currentDay) + 1;
+        }
+    }
+}
+
+function makeDateObj(time, banksTimeZone) {
+    const day = getWeekDay(time.split(' ')[0]);
+    const hrsAndMins = time.split(' ')[1];
+    const currentTimeZone = time.split('+')[1];
+    const hours = getHours(hrsAndMins);
+    const minutes = getMinutes(hrsAndMins);
+    let timeDifference = currentTimeZone * HOURS_IN_MILLISECONDS -
+    banksTimeZone * HOURS_IN_MILLISECONDS;
+
+    return Date.UTC(YEAR, MONTH, day, hours, minutes) - timeDifference;
+}
+
+function getRobbersTime(schedule, banksTimeZone) {
+    let allSchedule = [];
+    Object.keys(schedule).forEach((robber) => {
+        schedule[robber].forEach((occupiedTime) => {
+            allSchedule.push({
+                from: makeDateObj(occupiedTime.from, banksTimeZone),
+                to: makeDateObj(occupiedTime.to, banksTimeZone)
+            });
+        });
+    });
+
+    return allSchedule;
+}
+
+const areIntersected = (firstRange, secondRange) => firstRange.to >= secondRange.from;
+
+function mergeRanges(ranges) {
+    let result = [];
+    let top;
+
+    ranges.sort((firstDate, secondDate) => {
+        return firstDate.from - secondDate.from;
+    });
+    result.push({
+        from: ranges[0].from,
+        to: ranges[0].to
+    });
+    ranges.slice(1).forEach((range) => {
+        top = result[result.length - 1];
+        if (!areIntersected(top, range)) {
+            result.push(range);
+        } else if (top.to < range.to) {
+            top.to = range.to;
+        }
+    });
+
+    return result;
+}
+
+function reverseRanges(ranges, from, to) {
+    let reversed = [];
+    let start = from;
+    let reversedRange;
+
+    ranges.forEach((range) => {
+        reversedRange = { from: start, to: range.from };
+        start = range.to;
+        reversed.push(reversedRange);
+    });
+    reversed.push({ from: start, to: to });
+
+    return reversed;
+}
+
+function intersectWithBanksTime(available, banksWorkingHours) {
+    const combinedRanges = available.concat(banksWorkingHours)
+        .sort((firstDate, secondDate) => {
+            return firstDate.from - secondDate.from;
+        });
+    let intersected = [];
+    let top = combinedRanges[0];
+
+    combinedRanges.slice(1).forEach((range, i) => {
+        if (!areIntersected(top, combinedRanges[i])) {
+            top = combinedRanges[i];
+        } else if (top.to < combinedRanges[i].to) {
+            intersected.push({
+                from: combinedRanges[i].from,
+                to: top.to
+            });
+            top = combinedRanges[i];
+        } else {
+            intersected.push({
+                from: combinedRanges[i].from,
+                to: combinedRanges[i].to
+            });
+        }
+    });
+
+    return intersected;
+}
+
+function findRangesForRobbery(available, duration) {
+    let difference;
+    let rangesForRobbery = available.filter((range) => {
+        difference = range.to - range.from;
+
+        return difference >= (duration * MINUTES_TO_MILLISECONDS);
+    });
+
+    return rangesForRobbery;
+}
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -69,7 +204,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             return template.replace('%HH', hours)
                 .replace('%MM', minutes)
-                .replace('%DD', weekDays[day - 1]);
+                .replace('%DD', WEEK_DAYS[day - 1]);
         },
 
         /**
@@ -95,149 +230,4 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-function findRangesForRobbery(available, duration) {
-    let difference;
-    let rangesForRobbery = available.filter((range) => {
-        difference = range.to - range.from;
-
-        return difference >= (duration * MINUTES_TO_MILLISECONDS);
-    });
-
-    return rangesForRobbery;
-}
-
-function intersectWithBanksTime(available, banksWorkingHours) {
-    const combinedRanges = available.concat(banksWorkingHours)
-        .sort((firstDate, secondDate) => {
-            return firstDate.from - secondDate.from;
-        });
-    let intersected = [];
-    let top = combinedRanges[0];
-
-    combinedRanges.slice(1).forEach((range, i) => {
-        if (!areIntersected(top, combinedRanges[i])) {
-            top = combinedRanges[i];
-        } else if (top.to < combinedRanges[i].to) {
-            intersected.push({
-                from: combinedRanges[i].from,
-                to: top.to
-            });
-            top = combinedRanges[i];
-        } else {
-            intersected.push({
-                from: combinedRanges[i].from,
-                to: combinedRanges[i].to
-            });
-        }
-    });
-
-    return intersected;
-}
-
-function reverseRanges(ranges, from, to) {
-    let reversed = [];
-    let start = from;
-    let reversedRange;
-
-    ranges.forEach((range) => {
-        reversedRange = { from: start, to: range.from };
-        start = range.to;
-        reversed.push(reversedRange);
-    });
-    reversed.push({ from: start, to: to });
-
-    return reversed;
-}
-
-function mergeRanges(ranges) {
-    let result = [];
-    let top;
-
-    ranges.sort((firstDate, secondDate) => {
-        return firstDate.from - secondDate.from;
-    });
-    result.push({
-        from: ranges[0].from,
-        to: ranges[0].to
-    });
-    ranges.slice(1).forEach((range) => {
-        top = result[result.length - 1];
-        if (!areIntersected(top, range)) {
-            result.push(range);
-        } else if (top.to < range.to) {
-            top.to = range.to;
-        }
-    });
-
-    return result;
-}
-
-function getRobbersTime(schedule, banksTimeZone) {
-    let allSchedule = [];
-    Object.keys(schedule).forEach((robber) => {
-        schedule[robber].forEach((occupiedTime) => {
-            allSchedule.push({
-                from: makeDateObj(occupiedTime.from, banksTimeZone),
-                to: makeDateObj(occupiedTime.to, banksTimeZone)
-            });
-        });
-    });
-
-    return allSchedule;
-}
-
-function makeDateObj(time, banksTimeZone) {
-    const day = getWeekDay(time.split(' ')[0]);
-    const hrsAndMins = time.split(' ')[1];
-    const currentTimeZone = time.split('+')[1];
-    const hours = getHours(hrsAndMins);
-    const minutes = getMinutes(hrsAndMins);
-    let timeDifference = currentTimeZone * HOURS_IN_MILLISECONDS -
-    banksTimeZone * HOURS_IN_MILLISECONDS;
-
-    return Date.UTC(YEAR, MONTH, day, hours, minutes) - timeDifference;
-}
-
-
-function getMinutes(time) {
-    const minsAndZone = time.split(':')[1];
-    const minutes = minsAndZone.split('+')[0];
-
-    return Number(minutes);
-}
-
-
-function getWeekDay(currentDay) {
-    // brakes for some reason think about it later
-    // weekDays.forEach((weekDay) => {
-    //     if (currentDay === weekDay) {
-    //         return weekDays.indexOf(currentDay) + 1;
-    //     }
-    // });
-    let weekDay;
-
-    for (weekDay of weekDays) {
-        if (currentDay === weekDay) {
-            return weekDays.indexOf(currentDay) + 1;
-        }
-    }
-}
-
-
-function getDatesForBank(workingHours, timeZone) {
-    let dateFrom;
-    let dateTo;
-    let date;
-
-    let datesArray = weekDays.map((day, idx) => {
-        dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
-            getMinutes(workingHours.from), timeZone);
-        dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
-            getMinutes(workingHours.to), timeZone);
-        date = { from: dateFrom, to: dateTo };
-
-        return date;
-    });
-
-    return datesArray;
-}
+exports.isStar = true;
