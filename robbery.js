@@ -196,10 +196,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var localPropriateTime = JSON.parse(JSON.stringify(propriateTime));
             var desiredMoment = localPropriateTime[0].start + 30;
             while (localPropriateTime.length > 0 && localPropriateTime[0].start < desiredMoment) {
-                if (localPropriateTime[0].end - localPropriateTime[0].start - 30 < this.duration) {
-                    localPropriateTime.splice(0, 1);
+                if (localPropriateTime[0].end >= desiredMoment + duration &&
+                    localPropriateTime[0].start <= desiredMoment) {
+                    localPropriateTime[0].start = desiredMoment;
                 } else {
-                    localPropriateTime[0].start += 30;
+                    localPropriateTime.splice(0, 1);
                 }
             }
             if (localPropriateTime.length === 0) {
@@ -211,28 +212,3 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
-
-/*  var schedule = {
-    Danny: [
-        { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
-        { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
-    ],
-    Rusty: [
-        { from: 'ПН 11:30+5', to: 'ПН 16:30+5' },
-        { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
-    ],
-    Linus: [
-        { from: 'ПН 09:00+3', to: 'ПН 14:00+3' },
-        { from: 'ПН 21:00+3', to: 'ВТ 09:30+3' },
-        { from: 'СР 09:30+3', to: 'СР 15:00+3' }
-    ]
-};
-var time = 90;
-var wh = { from: '10:00+5', to: '18:00+5' };
-var res = exports.getAppropriateMoment(schedule, time, wh);
-console.log(res.propriateTime);
-res.propriateTime.forEach(function (item) {
-    console.log(minutesToDate(item.start, 5));
-    console.log(minutesToDate(item.end, 5));
-    console.log();
-});*/
