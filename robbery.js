@@ -118,14 +118,18 @@ function getBankOffset(time) {
 
 function unionTimespans(timespans) {
     timespans.sort((a, b) => a.from - b.from);
-    for (var i = 0; i + 1 < timespans.length; i++) {
+    for (let i = 0; i + 1 < timespans.length; i++) {
         if (timespans[i].to >= timespans[i + 1].from) {
-            timespans[i + 1].from = timespans[i].from;
+            timespans[i + 1].to = Math.max(timespans[i].to, timespans[i + 1].to);
+            timespans[i + 1].from = Math.min(timespans[i].from, timespans[i + 1].from);
             delete timespans[i];
         }
     }
     timespans.sort((a, b) => a.from - b.from);
-    timespans.splice(timespans.indexOf(undefined));
+    let firstUndef = timespans.indexOf(undefined);
+    if (firstUndef !== -1) {
+        timespans.splice(firstUndef);
+    }
 }
 
 function crossesWorkingHours(timespans, startWork, endWork) {
