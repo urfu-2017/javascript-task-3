@@ -290,12 +290,6 @@ function separateSegments(acc, segment) {
     return [...acc, segment];
 }
 
-exports.separateSegment = separateSegment;
-exports.normalizeSchedule = normalizeSchedule;
-exports.equalizeShifts = equalizeShifts;
-exports.fillActionDays = fillActionDays;
-exports.getRobberyTime = findRobberyTime;
-exports.mergeAvailableAndBusyTime = mergeAvailableAndBusyTime;
 
 /**
  * Возвращает день недели в виде ХХ
