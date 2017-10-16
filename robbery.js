@@ -6,7 +6,7 @@ const weekDays = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -100,9 +100,9 @@ function findFrom(fromTime, schedule, duration, workingHours) {
 
     for (let i = fromTime; i < 24 * 60 * 3; i++) {
         const isFreeTime = schedule.filter(({ from, to }) =>
-            (i > from.time && i < to.time) ||
-            (i + duration > from.time && i + duration < to.time)
-        ).length === 0;
+            (i < from.time && i + duration <= from.time) ||
+            (i >= to.time && i + duration >= to.time)
+        ).length === schedule.length;
 
         const isWorkTime = workingHours.filter(({ from, to }) =>
             i >= from.time && i + duration <= to.time
