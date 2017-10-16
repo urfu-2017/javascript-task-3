@@ -121,23 +121,23 @@ function intersectWithBanksTime(available, banksWorkingHours) {
     let intersected = [];
     let top = combinedRanges[0];
 
-    for (let i = 1; i < combinedRanges.length; i++) {
-    // combinedRanges.slice(1).forEach((range, i) => {
-        if (!areIntersected(top, combinedRanges[i])) {
-            top = combinedRanges[i];
-        } else if (top.to < combinedRanges[i].to) {
+    // for (let i = 1; i < combinedRanges.length; i++) {
+    combinedRanges.slice(1).forEach((range, i) => {
+        if (!areIntersected(top, combinedRanges[i + 1])) {
+            top = combinedRanges[i + 1];
+        } else if (top.to < combinedRanges[i + 1].to) {
             intersected.push({
-                from: combinedRanges[i].from,
+                from: combinedRanges[i + 1].from,
                 to: top.to
             });
-            top = combinedRanges[i];
+            top = combinedRanges[i + 1];
         } else {
             intersected.push({
-                from: combinedRanges[i].from,
-                to: combinedRanges[i].to
+                from: combinedRanges[i + 1].from,
+                to: combinedRanges[i + 1].to
             });
         }
-    }
+    });
 
     return intersected;
 }
