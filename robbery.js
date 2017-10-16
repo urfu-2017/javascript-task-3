@@ -92,7 +92,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 function findRangesForRobbery(available, duration) {
-    let rangesForRobbery = available.filter(function (range) {
+    let rangesForRobbery = available.filter((range) => {
         let difference = range.to - range.from;
 
         return difference >= (duration * MINUTES_TO_MILLISECONDS);
@@ -104,12 +104,12 @@ function findRangesForRobbery(available, duration) {
 function intersectWithBanksTime(available, banksWorkingHours) {
     let intersected = [];
     const combinedRanges = available.concat(banksWorkingHours)
-        .sort(function (firstDate, secondDate) {
+        .sort((firstDate, secondDate) => {
             return firstDate.from - secondDate.from;
         });
     let top = combinedRanges[0];
     // currently have no idea how to rewrite this for cycle, later
-    combinedRanges.slice(1).forEach(function (range, i) {
+    combinedRanges.slice(1).forEach((range, i) => {
         if (!areIntersected(top, combinedRanges[i])) {
             top = combinedRanges[i];
         } else if (top.to < combinedRanges[i].to) {
@@ -133,7 +133,7 @@ function reverseRanges(ranges, from, to) {
     let reversed = [];
     let start = from;
 
-    ranges.forEach(function (range) {
+    ranges.forEach((range) => {
         let reversedRange = { from: start, to: range.from };
         start = range.to;
         reversed.push(reversedRange);
@@ -145,14 +145,14 @@ function reverseRanges(ranges, from, to) {
 
 function mergeRanges(ranges) {
     let result = [];
-    ranges.sort(function (firstDate, secondDate) {
+    ranges.sort((firstDate, secondDate) => {
         return firstDate.from - secondDate.from;
     });
     result.push({
         from: ranges[0].from,
         to: ranges[0].to
     });
-    ranges.slice(1).forEach(function (range) {
+    ranges.slice(1).forEach((range) => {
         let top = result[result.length - 1];
         if (!areIntersected(top, range)) {
             result.push(range);
@@ -171,8 +171,8 @@ function areIntersected(firstRange, secondRange) {
 
 function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
-    Object.keys(schedule).forEach(function (robber) {
-        schedule[robber].forEach(function (occupiedTime) {
+    Object.keys(schedule).forEach((robber) => {
+        schedule[robber].forEach((occupiedTime) => {
             allSchedule.push({
                 from: makeDateObj(occupiedTime.from, banksTimeZone),
                 to: makeDateObj(occupiedTime.to, banksTimeZone)
@@ -203,7 +203,7 @@ function getHours(time) {
 
 function getWeekDay(currentDay) {
     // brakes for some reason think about it later
-    // weekDays.forEach(function (weekDay) {
+    // weekDays.forEach((weekDay) => {
     //     if (currentDay === weekDay) {
     //         return weekDays.indexOf(currentDay) + 1;
     //     }
@@ -220,7 +220,7 @@ function createDateForBank(day, hours, minutes) {
 }
 
 function getDatesForBank(workingHours, timeZone) {
-    let datesArray = weekDays.map(function (day, idx) {
+    let datesArray = weekDays.map((day, idx) => {
         let dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
             getMinutes(workingHours.from), timeZone);
         let dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
