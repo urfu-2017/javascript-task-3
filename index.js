@@ -19,8 +19,8 @@ var gangSchedule = {
 };
 
 var bankWorkingHours = {
-    from: '10:00+5',
-    to: '18:00+5'
+    from: '10:00+6',
+    to: '18:00+6'
 };
 
 // Время не существует

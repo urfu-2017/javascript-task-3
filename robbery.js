@@ -121,7 +121,8 @@ function intersectWithBanksTime(available, banksWorkingHours) {
     let intersected = [];
     let top = combinedRanges[0];
 
-    combinedRanges.slice(1).forEach((range, i) => {
+    for (let i = 1; i < combinedRanges.length; i++) {
+    // combinedRanges.slice(1).forEach((range, i) => {
         if (!areIntersected(top, combinedRanges[i])) {
             top = combinedRanges[i];
         } else if (top.to < combinedRanges[i].to) {
@@ -136,7 +137,7 @@ function intersectWithBanksTime(available, banksWorkingHours) {
                 to: combinedRanges[i].to
             });
         }
-    });
+    }
 
     return intersected;
 }
