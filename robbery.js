@@ -3,6 +3,7 @@
 const WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 const BANK_WORKING_DAYS = ['ПН', 'ВТ', 'СР'];
 
+
 /**
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
@@ -19,13 +20,6 @@ exports.isStar = true;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-
-    const addDay = ({ from, to }, day) => ({ from: `${day} ${from}`, to: `${day} ${to}` });
-    const parseToDateObj = ({ from, to }) => ({ from: parseDateStr(from), to: parseDateStr(to) });
-    const applyTimeZoneToDateObj = (timeZone, { from, to }) => ({
-        from: convertToTimeZone(from, timeZone),
-        to: convertToTimeZone(to, timeZone)
-    });
 
     const bankWorkTime = BANK_WORKING_DAYS
         .map(addDay.bind(null, workingHours))
@@ -97,9 +91,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 /**
  * Находим возможный промежуток времени для ограбления, начиная с указанного времени
  * @param {Number} fromTime - время в минутах с которого начинаем поиск
- * @param {Array} schedule - промежутки занятности
+ * @param {Object[]} schedule - промежутки занятности
+ * @param {{time: Number, timeZone: Number}} schedule[].from
+ * @param {{time: Number, timeZone: Number}} schedule[].to
  * @param {Number} duration - необходимое для ограбления время
- * @param {Array} workingHours - промежутки рабоы банка
+ * @param {Object[]} workingHours - промежутки работы банка
+ * @param {{time: Number, timeZone: Number}} workingHours[].from
+ * @param {{time: Number, timeZone: Number}} workingHours[].to
  * @returns {{success: boolean, time: number}}
  */
 function findFrom(fromTime, schedule, duration, workingHours) {
@@ -130,25 +128,26 @@ function findFrom(fromTime, schedule, duration, workingHours) {
 }
 
 /**
- * @param {Number} time - время в минутах
+ * @param {Object} timeObj
+ * @param {Number} timeObj.time - время в минутах
+ * @param {Number} timeObj.timeZone - текущий часовой пояс
  * @param {Number} timeZone - необходимый часовой пояс
- * @returns {{time: *, timeZone: *}}
+ * @returns {{time: Number, timeZone: Number}}
  */
-function convertToTimeZone(time, timeZone) {
-    const timeDiff = timeZone - time.timeZone;
+function convertToTimeZone(timeObj, timeZone) {
+    const timeDiff = timeZone - timeObj.timeZone;
 
     return {
-        time: time.time + 60 * timeDiff,
+        time: timeObj.time + 60 * timeDiff,
         timeZone: timeZone
     };
 }
 
 /**
- * Получам объект содержащий информацию о дате
+ * Возвращает объект объект содержащий информацию о дате
  * @param {String} dateStr - строка содержащая время в формате "XX YY:ZZ+N". Например "ПТ 13:30+4".
  * @returns {{time: *, timeZone: Number}}
- * time - время в минутах
- * timeZone - часовой пояс
+ * @returns {{time: Number, timeZone: number}} - время в минутах
  */
 function parseDateStr(dateStr) {
     const dateArray = dateStr.split(' ');
@@ -162,3 +161,10 @@ function parseDateStr(dateStr) {
         timeZone: parseInt(timeZone)
     };
 }
+
+const addDay = ({ from, to }, day) => ({ from: `${day} ${from}`, to: `${day} ${to}` });
+const parseToDateObj = ({ from, to }) => ({ from: parseDateStr(from), to: parseDateStr(to) });
+const applyTimeZoneToDateObj = (timeZone, { from, to }) => ({
+    from: convertToTimeZone(from, timeZone),
+    to: convertToTimeZone(to, timeZone)
+});
