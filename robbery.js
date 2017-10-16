@@ -5,6 +5,7 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = true;
+var days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -14,17 +15,156 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
+
+function stringToMinuts(str) {
+    var parsed = str.match(/([А-Я][А-Я]) (\d\d):(\d\d)\+?(\d?\d?)/);
+    if (!parsed || Number(parsed[2]) > 23 || Number(parsed[3]) > 59) {
+        return null;
+    }
+    var hours = days.indexOf(parsed[1]) * 24;
+    if (hours < 0) {
+        return null;
+    }
+    hours += Number(parsed[2]) - (parsed[4] ? Number(parsed[4]) : 0);
+
+    return hours * 60 + Number(parsed[3]);
+}
+
+function mergeSchedule(sched) {
+    function uniteIntervals(i1, i2) {
+        if (!i1) {
+            return i2;
+        }
+        if (!i2) {
+            return i1;
+        }
+        if (i1.end < i2.start || i1.start > i2.end) {
+            return null;
+        }
+
+        return { start: Math.min(i1.start, i2.start), end: Math.max(i1.end, i2.end) };
+    }
+    function mergeFirst(sh) {
+        var result = [];
+        var wasIntersected = 0;
+        sh.forEach(function (item) {
+            var union = uniteIntervals(sh[0], item);
+            if (union) {
+                result.push(union);
+                wasIntersected++;
+            } else {
+                result.push(item);
+            }
+        });
+        if (wasIntersected === 1) {
+            result.push(result[0]);
+        }
+        result.splice(0, 1);
+
+        return result;
+    }
+    var st = sched.length;
+    while (st >= 0) {
+        sched = mergeFirst(sched);
+        st--;
+    }
+
+    return sched;
+}
+
+function intersectSchedules(sh1, sh2) {
+    function intersectIntervals(i1, i2) {
+        if (!i1 || !i2 || i1.start >= i2.end || i1.end <= i2.start) {
+            return null;
+        }
+
+        return { start: Math.max(i1.start, i2.start), end: Math.min(i1.end, i2.end) };
+    }
+    var result = [];
+    sh1.forEach(function (item1) {
+        sh2.forEach(function (item2) {
+            var intersection = intersectIntervals(item1, item2);
+            if (intersection) {
+                result.push(intersection);
+            }
+        });
+    });
+
+    return mergeSchedule(result);
+}
+
+function minutesToDate(minutes, bankTimeZone) {
+    minutes = minutes + 60 * bankTimeZone;
+    var day = days[(minutes - minutes % (60 * 24)) / (60 * 24)];
+    minutes %= 60 * 24;
+    var hours = (minutes - minutes % 60) / 60;
+    minutes %= 60;
+
+    return { day, hours, minutes };
+}
+
+function findPropriateTime(schedule, workingHours, duration) {
+    function scheduleToIntervals(sch) {
+        var result = [{ start: 0, end: 3 * 24 * 60 }];
+        sch.forEach(function (item) {
+            var from = stringToMinuts(item.from);
+            var to = stringToMinuts(item.to);
+            if (from < 0 && to < 0) {
+                return 0;
+            }
+            if (from < 0) {
+                result = intersectSchedules(result, [{ start: to, end: 3 * 24 * 60 }]);
+
+                return 0;
+            }
+            result = intersectSchedules(result,
+                [{ start: 0, end: from }, { start: to, end: 3 * 24 * 60 }]);
+        });
+
+        return result;
+    }
+    function workingHoursToSchedule(wH) {
+        var result = [];
+        days.slice(0, 3).forEach(function (item) {
+            result.push({ start: stringToMinuts(item + ' ' + wH.from),
+                end: stringToMinuts(item + ' ' + wH.to) });
+        });
+
+        return result;
+    }
+    var intersection = scheduleToIntervals(schedule.Danny);
+    intersection = intersectSchedules(intersection, scheduleToIntervals(schedule.Rusty));
+    intersection = intersectSchedules(intersection, scheduleToIntervals(schedule.Linus));
+    intersection = intersectSchedules(intersection, workingHoursToSchedule(workingHours));
+    var result = [];
+    intersection.forEach(function (item) {
+        if (item.end - item.start >= duration) {
+            result.push(item);
+        }
+    });
+
+    return result;
+}
+
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
+    var bankTimeZone = Number(workingHours.from.split('+')[1]);
+    bankTimeZone = bankTimeZone ? bankTimeZone : 0;
+    var propriateTime = findPropriateTime(schedule, workingHours, duration);
+    propriateTime.sort(function (a, b) {
+        return a.start - b.start;
+    });
 
     return {
+        propriateTime,
+        duration,
 
         /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return Boolean(propriateTime.length);
         },
 
         /**
@@ -35,7 +175,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (propriateTime.length) {
+                var time = minutesToDate(propriateTime[0].start, bankTimeZone);
+                template = template.replace('%HH', (time.hours < 10 ? '0' : '') + time.hours);
+                template = template.replace('%MM', (time.minutes < 10 ? '0' : '') + time.minutes);
+                template = template.replace('%DD', time.day);
+
+                return template;
+            }
+
+            return '';
         },
 
         /**
@@ -44,7 +193,46 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            var localPropriateTime = JSON.parse(JSON.stringify(propriateTime));
+            var desiredMoment = localPropriateTime[0].start + 30;
+            while (localPropriateTime.length > 0 && localPropriateTime[0].start < desiredMoment) {
+                if (localPropriateTime[0].end - localPropriateTime[0].start - 30 < this.duration) {
+                    localPropriateTime.splice(0, 1);
+                } else {
+                    localPropriateTime[0].start += 30;
+                }
+            }
+            if (localPropriateTime.length === 0) {
+                return false;
+            }
+            propriateTime = JSON.parse(JSON.stringify(localPropriateTime));
+
+            return true;
         }
     };
 };
+
+/*  var schedule = {
+    Danny: [
+        { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
+        { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
+    ],
+    Rusty: [
+        { from: 'ПН 11:30+5', to: 'ПН 16:30+5' },
+        { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
+    ],
+    Linus: [
+        { from: 'ПН 09:00+3', to: 'ПН 14:00+3' },
+        { from: 'ПН 21:00+3', to: 'ВТ 09:30+3' },
+        { from: 'СР 09:30+3', to: 'СР 15:00+3' }
+    ]
+};
+var time = 90;
+var wh = { from: '10:00+5', to: '18:00+5' };
+var res = exports.getAppropriateMoment(schedule, time, wh);
+console.log(res.propriateTime);
+res.propriateTime.forEach(function (item) {
+    console.log(minutesToDate(item.start, 5));
+    console.log(minutesToDate(item.end, 5));
+    console.log();
+});*/
