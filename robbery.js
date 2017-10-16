@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 let MINUTES_IN_HOUR = 60;
 let HOURS_IN_DAY = 24;
@@ -111,26 +111,22 @@ function getBankInterval(bankSchedule) {
     return bankIntervals;
 }
 
-function isIntersection(interval, from, to) {
-    return ((from <= interval.from && interval.from <= to) ||
-        (from <= interval.to && interval.to <= to));
-}
-
 function isIntersectionFrom(interval, from, to) {
-    return (isIntersection(interval, from, to) &&
-        from <= interval.from &&
+    return (from <= interval.from &&
+        interval.from <= to &&
         to < interval.to);
 }
 
 function isIntersectionTo(interval, from, to) {
-    return (isIntersection(interval, from, to) &&
-        interval.from < from &&
+    return (interval.from < from &&
+        from <= interval.to &&
         interval.to <= to);
 }
 
 function isIntersectionFull(interval, from, to) {
-    return (isIntersection(interval, from, to) &&
-        from <= interval.from &&
+    return (from <= interval.from &&
+        interval.from <= to &&
+        from <= interval.to &&
         interval.to <= to);
 }
 
