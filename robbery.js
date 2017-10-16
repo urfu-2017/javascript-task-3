@@ -100,6 +100,20 @@ exports.isGoodTimeForBank = function (timeInterval, bankWorkingIntervals) {
     return false;
 };
 
+exports.findGoodTime = function (start, end, info) {
+    for (var timeNum = start; timeNum < end; ++timeNum) {
+        var timeInterval = exports.converter().toTimeInterval(
+            { from: timeNum, to: timeNum + info.duration }, 0);
+        if (exports.isGoodTimeForAllGuys(timeInterval, info.schedule) &&
+            exports.isGoodTimeForBank(timeInterval, info.bankIntervals)) {
+            return { exist: true, answer: timeNum };
+        }
+    }
+
+    return { exist: false };
+};
+
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -115,9 +129,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         { from: 'ПН ' + workingHours.from, to: 'ПН ' + workingHours.to },
         { from: 'ВТ ' + workingHours.from, to: 'ВТ ' + workingHours.to },
         { from: 'СР ' + workingHours.from, to: 'СР ' + workingHours.to }];
+    var info = {
+        schedule: schedule,
+        bankIntervals: bankWorkingIntervals,
+        duration: duration,
+        offset: offset
+    };
     var globalStart = exports.converter().toNumber(bankWorkingIntervals[0].from).number;
     var globalEnd = exports.converter().toNumber(bankWorkingIntervals[2].to).number;
-    var answer;
+    var result = exports.findGoodTime(globalStart, globalEnd, info);
+    var exist = result.exist;
+    var answer = result.answer;
 
     return {
 
@@ -126,12 +148,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            var result = this.findGoodTime(globalStart, globalEnd);
-            if (result.exist) {
-                answer = result.answer;
-            }
-
-            return result.exist;
+            return exist;
         },
 
         /**
@@ -156,25 +173,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             var nextTryDuration = 30;
-            var result = this.findGoodTime(answer + nextTryDuration, globalEnd);
+            result = exports.findGoodTime(
+                answer + nextTryDuration, globalEnd, info);
             if (result.exist) {
                 answer = result.answer;
             }
 
             return result.exist;
-        },
-
-        findGoodTime: function (start, end) {
-            for (var timeNum = start; timeNum < end; ++timeNum) {
-                var timeInterval = exports.converter().toTimeInterval(
-                    { from: timeNum, to: timeNum + duration }, offset);
-                if (exports.isGoodTimeForAllGuys(timeInterval, schedule) &&
-                    exports.isGoodTimeForBank(timeInterval, bankWorkingIntervals)) {
-                    return { exist: true, answer: timeNum };
-                }
-            }
-
-            return { exist: false };
         }
     };
 };
