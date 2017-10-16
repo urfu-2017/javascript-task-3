@@ -101,9 +101,9 @@ exports.isGoodTimeForBank = function (timeInterval, bankWorkingIntervals) {
 };
 
 exports.findGoodTime = function (start, end, info) {
-    for (var timeNum = start; timeNum < end; ++timeNum) {
+    for (var timeNum = start; timeNum <= end; ++timeNum) {
         var timeInterval = exports.converter().toTimeInterval(
-            { from: timeNum, to: timeNum + info.duration }, 0);
+            { from: timeNum, to: timeNum + info.duration }, info.offset);
         if (exports.isGoodTimeForAllGuys(timeInterval, info.schedule) &&
             exports.isGoodTimeForBank(timeInterval, info.bankIntervals)) {
             return { exist: true, answer: timeNum };
@@ -173,8 +173,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             var nextTryDuration = 30;
-            result = exports.findGoodTime(
-                answer + nextTryDuration, globalEnd, info);
+            if (answer === undefined) {
+                return false;
+            }
+            result = exports.findGoodTime(answer + nextTryDuration, globalEnd, info);
             if (result.exist) {
                 answer = result.answer;
             }
