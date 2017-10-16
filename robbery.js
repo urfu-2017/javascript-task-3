@@ -186,9 +186,12 @@ function makeDateObj(time, banksTimeZone) {
     const day = getWeekDay(time.split(' ')[0]);
     const hrsAndMins = time.split(' ')[1];
     const currentTimeZone = time.split('+')[1];
+    const hours = getHours(hrsAndMins);
+    const minutes = getMinutes(hrsAndMins);
+    let timeDifference = currentTimeZone * HOURS_IN_MILLISECONDS -
+    banksTimeZone * HOURS_IN_MILLISECONDS;
 
-    return Date.UTC(YEAR, MONTH, day, getHours(hrsAndMins), getMinutes(hrsAndMins)) -
-    currentTimeZone * HOURS_IN_MILLISECONDS + banksTimeZone * HOURS_IN_MILLISECONDS;
+    return Date.UTC(YEAR, MONTH, day, hours, minutes) - timeDifference;
 }
 
 
