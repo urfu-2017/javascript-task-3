@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 let MINUTES_IN_HOUR = 60;
 let HOURS_IN_DAY = 24;
