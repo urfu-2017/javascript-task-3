@@ -196,6 +196,7 @@ function parseTime(time, flag) {
 function parseSchedule(schedulePeople, namePeople) {
     if (schedulePeople.length === 0) {
         addNormInterval(0, 72 * 60 - 1, namePeople);
+
         return;
     }
     for (let i = 0; i < schedulePeople.length; i++) {
@@ -246,7 +247,7 @@ function check(timeFrom, timeTo, name, intervalCh) {
         }
         if (timeFrom >= arr[i].from && timeFrom <= arr[i].to) {
             arr[i].to = timeTo;
-            
+
             return intervalCh;
         }
         if (timeTo <= arr[i].to && timeTo >= arr[i].from) {
