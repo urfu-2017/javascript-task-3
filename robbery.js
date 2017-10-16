@@ -13,6 +13,7 @@ const HOURS_IN_DAY = 24;
 const MINUTES_IN_HOUR = 60;
 const MINUTES_IN_WEEK = DAYS_IN_WEEK * HOURS_IN_DAY * MINUTES_IN_HOUR;
 const END_OF_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
+const HALF_AN_HOUR = 30;
 
 function getBankScheduleAndTimeZone(workingHours) {
     let [, hoursFrom, minutesFrom, zone] = workingHours.from.match(bankTimeFormat);
@@ -108,7 +109,6 @@ function getIntervals(timeline, duration) {
     return intervals;
 }
 
-
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -123,6 +123,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [bankTimeLine, robbersTimeLine] = getTimeLines(bankSchedule, generalSchedule);
     let timeline = getTimeLine(bankTimeLine, robbersTimeLine);
     let intervals = getIntervals(timeline, duration);
+    console.info(JSON.stringify(intervals));
+    let niceTime = intervals[0];
 
     return {
 
@@ -142,14 +144,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (intervals.length === 0) {
+            if (!this.exists()) {
                 return '';
             }
-            let startTimeInMinutes = intervals[0].from;
-            let mm = startTimeInMinutes % MINUTES_IN_HOUR;
-            let hh = ((startTimeInMinutes - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY;
-            let index = Math.floor(((startTimeInMinutes - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
-            let dd = Object.keys(DAYS_OF_THE_WEEK)[index];
+            let startMinute = niceTime.from;
+            let mm = startMinute % MINUTES_IN_HOUR;
+            let hh = ((startMinute - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY;
+            let dayNumber = Math.floor(((startMinute - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
+            let dd = Object.keys(DAYS_OF_THE_WEEK)[dayNumber];
             mm = ('0' + mm).slice(-2);
             hh = ('0' + hh).slice(-2);
 
@@ -165,6 +167,28 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (!this.exists()) {
+                return false;
+            }
+            intervals = intervals.filter(x => x.to - x.from >= duration);
+            if (intervals.length === 1 &&
+                (intervals[0].to - intervals[0].from - HALF_AN_HOUR < duration)) {
+                return false;
+            }
+
+            for (let i = 0; i < intervals.length; i++) {
+                intervals[i].from += HALF_AN_HOUR;
+                if (intervals[i].to - intervals[i].from >= duration) {
+                    niceTime = intervals[i];
+
+                    return true;
+                } else if (intervals[i + 1]) {
+                    niceTime = intervals[i + 1];
+
+                    return true;
+                }
+            }
+
             return false;
         }
     };
