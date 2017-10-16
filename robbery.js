@@ -125,7 +125,7 @@ function unionTimespans(timespans) {
         }
     }
     timespans.sort((a, b) => a.from - b.from);
-    timespans.slice(timespans.indexOf(undefined));
+    timespans.splice(timespans.indexOf(undefined));
 }
 
 function crossesWorkingHours(timespans, startWork, endWork) {
