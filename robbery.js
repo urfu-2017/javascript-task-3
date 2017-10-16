@@ -162,9 +162,23 @@ function parseDateStr(dateStr) {
     };
 }
 
-const addDay = ({ from, to }, day) => ({ from: `${day} ${from}`, to: `${day} ${to}` });
-const parseToDateObj = ({ from, to }) => ({ from: parseDateStr(from), to: parseDateStr(to) });
-const applyTimeZoneToDateObj = (timeZone, { from, to }) => ({
-    from: convertToTimeZone(from, timeZone),
-    to: convertToTimeZone(to, timeZone)
-});
+function addDay({ from, to }, day) {
+    return {
+        from: `${day} ${from}`,
+        to: `${day} ${to}`
+    };
+}
+
+function parseToDateObj({ from, to }) {
+    return {
+        from: parseDateStr(from),
+        to: parseDateStr(to)
+    };
+}
+
+function applyTimeZoneToDateObj(timeZone, { from, to }) {
+    return {
+        from: convertToTimeZone(from, timeZone),
+        to: convertToTimeZone(to, timeZone)
+    };
+}
