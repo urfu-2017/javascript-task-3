@@ -30,7 +30,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let available = reverseRanges(
         notAvailable,
         banksWorkingHous[0].from,
-        banksWorkingHous[2].to);
+        banksWorkingHous[2].to
+    );
     const timeForRobbery = intersectWithBanksTime(available, banksWorkingHous);
     let robberyRanges = findRangesForRobbery(timeForRobbery, duration);
 
@@ -91,13 +92,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 function findRangesForRobbery(available, duration) {
-    let rangesForRobbery = [];
-    for (let range of available) {
+    let rangesForRobbery = available.filter(function (range) {
         let difference = range.to - range.from;
-        if (difference >= (duration * MINUTES_TO_MILLISECONDS)) {
-            rangesForRobbery.push(range);
-        }
-    }
+
+        return difference >= (duration * MINUTES_TO_MILLISECONDS);
+    });
 
     return rangesForRobbery;
 }
@@ -109,7 +108,8 @@ function intersectWithBanksTime(available, banksWorkingHours) {
             return firstDate.from - secondDate.from;
         });
     let top = combinedRanges[0];
-    for (let i = 1; i < combinedRanges.length; i++) {
+    // currently have no idea how to rewrite this for cycle, later
+    combinedRanges.slice(1).forEach(function (range, i) {
         if (!areIntersected(top, combinedRanges[i])) {
             top = combinedRanges[i];
         } else if (top.to < combinedRanges[i].to) {
@@ -124,7 +124,7 @@ function intersectWithBanksTime(available, banksWorkingHours) {
                 to: combinedRanges[i].to
             });
         }
-    }
+    });
 
     return intersected;
 }
@@ -132,11 +132,12 @@ function intersectWithBanksTime(available, banksWorkingHours) {
 function reverseRanges(ranges, from, to) {
     let reversed = [];
     let start = from;
-    for (let range of ranges) {
+
+    ranges.forEach(function (range) {
         let reversedRange = { from: start, to: range.from };
-        reversed.push(reversedRange);
         start = range.to;
-    }
+        reversed.push(reversedRange);
+    });
     reversed.push({ from: start, to: to });
 
     return reversed;
@@ -170,14 +171,14 @@ function areIntersected(firstRange, secondRange) {
 
 function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
-    for (let robber of Object.keys(schedule)) {
-        for (let occupiedTime of schedule[robber]) {
+    Object.keys(schedule).forEach(function (robber) {
+        schedule[robber].forEach(function (occupiedTime) {
             allSchedule.push({
                 from: makeDateObj(occupiedTime.from, banksTimeZone),
                 to: makeDateObj(occupiedTime.to, banksTimeZone)
             });
-        }
-    }
+        });
+    });
 
     return allSchedule;
 }
@@ -201,6 +202,12 @@ function getHours(time) {
 }
 
 function getWeekDay(currentDay) {
+    // brakes for some reason think about it later
+    // weekDays.forEach(function (weekDay) {
+    //     if (currentDay === weekDay) {
+    //         return weekDays.indexOf(currentDay) + 1;
+    //     }
+    // });
     for (let weekDay of weekDays) {
         if (currentDay === weekDay) {
             return weekDays.indexOf(currentDay) + 1;
@@ -213,15 +220,15 @@ function createDateForBank(day, hours, minutes) {
 }
 
 function getDatesForBank(workingHours, timeZone) {
-    let datesArray = [];
-    for (let i = 0; i < 3; i++) {
-        let dateFrom = createDateForBank(i + 1, getHours(workingHours.from),
+    let datesArray = weekDays.map(function (day, idx) {
+        let dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
             getMinutes(workingHours.from), timeZone);
-        let dateTo = createDateForBank(i + 1, getHours(workingHours.to),
+        let dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
             getMinutes(workingHours.to), timeZone);
         const date = { from: dateFrom, to: dateTo };
-        datesArray.push(date);
-    }
+
+        return date;
+    });
 
     return datesArray;
 }
