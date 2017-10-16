@@ -1,8 +1,8 @@
 'use strict';
 
-var robbery = require('./robbery');
+let robbery = require('./robbery');
 
-var gangSchedule = {
+let gangSchedule = {
     Danny: [
         { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
         { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
@@ -18,20 +18,20 @@ var gangSchedule = {
     ]
 };
 
-var bankWorkingHours = {
+let bankWorkingHours = {
     from: '10:00+5',
     to: '18:00+5'
 };
 
 // Время не существует
-var longMoment = robbery.getAppropriateMoment(gangSchedule, 121, bankWorkingHours);
+let longMoment = robbery.getAppropriateMoment(gangSchedule, 121, bankWorkingHours);
 
 // Выведется false и ""
 console.info(longMoment.exists());
 console.info(longMoment.format('Метим на %DD, старт в %HH:%MM!'));
 
 // Время существует
-var moment = robbery.getAppropriateMoment(gangSchedule, 90, bankWorkingHours);
+let moment = robbery.getAppropriateMoment(gangSchedule, 90, bankWorkingHours);
 
 // Выведется true и "Метим на ВТ, старт в 11:30!"
 console.info(moment.exists());

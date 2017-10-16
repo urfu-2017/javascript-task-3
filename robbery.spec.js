@@ -1,9 +1,28 @@
 /* eslint-env mocha */
 'use strict';
 
-var assert = require('assert');
+let assert = require('assert');
 
-var robbery = require('./robbery');
+let robbery = require('./robbery');
+
+describe('robbery.convertTime()', function () {
+    it('should give the correct time', function () {
+        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 6), 'ВТ 00:59+6');
+        assert.strictEqual(robbery.convertTime('ЧТ 05:59+24', 1), 'СР 06:59+1');
+        assert.strictEqual(robbery.convertTime('ВС 22:59+1', 2), 'ВС 23:59+2');
+        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 3), 'ПН 21:59+3');
+        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 5), 'ПН 23:59+5');
+    });
+});
+
+describe('robbery.less()', function () {
+    it('should be ok', function () {
+        assert.strictEqual(robbery.less('ПН 11:30+5', 'ПН 12:00+5'), true);
+        assert.strictEqual(robbery.less('ПН 23:00+5', 'ВТ 23:59+5'), true);
+        assert.strictEqual(robbery.less('ПН 23:59+5', 'ПН 00:59+5'), false);
+        assert.strictEqual(robbery.less('СР 23:59+5', 'ВТ 00:59+5'), false);
+    });
+});
 
 describe('robbery.getAppropriateMoment()', function () {
     function getMomentFor(time) {
@@ -29,7 +48,7 @@ describe('robbery.getAppropriateMoment()', function () {
     }
 
     it('должен форматировать существующий момент', function () {
-        var moment = getMomentFor(90);
+        let moment = getMomentFor(90);
 
         assert.ok(moment.exists());
         assert.strictEqual(
@@ -39,7 +58,7 @@ describe('robbery.getAppropriateMoment()', function () {
     });
 
     it('должен вернуть пустую строку при форматировании несуществующего момента', function () {
-        var moment = getMomentFor(121);
+        let moment = getMomentFor(121);
 
         assert.ok(!moment.exists());
         assert.strictEqual(
@@ -50,7 +69,7 @@ describe('robbery.getAppropriateMoment()', function () {
 
     if (robbery.isStar) {
         it('должен перемещаться на более поздний момент [*]', function () {
-            var moment = getMomentFor(90);
+            let moment = getMomentFor(90);
 
             assert.ok(moment.tryLater());
             assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 16:00');
@@ -63,7 +82,7 @@ describe('robbery.getAppropriateMoment()', function () {
         });
 
         it('не должен сдвигать момент, если более позднего нет [*]', function () {
-            var moment = getMomentFor(90);
+            let moment = getMomentFor(90);
 
             assert.ok(moment.tryLater());
             assert.ok(moment.tryLater());
