@@ -46,8 +46,8 @@ function getPossibleIntervals(workingHours, robberyInterval) {
  * @returns {Array} - интервалы незанятости грабителей
  */
 function getThievesFreedomIntervals(schedule, baseTimezone) {
-    let thiefsBusyIntervals = Object.keys(schedule).reduce(function (intervals, name) {
-        let thiefBusyIntervals = schedule[name].map(function (interval) {
+    let thievesBusyIntervals = Object.keys(schedule).reduce((intervals, name) => {
+        let thiefBusyIntervals = schedule[name].map((interval) => {
             const [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
             const [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
             const timeDifference = baseTimezone - timezone;
@@ -59,9 +59,45 @@ function getThievesFreedomIntervals(schedule, baseTimezone) {
 
         return intervals.concat(thiefBusyIntervals);
     }, []);
-    let combinedThiefIntervals = combineIntervals(thiefsBusyIntervals);
+    let combinedThiefIntervals = combineIntervals(thievesBusyIntervals);
 
     return invertTimeIntervals(combinedThiefIntervals);
+}
+
+/**
+ * Получение пересечения интервалов работы банка и незанятости воров
+ * @param {Array} bankIntervals
+ * @param {Array} thievesIntervals
+ * @returns {Array}
+ */
+function getIntervalsIntersection(bankIntervals, thievesIntervals) {
+    let intervalIntersections = bankIntervals.reduce((intersections, bankInterval) => {
+        return intersections.concat(findIntersections(bankInterval, thievesIntervals));
+    }, []);
+
+    return combineIntervals(intervalIntersections);
+}
+
+/**
+ * Получение пересечения интервала с множеством интервалов
+ * @param {Object} baseInterval
+ * @param {Number} baseInterval.from – Время открытия интервала
+ * @param {Number} baseInterval.to – Время закрытия интервала
+ * @param {Array} intervals
+ * @returns {Array}
+ */
+function findIntersections(baseInterval, intervals) {
+    return intervals.reduce((intersections, interval) => {
+        if (!(baseInterval.from > interval.to && baseInterval.from > interval.from ||
+            baseInterval.to < interval.from && baseInterval.to < interval.to)) {
+            intersections.push({
+                from: Math.max(baseInterval.from, interval.from),
+                to: Math.min(baseInterval.to, interval.to)
+            });
+        }
+
+        return intersections;
+    }, []);
 }
 
 /**
@@ -101,8 +137,8 @@ function combineIntervals(intervals) {
     for (let i = 0; i < sortedIntervals.length; i++) {
         const current = sortedIntervals[i];
         const overlappingIntervals = sortedIntervals
-            .filter(x => current.from <= x.from && x.from <= current.to + 1);
-        const intervalsBorder = Math.max(...overlappingIntervals.map(x => x.to));
+            .filter(other => current.from <= other.from && other.from <= current.to + 1);
+        const intervalsBorder = Math.max(...overlappingIntervals.map(interval => interval.to));
         combinedIntervals.push({ from: current.from, to: intervalsBorder });
         i += overlappingIntervals.length - 1;
     }
@@ -117,7 +153,7 @@ function combineIntervals(intervals) {
  */
 function invertTimeIntervals(intervals) {
     let previousEndPos = -Infinity;
-    let invertedIntervals = intervals.map(function (interval) {
+    let invertedIntervals = intervals.map((interval) => {
         const invertedInterval = { from: previousEndPos, to: interval.from - 1 };
         previousEndPos = interval.to;
 
@@ -126,42 +162,6 @@ function invertTimeIntervals(intervals) {
     invertedIntervals.push({ from: previousEndPos, to: Infinity });
 
     return invertedIntervals;
-}
-
-/**
- * Получение пересечения интервалов работы банка и незанятости воров
- * @param {Array} bankIntervals
- * @param {Array} thiefIntervals
- * @returns {Array}
- */
-function getIntervalsIntersection(bankIntervals, thiefIntervals) {
-    let intervalIntersections = bankIntervals.reduce(function (intersections, bankInterval) {
-        return intersections.concat(findIntersections(bankInterval, thiefIntervals));
-    }, []);
-
-    return combineIntervals(intervalIntersections);
-}
-
-/**
- * Получение пересечения интервала с множеством интервалов
- * @param {Object} baseInterval
- * @param {Number} baseInterval.from – Время открытия интервала
- * @param {Number} baseInterval.to – Время закрытия интервала
- * @param {Array} intervals
- * @returns {Array}
- */
-function findIntersections(baseInterval, intervals) {
-    return intervals.reduce(function (intersections, interval) {
-        if (!(baseInterval.from > interval.to && baseInterval.from > interval.from ||
-            baseInterval.to < interval.from && baseInterval.to < interval.to)) {
-            intersections.push({
-                from: Math.max(baseInterval.from, interval.from),
-                to: Math.min(baseInterval.to, interval.to)
-            });
-        }
-
-        return intersections;
-    }, []);
 }
 
 /**
