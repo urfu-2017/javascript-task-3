@@ -1,6 +1,7 @@
 'use strict';
 
-const weekDays = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const BANK_WORKING_DAYS = ['ПН', 'ВТ', 'СР'];
 
 /**
  * Сделано задание на звездочку
@@ -20,20 +21,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
 
     const addDay = ({ from, to }, day) => ({ from: `${day} ${from}`, to: `${day} ${to}` });
-    const parseAll = ({ from, to }) => ({ from: parseDate(from), to: parseDate(to) });
-    const convertAll = (timeZone, { from, to }) => ({
-        from: convertTimeZone(from, timeZone),
-        to: convertTimeZone(to, timeZone)
+    const parseToDateObj = ({ from, to }) => ({ from: parseDateStr(from), to: parseDateStr(to) });
+    const applyTimeZoneToDateObj = (timeZone, { from, to }) => ({
+        from: convertToTimeZone(from, timeZone),
+        to: convertToTimeZone(to, timeZone)
     });
 
-    const bankWorkTime = ['ПН', 'ВТ', 'СР']
+    const bankWorkTime = BANK_WORKING_DAYS
         .map(addDay.bind(null, workingHours))
-        .map(parseAll);
+        .map(parseToDateObj);
 
     const parsedSchedule = Object.keys(schedule)
-        .reduce((array, name) => array.concat(schedule[name]), [])
-        .map(parseAll)
-        .map(convertAll.bind(null, bankWorkTime[0].from.timeZone));
+        .reduce((flatSchedule, name) => flatSchedule.concat(schedule[name]), [])
+        .map(parseToDateObj)
+        .map(applyTimeZoneToDateObj.bind(null, bankWorkTime[0].from.timeZone));
 
     let result = findFrom(0, parsedSchedule, duration, bankWorkTime);
 
@@ -64,14 +65,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             const day = parseInt((result.time - timeInMinutes) / (24 * 60));
             const hours = parseInt((timeInMinutes - minutes) / 60);
 
-            const minsStr = minutes < 10 ? '0' + minutes.toString() : minutes;
+            const minutesStr = minutes < 10 ? '0' + minutes.toString() : minutes;
             const hoursStr = hours < 10 ? '0' + hours.toString() : hours;
 
-            let formatedStr = template.replace('%HH', hoursStr);
-            formatedStr = formatedStr.replace('%MM', minsStr);
-            formatedStr = formatedStr.replace('%DD', weekDays[day]);
-
-            return formatedStr;
+            return template
+                .replace('%HH', hoursStr)
+                .replace('%MM', minutesStr)
+                .replace('%DD', WEEK_DAYS[day]);
         },
 
         /**
@@ -94,34 +94,47 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
+/**
+ * Находим возможный промежуток времени для ограбления, начиная с указанного времени
+ * @param {Number} fromTime - время в минутах с которого начинаем поиск
+ * @param {Array} schedule - промежутки занятности
+ * @param {Number} duration - необходимое для ограбления время
+ * @param {Array} workingHours - промежутки рабоы банка
+ * @returns {{success: boolean, time: number}}
+ */
 function findFrom(fromTime, schedule, duration, workingHours) {
-    let result = false;
-    let time = 0;
+    const maxTime = 24 * 60 * BANK_WORKING_DAYS.length;
 
-    for (let i = fromTime; i < 24 * 60 * 3; i++) {
+    for (let currentTime = fromTime; currentTime < maxTime; currentTime++) {
         const isFreeTime = schedule.filter(({ from, to }) =>
-            (i < from.time && i + duration <= from.time) ||
-            (i >= to.time && i + duration >= to.time)
+            (currentTime < from.time && currentTime + duration <= from.time) ||
+            (currentTime >= to.time && currentTime + duration >= to.time)
         ).length === schedule.length;
 
-        const isWorkTime = workingHours.filter(({ from, to }) =>
-            i >= from.time && i + duration <= to.time
+        const isWorkTime = workingHours.filter(
+            ({ from, to }) => currentTime >= from.time && currentTime + duration <= to.time
         ).length >= 1;
 
         if (isFreeTime && isWorkTime) {
-            time = i;
-            result = true;
-            break;
+            return {
+                success: true,
+                time: currentTime
+            };
         }
     }
 
     return {
-        success: result,
-        time: time
+        success: false,
+        time: 0
     };
 }
 
-function convertTimeZone(time, timeZone) {
+/**
+ * @param {Number} time - время в минутах
+ * @param {Number} timeZone - необходимый часовой пояс
+ * @returns {{time: *, timeZone: *}}
+ */
+function convertToTimeZone(time, timeZone) {
     const timeDiff = timeZone - time.timeZone;
 
     return {
@@ -130,12 +143,19 @@ function convertTimeZone(time, timeZone) {
     };
 }
 
-function parseDate(dateStr) {
+/**
+ * Получам объект содержащий информацию о дате
+ * @param {String} dateStr - строка содержащая время в формате "XX YY:ZZ+N". Например "ПТ 13:30+4".
+ * @returns {{time: *, timeZone: Number}}
+ * time - время в минутах
+ * timeZone - часовой пояс
+ */
+function parseDateStr(dateStr) {
     const dateArray = dateStr.split(' ');
     const fullTime = dateArray[1];
     const [timeStr, timeZone] = fullTime.split('+');
     const [hours, minutes] = timeStr.split(':').map(x => parseInt(x));
-    const dayIndex = weekDays.indexOf(dateArray[0]);
+    const dayIndex = WEEK_DAYS.indexOf(dateArray[0]);
 
     return {
         time: hours * 60 + minutes + 24 * 60 * dayIndex,
