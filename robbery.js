@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -16,18 +16,21 @@ exports.isStar = false;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let answer = 0;
+    let answers = [];
     if (isDataCorrect(schedule, duration, workingHours)) {
         let DannyBusyTime = timeWhenSomeoneIsBusy(schedule.Danny);
         let RustyBusyTime = timeWhenSomeoneIsBusy(schedule.Rusty);
         let LinusBusyTime = timeWhenSomeoneIsBusy(schedule.Linus);
         let workTime = workingHoursToMinutes(workingHours);
-        let DannyFreeTimes = timeWhenSomeoneIsFree(DannyBusyTime, workTime, duration);
-        let RustyFreeTimes = timeWhenSomeoneIsFree(RustyBusyTime, workTime, duration);
-        let LinusFreeTimes = timeWhenSomeoneIsFree(LinusBusyTime, workTime, duration);
-        answer = canTheyThief(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes, duration);
+        let DannyFreeTimes = timeWhenSomeoneIsFree(DannyBusyTime, workTime, duration, workingHours);
+        let RustyFreeTimes = timeWhenSomeoneIsFree(RustyBusyTime, workTime, duration, workingHours);
+        let LinusFreeTimes = timeWhenSomeoneIsFree(LinusBusyTime, workTime, duration, workingHours);
+
+        answers = canTheyThief(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes, duration);
+
+
     } else {
-        answer = -1;
+        answers = [];
     }
 
     return {
@@ -37,7 +40,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (answer !== -1) {
+            if (answers.length !== 0) {
                 return true;
             }
 
@@ -52,12 +55,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (answer !== -1) {
-                let arr = minutesToData(answer, workingHours);
+            if (answers.length !== 0) {
+                let [day, hour, minute] = minutesToData(answers[0][0], workingHours);
+                if (minute === '0') {
+                    minute += '0';
+                }
+                if (hour === '0') {
+                    hour += '0';
+                }
 
-                return template.replace('%DD', arr[0])
-                    .replace('%HH', arr[1])
-                    .replace('%MM', arr[2]);
+                return template.replace('%DD', day)
+                    .replace('%HH', hour)
+                    .replace('%MM', minute);
             }
 
             return '';
@@ -69,10 +78,27 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            return tryToFindLaterTimeline(answers, duration);
         }
     };
 };
+
+function tryToFindLaterTimeline(answers, duration) {
+    for (let i = 0; i < answers.length; i++) {
+        if (answers[i][0] >= answers[0][0] + 30 && answers[i][1] - answers[i][0] >= duration) {
+            answers[0] = answers[i];
+
+            return true;
+        }
+        if (answers[i][0] < answers[0][0] + 30 && answers[0][1] - answers[0][0] - 30 >= duration) {
+            answers[0][0] += 30;
+
+            return true;
+        }
+    }
+
+    return false;
+}
 
 function isDataCorrect(schedule, duration, workingHours) {
     return typeof (schedule) === 'object' && duration >= 0 &&
@@ -81,17 +107,17 @@ function isDataCorrect(schedule, duration, workingHours) {
 
 function minutesToData(minutes, workingHours) {
     let day = 'ПН';
-    let hour = Math.floor(minutes / 60) + workingHours.to.slice(9, 10);
-    let minute = minutes % 60;
+    let hour = String(Math.floor(minutes / 60) + workingHours.to.slice(9, 10));
+    let minute = String(minutes % 60);
     if (Math.floor(minutes / 24 / 60) === 1) {
         day = 'ВТ';
-        hour = Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 7));
-        minute = minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60;
+        hour = String(Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 7)));
+        minute = String(minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60);
     }
     if (Math.floor(minutes / 24 / 60) === 2) {
         day = 'СР';
-        hour = Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 7));
-        minute = minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60;
+        hour = String(Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 7)));
+        minute = String(minutes - 48 * 60 - Math.floor((minutes - 48 * 60) / 60) * 60);
     }
 
     return [day, hour, minute];
@@ -99,15 +125,16 @@ function minutesToData(minutes, workingHours) {
 
 function canTheyThief(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes, duration) {
     let intersection = [];
+    let answers = [];
     while (DannyFreeTimes.length > 0 && RustyFreeTimes.length > 0 && LinusFreeTimes.length > 0) {
         intersection = intersect(DannyFreeTimes[0], RustyFreeTimes[0], LinusFreeTimes[0]);
         getManWithEarliestTimeline(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes).shift();
         if (intersection[1] - intersection[0] >= duration) {
-            return intersection[0];
+            answers.push(intersection);
         }
     }
 
-    return -1;
+    return answers;
 }
 
 function intersect(timeline1, timeline2, timeline3) {
@@ -129,10 +156,16 @@ function getManWithEarliestTimeline(DannyFreeTimes, RustyFreeTimes, LinusFreeTim
     return LinusFreeTimes;
 }
 
-function timeWhenSomeoneIsFree(someoneSchedule, workTimes, duration) {
+function timeWhenSomeoneIsFree(someoneSchedule, workTimes, duration, workingHours) {
     let freeTimes = [];
     for (let workTime of workTimes) {
         getTimeToThief(workTime, someoneSchedule, duration, freeTimes);
+    }
+    if (freeTimes.length !== 0) {
+        freeTimes.push([Math.max(freeTimes[freeTimes.length - 1][1],
+            someoneSchedule[someoneSchedule.length - 1][1]),
+        48 * 60 + partWorkingHoursToMinutes(workingHours.to) -
+        Number(workingHours.to.slice(6, 7)) * 60]);
     }
 
     return freeTimes;
@@ -160,6 +193,7 @@ function getTimeToThief(workTime, someoneSchedule, duration, freeTimes) {
 
     return freeTimes;
 }
+
 
 function itemInArray(time, array) {
     for (let item of array) {
@@ -208,6 +242,11 @@ function right(timeline, workTime, duration) {
     if (timeline[0] >= workTime[0] && timeline[1] >= workTime[1] && timeline[0] <= workTime[1]) {
         if (timeline[0] - workTime[0] >= duration) {
             return [workTime[0], timeline[0]];
+        }
+    }
+    if (timeline[0] <= workTime[0] && timeline[1] >= workTime[1]) {
+        if (workTime[1] - workTime[0] >= duration) {
+            return [workTime[0], workTime[1]];
         }
     }
 
@@ -259,3 +298,4 @@ function partOfNoteToMinutes(part) {
 
     return ours * 60 + minutes - timezone * 60;
 }
+
