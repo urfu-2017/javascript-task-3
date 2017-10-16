@@ -11,6 +11,10 @@ const MONTH = 0;
 const MINUTES_TO_MILLISECONDS = 60000;
 const HOURS_IN_MILLISECONDS = 60 * 60000;
 const weekDays = ['ПН', 'ВТ', 'СР'];
+const areIntersected = (firstRange, secondRange) => firstRange.to >= secondRange.from;
+const getBanksTimeZone = banksTime => banksTime.split('+')[1];
+const createDateForBank = (day, hours, minutes) => Date.UTC(YEAR, MONTH, day, hours, minutes);
+const getHours = (time) => Number(time.split(':')[0]);
 
 
 /**
@@ -164,11 +168,6 @@ function mergeRanges(ranges) {
     return result;
 }
 
-
-function areIntersected(firstRange, secondRange) {
-    return firstRange.to >= secondRange.from;
-}
-
 function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
     Object.keys(schedule).forEach((robber) => {
@@ -197,9 +196,6 @@ function getMinutes(time) {
     return Number(time.split(':')[1].split('+')[0]);
 }
 
-function getHours(time) {
-    return Number(time.split(':')[0]);
-}
 
 function getWeekDay(currentDay) {
     // brakes for some reason think about it later
@@ -215,9 +211,6 @@ function getWeekDay(currentDay) {
     }
 }
 
-function createDateForBank(day, hours, minutes) {
-    return Date.UTC(YEAR, MONTH, day, hours, minutes);
-}
 
 function getDatesForBank(workingHours, timeZone) {
     let datesArray = weekDays.map((day, idx) => {
@@ -232,8 +225,3 @@ function getDatesForBank(workingHours, timeZone) {
 
     return datesArray;
 }
-
-function getBanksTimeZone(banksTime) {
-    return banksTime.split('+')[1];
-}
-
