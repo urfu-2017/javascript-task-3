@@ -16,14 +16,19 @@ exports.isStar = false;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let DannyBusyTime = timeWhenSomeoneIsBusy(schedule.Danny);
-    let RustyBusyTime = timeWhenSomeoneIsBusy(schedule.Rusty);
-    let LinusBusyTime = timeWhenSomeoneIsBusy(schedule.Linus);
-    let workTime = workingHoursToMinutes(workingHours);
-    let DannyFreeTimes = timeWhenSomeoneIsFree(DannyBusyTime, workTime, duration);
-    let RustyFreeTimes = timeWhenSomeoneIsFree(RustyBusyTime, workTime, duration);
-    let LinusFreeTimes = timeWhenSomeoneIsFree(LinusBusyTime, workTime, duration);
-    let answer = canTheyThief(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes, duration);
+    let answer = 0;
+    if (isDataCorrect(schedule, duration, workingHours)) {
+        let DannyBusyTime = timeWhenSomeoneIsBusy(schedule.Danny);
+        let RustyBusyTime = timeWhenSomeoneIsBusy(schedule.Rusty);
+        let LinusBusyTime = timeWhenSomeoneIsBusy(schedule.Linus);
+        let workTime = workingHoursToMinutes(workingHours);
+        let DannyFreeTimes = timeWhenSomeoneIsFree(DannyBusyTime, workTime, duration);
+        let RustyFreeTimes = timeWhenSomeoneIsFree(RustyBusyTime, workTime, duration);
+        let LinusFreeTimes = timeWhenSomeoneIsFree(LinusBusyTime, workTime, duration);
+        answer = canTheyThief(DannyFreeTimes, RustyFreeTimes, LinusFreeTimes, duration);
+    } else {
+        answer = -1;
+    }
 
     return {
 
@@ -68,6 +73,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
+
+function isDataCorrect(schedule, duration, workingHours) {
+    return typeof (schedule) === 'object' && duration >= 0 &&
+        duration < 24 * 60 && typeof (workingHours) === 'object';
+}
 
 function minutesToData(minutes, workingHours) {
     let day = 'ПН';
