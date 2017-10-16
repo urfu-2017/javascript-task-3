@@ -15,7 +15,78 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+    let [hours, minutes, timezone] = workingHours.from.split(/:|\+/).map(x=> Number(x));
+    
+    let danny = schedule.Danny;
+    let rusty = schedule.Rusty;
+    let linus = schedule.Linus;
+
+    let s1 = danny.filter(x => x.from.includes('ПН'))
+        .map(function (x) {
+            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            let timezoneDiff = timezone - timezoneFrom;
+
+            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            timezoneDiff = timezone - timezoneFrom;
+            if (x.to.substring(0, 2) !== 'ПН') {
+                hoursTo = hours;
+                minutesTo = minutes;
+            }
+
+            return {
+                hoursFrom: hoursFrom - timezoneDiff,
+                minutesFrom: minutesFrom,
+                hoursTo: hoursTo,
+                minutesTo: minutesTo
+            };
+        });
+    let s2 = rusty.filter(x => x.from.includes('ПН'))
+        .map(function (x) {
+            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            let timezoneDiff = timezone - timezoneFrom;
+
+            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            timezoneDiff = timezone - timezoneFrom;
+            if (x.to.substring(0, 2) !== 'ПН') {
+                    hoursTo = hours;
+                    minutesTo = minutes;
+                }
+    
+                return {
+                    hoursFrom: hoursFrom - timezoneDiff,
+                    minutesFrom: minutesFrom,
+                    hoursTo: hoursTo,
+                    minutesTo: minutesTo
+                };
+            });
+
+    let s3 = linus.filter(x => x.from.includes('ПН'))
+        .map(function (x) {
+            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            let timezoneDiff = timezone - timezoneFrom;
+
+            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
+                .map(y => Number(y));
+            timezoneDiff = timezone - timezoneFrom;
+            if (x.to.substring(0, 2) !== 'ПН') {
+                hoursTo = hours;
+                minutesTo = minutes;
+            }
+
+            return {
+                hoursFrom: hoursFrom - timezoneDiff,
+                minutesFrom: minutesFrom,
+                hoursTo: hoursTo,
+                minutesTo: minutesTo
+            };
+        });
+
+    let rez = s1.concat(s2).concat(s3);
 
     return {
 
