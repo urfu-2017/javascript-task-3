@@ -170,9 +170,6 @@ function parseData(schedule, workingHours) {
     parseSchedule(schedule.Danny, 'Danny');
     parseSchedule(schedule.Rusty, 'Rusty');
     parseSchedule(schedule.Linus, 'Linus');
-    interpretatorIntervals('Danny');
-    interpretatorIntervals('Rusty');
-    interpretatorIntervals('Linus');
 }
 
 function parseTime(time, flag) {
@@ -197,6 +194,10 @@ function parseTime(time, flag) {
 }
 
 function parseSchedule(schedulePeople, namePeople) {
+    if (schedulePeople.length === 0) {
+        addNormInterval(0, 72 * 60 - 1, namePeople);
+        return;
+    }
     for (let i = 0; i < schedulePeople.length; i++) {
         let dayWeekFrom = schedulePeople[i].from.split(' ');
         let dayWeekTo = schedulePeople[i].to.split(' ');
@@ -208,6 +209,7 @@ function parseSchedule(schedulePeople, namePeople) {
         timeTo = timeWithWeek(timeTo, dayWeekTo[0]);
         linkage(timeFrom, timeTo, namePeople);
     }
+    interpretatorIntervals(namePeople);
 }
 
 function timeWithWeek(time, dayWeek) {
@@ -228,9 +230,35 @@ function timeWithWeek(time, dayWeek) {
 
 function linkage(timeFrom, timeTo, name) {
     let intervalTimePeople = Object.create(intervalTime);
-    intervalTimePeople.from = timeFrom;
-    intervalTimePeople.to = timeTo;
+    intervalTimePeople = check (timeFrom, timeTo, name, intervalTimePeople);
     busyTime[name].push(intervalTimePeople);
+}
+
+function check(timeFrom, timeTo, name, intervalCh) {
+    let arr = busyTime[name];
+    for (let i = 0; i < arr.length; i++) {
+        if (timeFrom >= arr[i].from && timeTo <= arr[i].to ||
+            timeFrom <= arr[i].from && timeTo >= arr[i].to) {
+            arr[i].from = Math.min(timeFrom, arr[i].from);
+            arr[i].to = Math.max(timeTo, arr[i].to);
+
+            return intervalCh;
+        }
+        if (timeFrom >= arr[i].from && timeFrom <= arr[i].to) {
+            arr[i].to = timeTo;
+            
+            return intervalCh;
+        }
+        if (timeTo <= arr[i].to && timeTo >= arr[i].from) {
+            arr[i].from = timeFrom;
+
+            return intervalCh;
+        }
+    }
+    intervalCh.from = timeFrom;
+    intervalCh.to = timeTo;
+
+    return intervalCh;
 }
 
 function interpretatorIntervals(name) {
