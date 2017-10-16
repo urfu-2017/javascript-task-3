@@ -7,7 +7,8 @@
 exports.isStar = true;
 const DAY_TO_INT = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
 const TRY_LATER_TIME = 30;
-
+const ROBBERY_START_DAY = 'ПН';
+const ROBBERY_END_DAY = 'СР';
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -20,16 +21,17 @@ const TRY_LATER_TIME = 30;
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let data = {};
+    const data = {};
+    const robberyInterval = { from: ROBBERY_START_DAY, to: ROBBERY_END_DAY };
 
-    let [bankOpenIntervals, baseTimezone] = parseBankOpenIntervals(workingHours);
-    let thiefBusyIntervals = parseThiefBusyIntervals(schedule, baseTimezone);
-    let disjointThiefIntervals = combineIntervals(thiefBusyIntervals);
-    let thiefReadinessIntervals = invertTimeIntervals(disjointThiefIntervals);
+    const [robberyIntervals, timezone] = getPossibleRobberyIntervals(workingHours, robberyInterval);
+    const thiefBusyIntervals = getThiefBusyIntervals(schedule, timezone);
+    const disjointThiefIntervals = combineIntervals(thiefBusyIntervals);
+    const thiefReadinessIntervals = invertTimeIntervals(disjointThiefIntervals);
 
-    data.possibleIntervals = getIntervalsIntersection(bankOpenIntervals, thiefReadinessIntervals);
-    data.satisfyingIntervals = data.possibleIntervals.filter(x=>x.end - x.start + 1 >= duration);
-    data.intervalIndex = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
+    data.possibleIntervals = getIntervalsIntersection(robberyIntervals, thiefReadinessIntervals);
+    data.satisfyingIntervals = data.possibleIntervals.filter(x=>x.to - x.from + 1 >= duration);
+    data.intervalIndex = data.satisfyingIntervals.findIndex(x=>x.to - x.from + 1 >= duration);
 
     return {
 
@@ -49,14 +51,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            let searchResult = data.satisfyingIntervals[data.intervalIndex];
+            const searchResult = data.satisfyingIntervals[data.intervalIndex];
             if (!searchResult) {
                 return '';
             }
-            let time = searchResult.start;
-            let days = Math.floor(time / (24 * 60));
-            let hours = Math.floor((time - days * 24 * 60) / 60);
-            let minutes = time - days * 24 * 60 - hours * 60;
+            const time = searchResult.from;
+            const days = Math.floor(time / (24 * 60));
+            const hours = Math.floor((time - days * 24 * 60) / 60);
+            const minutes = time - days * 24 * 60 - hours * 60;
 
             return template
                 .replace(/%DD/, Object.keys(DAY_TO_INT).find(key => DAY_TO_INT[key] === days))
@@ -73,14 +75,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (data.intervalIndex < 0) {
                 return false;
             }
-            data.satisfyingIntervals[data.intervalIndex].start += TRY_LATER_TIME;
-            let nextItem = data.satisfyingIntervals.findIndex(x=>x.end - x.start + 1 >= duration);
+            data.satisfyingIntervals[data.intervalIndex].from += TRY_LATER_TIME;
+            const nextItem = data.satisfyingIntervals.findIndex(x=>x.to - x.from + 1 >= duration);
             if (nextItem >= 0) {
                 data.intervalIndex = nextItem;
 
                 return true;
             }
-            data.satisfyingIntervals[data.intervalIndex].start -= TRY_LATER_TIME;
+            data.satisfyingIntervals[data.intervalIndex].from -= TRY_LATER_TIME;
 
             return false;
         }
@@ -88,22 +90,28 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 /**
- * Возвращает интервалы работы банка и его временную зону
+ * Возвращает интервалы, в которые возможно совершить ограбления банка
  * @param {Array} workingHours
- * @returns {Array} - интервалы работы банка
+ * @param {Object} robberyInterval - Пределы ограбления
+ * @param {String} robberyInterval.from – Время открытия интервала ограбления
+ * @param {String} robberyInterval.to – Время закрытия интервала ограбления
+ * @returns {Array} - интервалы ограбления банка
  * @returns {Number} - временная зона банка
  */
-function parseBankOpenIntervals(workingHours) {
+function getPossibleRobberyIntervals(workingHours, robberyInterval) {
     let intervals = [];
-    let [hoursFrom, minutesFrom, bankTimezone] = parseTime(workingHours.from);
-    let [hoursTo, minutesTo] = parseTime(workingHours.to);
-    for (var weekDayNumber = 0; weekDayNumber < 3; weekDayNumber++) {
-        let UTCStartTime = (hoursFrom + 24 * weekDayNumber) * 60 + minutesFrom;
-        let UTCEndsTime = (hoursTo + 24 * weekDayNumber) * 60 + minutesTo - 1;
-        intervals.push({ start: UTCStartTime, end: UTCEndsTime });
+    const [hoursFrom, minutesFrom, baseTimezone] = parseTime(workingHours.from);
+    const [hoursTo, minutesTo] = parseTime(workingHours.to);
+    const startDay = robberyInterval.from;
+    const endDay = robberyInterval.to;
+
+    for (let dayNumber = DAY_TO_INT[startDay]; dayNumber <= DAY_TO_INT[endDay]; dayNumber++) {
+        const from = (hoursFrom + 24 * dayNumber) * 60 + minutesFrom;
+        const to = (hoursTo + 24 * dayNumber) * 60 + minutesTo - 1;
+        intervals.push({ from, to });
     }
 
-    return [intervals, bankTimezone];
+    return [intervals, baseTimezone];
 }
 
 /**
@@ -112,19 +120,19 @@ function parseBankOpenIntervals(workingHours) {
  * @param {Number} baseTimezone
  * @returns {Array} - интервалы занятости грабителей
  */
-function parseThiefBusyIntervals(schedule, baseTimezone) {
+function getThiefBusyIntervals(schedule, baseTimezone) {
     let intervals = [];
-    for (var thiefIntervals in schedule) {
+    for (let thiefIntervals in schedule) {
         if (!schedule[thiefIntervals]) {
             continue;
         }
         for (var interval of schedule[thiefIntervals]) {
-            let [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
-            let [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
-            let timeDifference = baseTimezone - timezone;
-            let UTCStart = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
-            let UTCEnds = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
-            intervals.push({ start: UTCStart, end: UTCEnds });
+            const [weekDayNumberFrom, hoursFrom, minutesFrom, timezone] = parseTime(interval.from);
+            const [weekDayNumberTo, hoursTo, minutesTo] = parseTime(interval.to);
+            const timeDifference = baseTimezone - timezone;
+            const from = (hoursFrom + timeDifference + 24 * weekDayNumberFrom) * 60 + minutesFrom;
+            const to = (hoursTo + timeDifference + 24 * weekDayNumberTo) * 60 + minutesTo;
+            intervals.push({ from, to });
         }
     }
 
@@ -137,14 +145,14 @@ function parseThiefBusyIntervals(schedule, baseTimezone) {
  * @returns {Array} - склеенные интервалы
  */
 function combineIntervals(intervals) {
-    let sortedIntervals = sortIntervals(intervals);
+    const sortedIntervals = sortIntervals(intervals);
     let combinedIntervals = [];
     for (let i = 0; i < sortedIntervals.length; i++) {
-        let current = sortedIntervals[i];
-        let overlappingIntervals = sortedIntervals
-            .filter(x=> current.start <= x.start && x.start <= current.end + 1);
-        let intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.end));
-        combinedIntervals.push({ start: current.start, end: intervalsBorder });
+        const current = sortedIntervals[i];
+        const overlappingIntervals = sortedIntervals
+            .filter(x=> current.from <= x.from && x.from <= current.to + 1);
+        const intervalsBorder = Math.max.apply(null, overlappingIntervals.map((x)=>x.to));
+        combinedIntervals.push({ from: current.from, to: intervalsBorder });
         i += overlappingIntervals.length - 1;
     }
 
@@ -162,12 +170,12 @@ function invertTimeIntervals(intervals) {
     let invertedIntervals = [];
     let previousEndPos = minValue;
     for (let i = 0; i < intervals.length; i++) {
-        let interval = intervals[i];
-        let invertedInterval = { start: previousEndPos, end: interval.start - 1 };
-        previousEndPos = interval.end;
+        const interval = intervals[i];
+        const invertedInterval = { from: previousEndPos, to: interval.from - 1 };
+        previousEndPos = interval.to;
         invertedIntervals.push(invertedInterval);
     }
-    invertedIntervals.push({ start: previousEndPos, end: maxValue });
+    invertedIntervals.push({ from: previousEndPos, to: maxValue });
 
     return invertedIntervals;
 }
@@ -181,7 +189,7 @@ function invertTimeIntervals(intervals) {
 function getIntervalsIntersection(bankIntervals, thiefIntervals) {
     let intervalsIntersections = [];
     for (let bankInterval of bankIntervals) {
-        let localIntersections = findIntersections(bankInterval, thiefIntervals);
+        const localIntersections = findIntersections(bankInterval, thiefIntervals);
         intervalsIntersections = intervalsIntersections.concat(localIntersections);
     }
 
@@ -190,20 +198,22 @@ function getIntervalsIntersection(bankIntervals, thiefIntervals) {
 
 /**
  * Получение пересечения интервала с множеством интервалов
- * @param {Interval} baseInterval
+ * @param {Object} baseInterval
+ * @param {Number} baseInterval.from – Время открытия интервала
+ * @param {Number} baseInterval.to – Время закрытия интервала
  * @param {Array} intervals
  * @returns {Array}
  */
 function findIntersections(baseInterval, intervals) {
     let intersections = [];
     for (let interval of intervals) {
-        if (baseInterval.start > interval.end && baseInterval.start > interval.start ||
-            baseInterval.end < interval.start && baseInterval.end < interval.end) {
+        if (baseInterval.from > interval.to && baseInterval.from > interval.from ||
+            baseInterval.to < interval.from && baseInterval.to < interval.to) {
             continue;
         }
-        let start = Math.max(baseInterval.start, interval.start);
-        let end = Math.min(baseInterval.end, interval.end);
-        intersections.push({ start, end });
+        const from = Math.max(baseInterval.from, interval.from);
+        const to = Math.min(baseInterval.to, interval.to);
+        intersections.push({ from, to });
     }
 
     return intersections;
@@ -211,23 +221,23 @@ function findIntersections(baseInterval, intervals) {
 
 function sortIntervals(intervals) {
     return intervals.sort(function (a, b) {
-        if (a.start > b.start) {
+        if (a.from > b.from) {
             return 1;
         }
-        if (a.start < b.start) {
+        if (a.from < b.from) {
             return -1;
         }
-        let al = a.start - a.end;
-        let bl = b.start - b.end;
+        const al = a.from - a.to;
+        const bl = b.from - b.to;
 
         return -(al - bl);
     });
 }
 
 function parseTime(string) {
-    let [time, dayOfWeek] = string.split(' ').reverse();
-    let expr = /^([01]\d|2[0-3]):([0-5]\d)\+(\d)$/;
-    let [, hours, minutes, timeZone] = time.match(expr).map(Number);
+    const [time, dayOfWeek] = string.split(' ').reverse();
+    const expr = /^([01]\d|2[0-3]):([0-5]\d)\+(\d)$/;
+    const [, hours, minutes, timeZone] = time.match(expr).map(Number);
 
     return dayOfWeek
         ? [DAY_TO_INT[dayOfWeek], hours, minutes, timeZone]
