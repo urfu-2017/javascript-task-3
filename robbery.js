@@ -27,7 +27,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const banksWorkingHous = getDatesForBank(workingHours, banksTimeZone);
     let notAvailable = getRobbersTime(schedule, banksTimeZone);
     notAvailable = mergeRanges(notAvailable);
-    let available = reverseRanges(notAvailable, banksWorkingHous[0].from,
+    let available = reverseRanges(
+        notAvailable,
+        banksWorkingHous[0].from,
         banksWorkingHous[2].to);
     const timeForRobbery = intersectWithBanksTime(available, banksWorkingHous);
     let robberyRanges = findRangesForRobbery(timeForRobbery, duration);
@@ -102,20 +104,25 @@ function findRangesForRobbery(available, duration) {
 
 function intersectWithBanksTime(available, banksWorkingHours) {
     let intersected = [];
-    const combinedRanges = available.concat(banksWorkingHours).sort(function
-        (firstDate, secondDate) {
-        return firstDate.from - secondDate.from;
-    });
+    const combinedRanges = available.concat(banksWorkingHours)
+        .sort(function (firstDate, secondDate) {
+            return firstDate.from - secondDate.from;
+        });
     let top = combinedRanges[0];
     for (let i = 1; i < combinedRanges.length; i++) {
         if (!areIntersected(top, combinedRanges[i])) {
             top = combinedRanges[i];
         } else if (top.to < combinedRanges[i].to) {
-            intersected.push({ from: combinedRanges[i].from, to: top.to });
+            intersected.push({
+                from: combinedRanges[i].from,
+                to: top.to
+            });
             top = combinedRanges[i];
         } else {
-            intersected.push({ from: combinedRanges[i].from,
-                to: combinedRanges[i].to });
+            intersected.push({
+                from: combinedRanges[i].from,
+                to: combinedRanges[i].to
+            });
         }
     }
 
@@ -140,8 +147,10 @@ function mergeRanges(ranges) {
     ranges.sort(function (firstDate, secondDate) {
         return firstDate.from - secondDate.from;
     });
-    result.push({ from: ranges[0].from,
-        to: ranges[0].to });
+    result.push({
+        from: ranges[0].from,
+        to: ranges[0].to
+    });
     ranges.slice(1).forEach(function (range) {
         let top = result[result.length - 1];
         if (!areIntersected(top, range)) {
@@ -163,9 +172,10 @@ function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
     for (let robber of Object.keys(schedule)) {
         for (let occupiedTime of schedule[robber]) {
-            allSchedule.push(
-                { from: makeDateObj(occupiedTime.from, banksTimeZone),
-                    to: makeDateObj(occupiedTime.to, banksTimeZone) });
+            allSchedule.push({
+                from: makeDateObj(occupiedTime.from, banksTimeZone),
+                to: makeDateObj(occupiedTime.to, banksTimeZone)
+            });
         }
     }
 
