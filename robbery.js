@@ -1,10 +1,11 @@
+
 'use strict';
 
 /**
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 /**
@@ -93,8 +94,7 @@ function intersectSchedules(sh1, sh2) {
     return mergeSchedule(result);
 }
 
-function minutesToDate(minutes, bankTimeZone) {
-    minutes = minutes + 60 * bankTimeZone;
+function minutesToDate(minutes) {
     var day = days[(minutes - minutes % (60 * 24)) / (60 * 24)];
     minutes %= 60 * 24;
     var hours = (minutes - minutes % 60) / 60;
@@ -103,12 +103,12 @@ function minutesToDate(minutes, bankTimeZone) {
     return { day, hours, minutes };
 }
 
-function findPropriateTime(schedule, workingHours, duration) {
+function findPropriateTime(schedule, workingHours, duration, bankTimeZone) {
     function scheduleToIntervals(sch) {
         var result = [{ start: 0, end: 3 * 24 * 60 }];
         sch.forEach(function (item) {
-            var from = stringToMinuts(item.from);
-            var to = stringToMinuts(item.to);
+            var from = stringToMinuts(item.from) + bankTimeZone * 60;
+            var to = stringToMinuts(item.to) + bankTimeZone * 60;
             if (from < 0 && to < 0) {
                 return 0;
             }
@@ -126,8 +126,8 @@ function findPropriateTime(schedule, workingHours, duration) {
     function workingHoursToSchedule(wH) {
         var result = [];
         days.slice(0, 3).forEach(function (item) {
-            result.push({ start: stringToMinuts(item + ' ' + wH.from),
-                end: stringToMinuts(item + ' ' + wH.to) });
+            result.push({ start: stringToMinuts(item + ' ' + wH.from) + bankTimeZone * 60,
+                end: stringToMinuts(item + ' ' + wH.to) + bankTimeZone * 60 });
         });
 
         return result;
@@ -150,7 +150,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var bankTimeZone = Number(workingHours.from.split('+')[1]);
     bankTimeZone = bankTimeZone ? bankTimeZone : 0;
-    var propriateTime = findPropriateTime(schedule, workingHours, duration);
+    var propriateTime = findPropriateTime(schedule, workingHours, duration, bankTimeZone);
     propriateTime.sort(function (a, b) {
         return a.start - b.start;
     });
@@ -176,7 +176,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             if (propriateTime.length) {
-                var time = minutesToDate(propriateTime[0].start, bankTimeZone);
+                var time = minutesToDate(propriateTime[0].start);
                 template = template.replace('%HH', (time.hours < 10 ? '0' : '') + time.hours);
                 template = template.replace('%MM', (time.minutes < 10 ? '0' : '') + time.minutes);
                 template = template.replace('%DD', time.day);
