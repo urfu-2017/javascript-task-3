@@ -29,8 +29,8 @@ const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let normalizedSchedule = normalizeSchedule(schedule, workingHours);
-    let robberyDaysSchedule = fillActionDays(normalizedSchedule, ROBBERY_DAYS);
+    let robberyDaysSchedule = fillActionDays(normalizeSchedule(schedule, workingHours),
+        ROBBERY_DAYS);
     let availableTime = {};
     ROBBERY_DAYS.forEach(day => {
         availableTime[day] = [...findRobberyTime(robberyDaysSchedule[day], duration, workingHours)];
@@ -247,15 +247,6 @@ function equalizeShifts(scheduleBlock, mainShift) {
 
 }
 
-
-/**
- * Разделяет строки из расписания типа:
- * "from 'A XX:XX' to 'B YY:YY'" (одна строка "соединяет" два разных дня)
- * на две новые строки "from 'A XX:XX' to 'A 23:59'" и "from B 00:00 to B YY:YY"
- * и возвращает их
- * @param {Object} segment отрезок времени из расписания участника
- * @returns {Object}
- */
 function separateSegment(segment) {
     let separatedSegments = [];
     let tempSegment = segment;
@@ -289,13 +280,6 @@ function separateSegments(acc, segment) {
 
     return [...acc, segment];
 }
-
-
-/**
- * Возвращает день недели в виде ХХ
- * @param {String} time вида " YY:XX+5"
- * @returns {String}
- */
 
 function getDay(time) {
     return time.substr(0, 2);
