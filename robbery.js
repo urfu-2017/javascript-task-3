@@ -50,6 +50,7 @@ const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
+
     let robberyDaysSchedule = fillActionDays(normalizeSchedule(schedule, workingHours),
         ROBBERY_DAYS);
     let availableTime = {};
@@ -230,8 +231,8 @@ function fillActionDays(schedule, actionDays) {
 }
 
 function normalizeSchedule(schedule, workingHours) {
-    let newSchedule = schedule;
-    Object.keys(schedule).forEach(name => {
+    let newSchedule = JSON.parse(JSON.stringify(schedule));
+    Object.keys(newSchedule).forEach(name => {
         if (newSchedule.hasOwnProperty(name)) {
             newSchedule[name] = equalizeShifts(newSchedule[name], getShift(workingHours));
             newSchedule[name] = newSchedule[name].reduce(separateSegments, []);
