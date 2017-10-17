@@ -285,6 +285,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (result.length > 1) {
                 result.shift();
             }
+
             return willLater;
         }
     };
