@@ -157,20 +157,20 @@ function partWorkingHoursToTimelines(part) {
 function timeWhenSomeoneIsBusy(manSchedule) {
     let timelines = [];
     for (let note of manSchedule) {
-        timelines.push(noteToTimelines(note));
+        timelines.push(noteToMinutes(note));
     }
 
     return timelines;
 }
 
-function noteToTimelines(note) {
-    return [partOfNoteToTimelines(note.from), partOfNoteToTimelines(note.to)];
+function noteToMinutes(note) {
+    return [partOfNoteToMinutes(note.from), partOfNoteToMinutes(note.to)];
 }
 
-function partOfNoteToTimelines(part) {
+function partOfNoteToMinutes(part) {
     let day = part.slice(0, 2);
     let ours = Number(part.slice(3, 5));
-    let Timelines = Number(part.slice(6, 8));
+    let minutes = Number(part.slice(6, 8));
     let timezone = Number(part.slice(9, 10));
     if (day === 'ВТ') {
         ours += 24;
@@ -178,6 +178,9 @@ function partOfNoteToTimelines(part) {
     if (day === 'СР') {
         ours += 48;
     }
+    if (day !== 'ПН' && day !== 'ВТ' && day !== 'СР') {
+        ours += 72;
+    }
 
-    return ours * 60 + Timelines - timezone * 60;
+    return ours * 60 + minutes - timezone * 60;
 }
