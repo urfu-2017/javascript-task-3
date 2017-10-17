@@ -225,17 +225,19 @@ function equalizeShifts(scheduleBlock, mainShift) {
         let time = new Date();
         let difference = Number(getShift(segment)) - Number(mainShift);
 
-        time.setHours(Number(getHours(segment.from)) - difference);
+        time.setUTCHours(Number(getHours(segment.from)) - difference);
+        // console.info(time.getUTCHours() + ' - ' + time.getTime());
         let newFrom = segment.from.replace(/\d\d:/,
-            time.getHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
+            time.getUTCHours() + ':').replace(/\+\d$/, '');
+        if (Number(time.getUTCHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
             newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].next);
         }
 
-        time.setHours(Number(getHours(segment.to)) - difference);
+        time.setUTCHours(Number(getHours(segment.to)) - difference);
+        // console.info(time.getUTCHours() + ' - ' + time.getTime());
         let newTo = segment.to.replace(/\d\d:/,
-            time.getHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
+            time.getUTCHours() + ':').replace(/\+\d$/, '');
+        if (Number(time.getUTCHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
             newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].next);
         }
 
@@ -286,7 +288,7 @@ function getDay(time) {
 }
 
 function getTime(time) {
-    return /\d\d:\d\d/.exec(time)[0];
+    return /\d?\d:\d\d?/.exec(time)[0];
 }
 
 function getHours(time) {
@@ -296,7 +298,6 @@ function getHours(time) {
 function getMinutes(time) {
     return getTime(time).substr(3, 2);
 }
-
 
 function getShift(time) {
     return /\d$/.exec(time.to)[0];
