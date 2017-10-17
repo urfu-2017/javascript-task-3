@@ -102,18 +102,20 @@ class AppropriateMoment {
      * @returns {Array} 
      */
     _mergeTimelines(timelines) {
-        return timelines.slice()
-            .sort((a, b) => a.from - b.from)
-            .reduce((result, timeline) => {
-                const last = result[result.lenght - 1];
-                if (!last || !this._areIntersected(last, timeline)) {
-                    return result.concat(timeline);
+        const merged = timelines.reduce((result, timeline) => {
+            for (const mergedTimeline of result) {
+                if (this._areIntersected(mergedTimeline, timeline)) {
+                    mergedTimeline.from = Math.min(mergedTimeline.from, timeline.from);
+                    mergedTimeline.to = Math.max(mergedTimeline.to, timeline.to);
+
+                    return result;
                 }
+            }
 
-                last.to = Math.max(last.to, timeline.to);
+            return result.concat(timeline);
+        }, []);
 
-                return result;
-            }, []);
+        return (merged.length === timelines.length) ? merged : this._mergeTimelines(merged);
     }
 
     /**
