@@ -7,7 +7,6 @@
 exports.isStar = true;
 
 var DAYS_INDEXES = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
-var DAYS_NAMES = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 var MINUTES_IN_HOUR = 60;
 var HOURS_IN_DAY = 24;
 var MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
@@ -184,7 +183,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var hour = parseInt(startInterval.start / MINUTES_IN_HOUR, 10) - day * HOURS_IN_DAY;
             var minutes = startInterval.start % MINUTES_IN_HOUR;
 
-            return template.replace('%DD', DAYS_NAMES[day]).replace('%HH', timeToString(hour))
+            return template.replace('%DD', Object.keys(DAYS_INDEXES)[day])
+                .replace('%HH', timeToString(hour))
                 .replace('%MM', timeToString(minutes));
         },
 
@@ -195,8 +195,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             var startInterval = timeIntervals[0];
-            if (this.exists() && (timeIntervals.length > 1 ||
-                    startInterval.getLength() >= duration + MINUTES_TO_START_LATER)) {
+            var a = timeIntervals.length > 1;
+            var b = startInterval.getLength() >= duration + MINUTES_TO_START_LATER;
+            if (this.exists() && (a || b)) {
                 startInterval.start += MINUTES_TO_START_LATER;
                 timeIntervals = removeSmallIntervals(timeIntervals, duration);
 
