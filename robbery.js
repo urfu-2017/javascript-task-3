@@ -5,11 +5,6 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = true;
-const MINUTES_IN_HOUR = 60;
-const MINUTES_IN_DAY = 60 * 24;
-const DELAY = 30;
-const TIME_REGEX = /(ПН|ВТ|СР)? ?(\d\d):(\d\d)\+(\d+)/;
-const DAYS = ['ПН', 'ВТ', 'СР'];
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -17,231 +12,117 @@ const DAYS = ['ПН', 'ВТ', 'СР'];
  * @param {Object} workingHours – Время работы банка
  * @param {String} workingHours.from – Время открытия, например, "10:00+5"
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @param {String} bankHourZone
  * @returns {Object}
  */
-exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
-    const timezone = parseInt(TIME_REGEX.exec(workingHours.from)[4]);
-    const bankSchedule = parseBankSchedule(workingHours);
-    const gangSchedule = parseGangSchedule(schedule, timezone);
-    const mergedSchedule = mergeGangSchedule(gangSchedule);
-    const freeSchedule = getFreeSchedule(mergedSchedule);
-    console.info(freeSchedule);
-    console.info(bankSchedule);
-    const robberyTimes = getRobberyTimes(freeSchedule, bankSchedule, duration);
-    console.info(robberyTimes);
 
-    return {
-
-        /**
-         * Найдено ли время
-         * @returns {Boolean}
-         */
-        exists: function () {
-            if (robberyTimes[0]) {
-                return true;
-            }
-
-            return false;
-        },
-
-        /**
-         * Возвращает отформатированную строку с часами для ограбления
-         * Например,
-         *   "Начинаем в %HH:%MM (%DD)" -> "Начинаем в 14:59 (СР)"
-         * @param {String} template
-         * @returns {String}
-         */
-        format: function (template) {
-            if (!robberyTimes[0]) {
-                return '';
-            }
-            let time = getTime(robberyTimes[0].from[1]);
-
-            return template
-                .replace(/%HH/g, time[0])
-                .replace(/%MM/g, time[1])
-                .replace(/%DD/g, DAYS[robberyTimes[0].from[0]]);
-        },
-
-        /**
-         * Попробовать найти часы для ограбления позже [*]
-         * @star
-         * @returns {Boolean}
-         */
-        tryLater: function () {
-            if (!robberyTimes[0]) {
-                return false;
-            } else if (robberyTimes[0].to[1] - robberyTimes[0].from[1] - DELAY >= duration) {
-                robberyTimes[0].from[1] += DELAY;
-
-                return true;
-            } else if (robberyTimes.length > 1) {
-                robberyTimes.shift();
-
-                return true;
-            }
-
-            return false;
-        }
-    };
+const DAYS = {
+    ПН: 1,
+    ВТ: 2,
+    СР: 3
 };
+const TIME_REGEX = /([А-Я]{2}) (\d\d):(\d\d)\+(\d+)/;
+const BANK_REGEX = /(\d\d):(\d\d)\+(\d+)/;
+const NAME_BUDDY = ['Danny', 'Rusty', 'Linus'];
+const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
+const MS_IN_MINUTE = 60000;
 
-function getTime(time) {
-    let hours = Math.floor(time / MINUTES_IN_HOUR);
-    let minutes = time % MINUTES_IN_HOUR;
-    hours = hours >= 10 ? String(hours) : '0' + String(hours);
-    minutes = minutes >= 10 ? String(minutes) : '0' + String(minutes);
-
-    return [hours, minutes];
-}
-
-function getRobberyTimes(free, bank, duration) {
-    for (var i = 0; i < free.length; i++) {
-        let timeFrom = free[i].from[1];
-        let timeTo = free[i].to[1];
-        if ((timeFrom <= bank.from && timeTo <= bank.from) ||
-        (timeFrom >= bank.to && timeTo >= bank.to)) {
-            free.splice(i, 1);
-            i--;
-            continue;
-        } else if (timeFrom < bank.from) {
-            free[i] = { from: [free[i].from[0], bank.from], to: free[i].to };
-        } else if (timeTo > bank.to) {
-            free[i] = { from: free[i].from, to: [free[i].to[0], bank.to] };
-        }
-    }
-    console.info(free);
-    free = checkDuration(free, duration);
-
-    return free;
-}
-
-function checkDuration(schedule, duration) {
-    for (var i = 0; i < schedule.length; i++) {
-        if (schedule[i].to[1] - schedule[i].from[1] < duration) {
-            schedule.splice(i, 1);
-            i -= 1;
-        }
+function createDate([day, hour, minute]) {
+    if (hour > 23 || hour < 0) {
+        let sign = hour > 23 ? 1 : -1;
+        hour -= 24 * sign;
+        day += sign;
     }
 
-    return schedule;
+    return Date.parse(new Date(1970, 5, day, hour, minute, 0));
 }
 
-function getFreeSchedule(gangSchedule) {
-    let freeSchedule = [];
-    for (var j = 0; j < gangSchedule.length - 1; j++) {
-        freeSchedule.push({ from: gangSchedule[j].to, to: gangSchedule[j + 1].from });
-    }
-    freeSchedule.unshift({ from: [0, 0], to: gangSchedule[0].from });
-    freeSchedule.push({ from: gangSchedule[gangSchedule.length - 1].to,
-        to: [DAYS.length - 1, MINUTES_IN_DAY - 1] });
-    for (var i = 0; i < freeSchedule.length; i++) {
-        if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
-            freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
-                to: [freeSchedule[i].from[0], MINUTES_IN_DAY - 1] },
-            { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
-            i++;
-        } else if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
-            freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
-                to: [freeSchedule[i].from[0], MINUTES_IN_DAY - 1] },
-            { from: [1, 0], to: [1, MINUTES_IN_DAY - 1] },
-            { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
-            i += 2;
-        }
-    }
+function parseInterval(time) {
+    let elements = TIME_REGEX.exec(time);
 
-    return freeSchedule;
+    return [DAYS[elements[1]] || 0, elements[2], elements[3], elements[4]];
 }
 
-function parseBankSchedule(schedule) {
-    let timeFrom = TIME_REGEX.exec(schedule.from);
-    let timeTo = TIME_REGEX.exec(schedule.to);
-
-    return { from: toMinutes(timeFrom[2], timeFrom[3]), to: toMinutes(timeTo[2], timeTo[3]) };
+function getNumberString(number) {
+    return number < 10 ? '0' + number : number;
 }
 
-function parseGangSchedule(schedule, timezone) {
-    let newSchedule = [];
-    for (var prop of Object.values(schedule)) {
-        let timezoneDifferene = (timezone - parseInt(TIME_REGEX.exec(prop[0].from)[4])) *
-        MINUTES_IN_HOUR;
-        prop = prop.map(function (interval) {
-            return changeDay(interval, timezoneDifferene);
-        });
-        prop.sort(function (a, b) {
-            if (a.to[0] < b.from[0]) {
-                return -1;
-            } else if (a.to[0] > b.from[0]) {
-                return 1;
-            } else if (a.to[1] < b.from[1]) {
-                return -1;
-            } else if (a.to[1] > b.from[1]) {
-                return 1;
-            }
+function getDate(time, bankUTC) {
+    let parsedTime = parseInterval(time);
+    parsedTime[1] -= parsedTime[3] - bankUTC;
 
-            return 0;
-        });
-        newSchedule.push(prop);
-    }
-
-    return newSchedule;
+    return createDate(parsedTime);
 }
 
-function changeDay(interval, dif) {
-    let from = TIME_REGEX.exec(interval.from);
-    let to = TIME_REGEX.exec(interval.to);
-
-    return { from: checkOutdating(from, dif),
-        to: checkOutdating(to, dif) };
+function getInterval(interval, bankUTC) {
+    return {
+        from: getDate(interval.from, bankUTC),
+        to: getDate(interval.to, bankUTC)
+    };
 }
 
-function checkOutdating([, day, hours, minutes], dif) {
-    let time = toMinutes(hours, minutes);
-    if (time + dif > MINUTES_IN_DAY - 1) {
-        time = time + dif - MINUTES_IN_DAY;
-        day = DAYS.indexOf(day) + 1;
-        if (day >= DAYS.length) {
-            time = MINUTES_IN_DAY - 1;
-            day = DAYS.length - 1;
-        }
-    } else if (time + dif < 0) {
-        time = MINUTES_IN_DAY + time + dif;
-        day = DAYS.indexOf(day) - 1;
-        if (day < 0) {
-            time = 0;
-            day = 0;
-        }
-    } else {
-        time = time + dif;
-        day = DAYS.indexOf(day);
-    }
-
-    return [day, time];
-}
-
-function toMinutes(hours, minutes) {
-    hours = parseInt(hours);
-    minutes = parseInt(minutes);
-
-    return hours * MINUTES_IN_HOUR + minutes;
-}
-
-function mergeGangSchedule(schedule) {
-    return schedule.reduce((prev, cur) => {
-        return mergePersons(prev, cur);
+function getBusyTime(schedule, bankUTC) {
+    return schedule.map(function (interval) {
+        return getInterval(interval, bankUTC);
     });
 }
 
-function mergePersons(prev, cur) {
-    if (!cur) {
-        return prev;
+function parseBankInterval(time) {
+    let matches = BANK_REGEX.exec(time);
+
+    return {
+        hour: matches[1],
+        minute: matches[2],
+        UTC: matches[3]
+    };
+}
+
+function getClosedBank(workingHours) {
+    let intervals = [];
+    let startBankInterval = parseBankInterval(workingHours.from);
+    let endBankInterval = parseBankInterval(workingHours.to);
+
+    Object.keys(DAYS).forEach(function (day) {
+        day = DAYS[day];
+        intervals.push (
+            {
+                from: createDate([day, 0, 0]),
+                to: createDate([day, startBankInterval.hour, startBankInterval.minute])
+            },
+            {
+                from: createDate([day, endBankInterval.hour, endBankInterval.minute]),
+                to: createDate([day, 24, 0])
+            });
+    });
+
+    return intervals;
+}
+
+function getMomentsForAttack(busy, duration) {
+    let tempSchedule = [];
+    for (var i = 0; i < busy.length - 1; i++) {
+        if (busy[i].to + (duration * MS_IN_MINUTE) <= busy[i + 1].from) {
+            tempSchedule.push({ from: busy[i].to, to: busy[i + 1].from });
+        }
     }
+
+    return tempSchedule;
+}
+
+function mergeSchedule(schedule) {
+    for (var i = 0; i < 3; i++) {
+        schedule.splice(0, 2, mergePersons(schedule[0], schedule[1]));
+    }
+}
+
+function mergePersons(prev, cur) {
     let tempSchedule = prev;
     for (var i = 0; i < cur.length; i++) {
-        let fromMin = findMin(prev, cur[i]);
+        let fromMin = findMin(prev, cur[i].from);
         let toMax = findMax(prev, cur[i].to);
-        if (toMax[1] === -1) {
+        if (fromMin[1] === cur.length) {
+            tempSchedule.push({ from: fromMin[0], to: toMax[0] });
+        } else if (toMax[1] === -1) {
             tempSchedule.unshift({ from: fromMin[0], to: toMax[0] });
         } else {
             tempSchedule.splice(fromMin[1], toMax[1] - fromMin[1] + 1,
@@ -252,15 +133,11 @@ function mergePersons(prev, cur) {
     return tempSchedule;
 }
 
-function findMin(arr, { from }) {
+function findMin(arr, from) {
     for (var i = 0; i < arr.length; i++) {
-        if (arr[i].from[0] > from[0] ||
-            (arr[i].from[0] === from[0] && arr[i].from[1] >= from[1])) {
-
+        if (from <= arr[i].from) {
             return [from, i];
-        } else if (arr[i].to[0] > from[0] ||
-            (arr[i].to[0] === from[0] && arr[i].to[1] >= from[1])) {
-
+        } else if (from <= arr[i].to) {
             return [arr[i].from, i];
         }
     }
@@ -270,16 +147,83 @@ function findMin(arr, { from }) {
 
 function findMax(arr, to) {
     for (var i = arr.length - 1; i >= 0; i--) {
-        if (arr[i].to[0] < to[0] ||
-            (arr[i].to[0] === to[0] && arr[i].to[1] <= to[1])) {
-
+        if (to >= arr[i].to) {
             return [to, i];
-        } else if (arr[i].from[0] < to[0] ||
-            (arr[i].from[0] === to[0] && arr[i].from[1] <= to[1])) {
-
+        } else if (to >= arr[i].from) {
             return [arr[i].to, i];
         }
     }
 
     return [to, -1];
 }
+
+exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+    const bankUTC = parseBankInterval(workingHours.from).UTC;
+    let busy = [];
+    NAME_BUDDY.forEach(function (name) {
+        busy.push((getBusyTime(schedule[name], bankUTC)));
+    });
+    busy.push(getClosedBank(workingHours));
+    busy.forEach(function (obj) {
+        obj.sort(function (firstInterval, secondInterval) {
+            return firstInterval.from - secondInterval.from;
+        });
+    });
+    mergeSchedule(busy);
+    console.info(busy[0]);
+    let robberyMoments = getMomentsForAttack(busy[0], duration);
+    console.info(robberyMoments);
+
+    return {
+
+        /**
+         * Найдено ли время
+         * @returns {Boolean}
+         */
+        exists: function () {
+            return Boolean(robberyMoments[0]);
+        },
+
+        /**
+         * Возвращает отформатированную строку с часами для ограбления
+         * Например,
+         *   "Начинаем в %HH:%MM (%DD)" -> "Начинаем в 14:59 (СР)"
+         * @param {String} template
+         * @returns {String}
+         */
+        format: function (template) {
+            if (this.exists()) {
+                let robbery = new Date(robberyMoments[0].from);
+
+                return template
+                    .replace(/%DD/g, ACTION_DAYS[robbery.getDay() - 1])
+                    .replace(/%HH/g, getNumberString(robbery.getHours()))
+                    .replace(/%MM/g, getNumberString(robbery.getMinutes()));
+            }
+
+            return '';
+        },
+
+        /**
+         * Попробовать найти часы для ограбления позже [*]
+         * @star
+         * @returns {Boolean}
+         */
+        tryLater: function () {
+            if (this.exists) {
+                if (robberyMoments[0].from + (duration + 30) * MS_IN_MINUTE <=
+                robberyMoments[0].to) {
+                    robberyMoments[0].from += 30 * MS_IN_MINUTE;
+
+                    return true;
+                } else if (robberyMoments.length > 1) {
+                    robberyMoments.shift();
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    };
+};
