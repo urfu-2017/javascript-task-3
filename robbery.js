@@ -15,13 +15,6 @@ exports.isStar = true;
  * @returns {Object}
  */
 
-function convertToMinutes(time) {
-    var hours = parseInt(time.split(':')[0]);
-    var mins = parseInt(time.split(':')[1]);
-
-    return hours * 60 + mins;
-}
-
 function convertToHours(mins) {
     var hours = parseInt(mins / 60);
     var minutes = mins % 60;
@@ -33,6 +26,13 @@ function convertToHours(mins) {
     }
 
     return hours + ':' + minutes;
+}
+
+function convertToMinutes(time) {
+    var hours = parseInt(time.split(':')[0]);
+    var mins = parseInt(time.split(':')[1]);
+
+    return hours * 60 + mins;
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
