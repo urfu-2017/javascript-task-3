@@ -172,6 +172,9 @@ function partOfNoteToMinutes(part) {
     let ours = Number(part.slice(3, 5));
     let minutes = Number(part.slice(6, 8));
     let timezone = Number(part.slice(9, 10));
+    if (part.length === 11) {
+        timezone = Number(part.slice(9, 11));
+    }
     if (day === 'ВТ') {
         ours += 24;
     }
@@ -184,3 +187,4 @@ function partOfNoteToMinutes(part) {
 
     return ours * 60 + minutes - timezone * 60;
 }
+
