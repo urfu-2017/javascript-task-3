@@ -35,11 +35,11 @@ function convertToMinutes(time) {
     return hours * 60 + mins;
 }
 
-exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+var result = [];
+var intervals = [];
 
-    var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
-    var result = [];
-    var intervals = [];
+exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
@@ -55,10 +55,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
 
         return (day + ' ' + newHours + ':' + time[1] + '+' + bankTimezone);
-    }
-
-    function split() {
-
     }
 
     function splitIntervalsOverDay(robber, record) {
