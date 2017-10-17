@@ -22,7 +22,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let workTimelines = workingHoursToTimelines(workingHours);
     let busyTime = DannyBusy.concat(RustyBusy.concat(LinusBusy));
     let start = -1;
-    if (typeof (duration) === 'number' && duration > 0) {
+    if (typeof (duration) === 'number' && duration > 0 && duration < 1440) {
         start = getStart(workTimelines, busyTime, duration);
     }
 
@@ -54,7 +54,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                     minute = '0' + minute;
                 }
                 if (Number(hour) < 10) {
-                    hour = '0' + hour;
+                    minute = '0' + hour;
                 }
 
                 return template.replace('%DD', day)
@@ -136,6 +136,12 @@ function intersect(timeline1, timeline2) {
         return true;
     }
     if (timeline1[1] < timeline2[1] && timeline1[1] > timeline2[0]) {
+        return true;
+    }
+    if (timeline1[1] === timeline2[1] && timeline1[0] < timeline2[0]) {
+        return true;
+    }
+    if (timeline1[0] === timeline2[0] && timeline1[1] > timeline2[1]) {
         return true;
     }
     if (timeline1[1] === timeline2[1] && timeline1[0] === timeline2[0]) {
