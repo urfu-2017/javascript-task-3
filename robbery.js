@@ -26,7 +26,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const gangSchedule = parseGangSchedule(schedule, timezone);
     const mergedSchedule = mergeGangSchedule(gangSchedule);
     const freeSchedule = getFreeSchedule(mergedSchedule);
+    console.info(freeSchedule);
+    console.info(bankSchedule);
     const robberyTimes = getRobberyTimes(freeSchedule, bankSchedule, duration);
+    console.info(robberyTimes);
 
     return {
 
@@ -100,6 +103,7 @@ function getRobberyTimes(free, bank, duration) {
         if ((timeFrom <= bank.from && timeTo <= bank.from) ||
         (timeFrom >= bank.to && timeTo >= bank.to)) {
             free.splice(i, 1);
+            i--;
             continue;
         } else if (timeFrom < bank.from) {
             free[i] = { from: [free[i].from[0], bank.from], to: free[i].to };
@@ -107,6 +111,7 @@ function getRobberyTimes(free, bank, duration) {
             free[i] = { from: free[i].from, to: [free[i].to[0], bank.to] };
         }
     }
+    console.info(free);
     free = checkDuration(free, duration);
 
     return free;
@@ -130,7 +135,7 @@ function getFreeSchedule(gangSchedule) {
     }
     freeSchedule.unshift({ from: [0, 0], to: gangSchedule[0].from });
     freeSchedule.push({ from: gangSchedule[gangSchedule.length - 1].to,
-        to: [DAYS.length - 1, MINUTES_IN_DAY] });
+        to: [DAYS.length - 1, MINUTES_IN_DAY - 1] });
     for (var i = 0; i < freeSchedule.length; i++) {
         if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
             freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
