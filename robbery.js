@@ -26,7 +26,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const gangSchedule = parseGangSchedule(schedule, timezone);
     const mergedSchedule = mergeGangSchedule(gangSchedule);
     const freeSchedule = getFreeSchedule(mergedSchedule);
-    console.info(freeSchedule);
     const robberyTimes = getRobberyTimes(freeSchedule, bankSchedule, duration);
 
     return {
@@ -162,7 +161,6 @@ function parseGangSchedule(schedule, timezone) {
     for (var prop of Object.values(schedule)) {
         let timezoneDifferene = (timezone - parseInt(TIME_REGEX.exec(prop[0].from)[4])) *
         MINUTES_IN_HOUR;
-        console.info(timezoneDifferene);
         prop = prop.map(function (interval) {
             return changeDay(interval, timezoneDifferene);
         });
