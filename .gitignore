@@ -1,3 +1,7 @@
 .idea
 /node_modules
 *.log
+*mytests.js
+*my.spec.js
+launch.json
+

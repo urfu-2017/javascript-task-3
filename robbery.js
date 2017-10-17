@@ -14,8 +14,17 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
+const MILLIS_IN_MINUTE = 60 * 1000;
+const START_DAY = 16;
+const START_MONTH = 9;
+const START_YEAR = 2017;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+    // console.info(schedule, duration, workingHours);
+    let bankOffset = getBankOffset(workingHours.from);
+    let timespans = parseShedule(schedule);
+    let infos = getInfos(timespans, workingHours);
+    let durationInMillis = duration * MILLIS_IN_MINUTE;
+    let goodTime = searchStart(infos, durationInMillis);
 
     return {
 
@@ -24,7 +33,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return Boolean(goodTime);
         },
 
         /**
@@ -35,7 +44,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            return formatTime(template, goodTime, bankOffset);
         },
 
         /**
@@ -44,7 +53,234 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            let frees = extractFrees(infos);
+            if (frees.length === 0) {
+                return false;
+            }
+
+            let nextPossible = goodTime + 30 * MILLIS_IN_MINUTE;
+            if (checkPossible(frees, nextPossible)) {
+                goodTime = nextPossible;
+
+                return true;
+            }
+            let timeInOtherFree = getTimeInOtherFree(frees, nextPossible);
+            if (timeInOtherFree) {
+                goodTime = timeInOtherFree;
+
+                return true;
+            }
+
             return false;
         }
     };
+
+    function getTimeInOtherFree(frees, time) {
+        for (let free of frees) {
+            if (free.from < time) {
+                continue;
+            }
+            if (free.from + durationInMillis <= free.to) {
+                return free.from;
+            }
+        }
+
+        return false;
+    }
+
+    function checkPossible(frees, nextPossible) {
+        let nextIndex = getIndexByTime(frees, nextPossible);
+        if (nextIndex === false) {
+            return false;
+        }
+        if (nextPossible + durationInMillis <= frees[nextIndex].to) {
+            return nextPossible;
+        }
+
+        return false;
+    }
 };
+
+
+function extractFrees(infos) {
+    let frees = [];
+    infos.forEach(function (currentDay) {
+        frees = frees.concat(currentDay.free);
+    });
+
+    return frees;
+}
+
+function getIndexByTime(frees, time) {
+    let indexFree = 0;
+    while (time < frees[indexFree].from || time > frees[indexFree].to) {
+        indexFree++;
+        if (indexFree >= frees.length) {
+            return false;
+        }
+    }
+
+    return indexFree;
+}
+
+function getInfos(timespans, workingHours) {
+    combineTimespans(timespans);
+    let infoOnDay = [];
+    for (var day = 0; day < 3; day++) {
+        infoOnDay[day] = {};
+        let startWork = parseWorkTime(workingHours.from, day);
+        let endWork = parseWorkTime(workingHours.to, day);
+        infoOnDay[day].crosses = filterCrossesWorkHours(timespans, startWork, endWork);
+        infoOnDay[day].start = startWork;
+        infoOnDay[day].end = endWork;
+        infoOnDay[day].free = getFrees(infoOnDay[day]);
+    }
+
+    return infoOnDay;
+}
+
+function parseShedule(schedule) {
+    let timespans = [];
+    for (var man in schedule) {
+        if (schedule.hasOwnProperty(man)) {
+            let times = schedule[man];
+            parseTimesToArray(times, timespans);
+        }
+    }
+
+    return timespans;
+
+    function parseTimesToArray(times, array) {
+        for (let time of times) {
+            let timespan = {};
+            timespan.from = parseTime(time.from);
+            timespan.to = parseTime(time.to);
+            array.push(timespan);
+        }
+    }
+}
+
+let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+
+function parseTime(time) {
+    let result = /(..) (\d\d):(\d\d)\+(\d+)/.exec(time);
+    let day = days.indexOf(result[1]);
+    let hours = Number(result[2]);
+    let minutes = Number(result[3]);
+    let offset = Number(result[4]);
+
+    return Date.UTC(START_YEAR, START_MONTH, START_DAY + day, hours - offset, minutes);
+}
+
+function parseWorkTime(time, day = 0) {
+    let result = /(\d\d):(\d\d)\+(\d+)/.exec(time);
+    let hours = Number(result[1]);
+    let minutes = Number(result[2]);
+    let offset = Number(result[3]);
+
+    return Date.UTC(START_YEAR, START_MONTH, START_DAY + day, hours - offset, minutes);
+}
+
+function getBankOffset(time) {
+    return Number(time.substring(6));
+}
+
+function combineTimespans(timespans) {
+    timespans.sort((a, b) => a.from - b.from);
+    for (let i = 0; i + 1 < timespans.length; i++) {
+        if (timespans[i].to >= timespans[i + 1].from) {
+            timespans[i + 1].to = Math.max(timespans[i].to, timespans[i + 1].to);
+            timespans[i + 1].from = Math.min(timespans[i].from, timespans[i + 1].from);
+            delete timespans[i];
+        }
+    }
+    timespans.sort((a, b) => a.from - b.from);
+    let firstUndef = timespans.indexOf(undefined);
+    if (firstUndef !== -1) {
+        timespans.splice(firstUndef);
+    }
+}
+
+function filterCrossesWorkHours(timespans, startWork, endWork) {
+    return timespans.filter(timespan => {
+        return !(timespan.to <= startWork || timespan.from >= endWork);
+    }).sort((a, b) => a.from - b.from);
+}
+
+let startWeek = Date.UTC(START_YEAR, START_MONTH, START_DAY);
+let startWeekDate = new Date(startWeek);
+function formatTime(template, time, offset) {
+    if (!time) {
+        return '';
+    }
+    let date = new Date(time);
+    let hours = date.getUTCHours() + offset;
+    var day = date.getUTCDay() - startWeekDate.getUTCDay();
+    if (hours > 23) {
+        hours -= 24;
+        day++;
+    }
+    var minutes = date.getUTCMinutes();
+    template = template.replace('%MM', (minutes < 10 ? '0' : '') + minutes);
+    template = template.replace('%HH', (hours < 10 ? '0' : '') + hours);
+    template = template.replace('%DD', days[day]);
+
+    return template;
+}
+
+function getFrees(currentDay) {
+    let frees = [];
+    let points = getBoundaryPoints(currentDay);
+    for (let i = 0; i + 1 < points.length; i += 2) {
+        frees.push({
+            from: points[i],
+            to: points[i + 1]
+        });
+    }
+
+    return frees;
+}
+
+function getBoundaryPoints(currentDay) {
+    let points = [];
+    let crosses = currentDay.crosses;
+    if (currentDay.crosses.length === 0) {
+        return [currentDay.start, currentDay.end];
+    }
+    if (crosses[0].from > currentDay.start) {
+        points.push(currentDay.start);
+        points.push(crosses[0].from);
+    }
+    for (let i = 0; i + 1 < crosses.length; i++) {
+        points.push(crosses[i].to);
+        points.push(crosses[i + 1].from);
+    }
+    if (crosses[crosses.length - 1].to < currentDay.end) {
+        points.push(crosses[crosses.length - 1].to);
+        points.push(currentDay.end);
+    }
+
+    return points;
+}
+
+function searchStart(infos, duration) {
+    let search = null;
+    for (let currentDay of infos) {
+        search = getNiceStart(currentDay.free, duration);
+        if (search) {
+            break;
+        }
+    }
+
+    return search;
+}
+
+function getNiceStart(frees, duration) {
+    for (let timespan of frees) {
+        if (timespan.to - timespan.from >= duration) {
+            return timespan.from;
+        }
+    }
+
+    return null;
+}
