@@ -7,13 +7,34 @@
 exports.isStar = true;
 
 const RUSSIAN_WEEK = {
-    ВТ: { next: 'СР' },
-    ПН: { next: 'ВТ' },
-    СР: { next: 'ЧТ' },
-    ЧТ: { next: 'ПТ' },
-    ПТ: { next: 'СБ' },
-    СБ: { next: 'ВС' },
-    ВС: { next: 'ПН' }
+    ПН: {
+        next: 'ВТ',
+        previous: ''
+    },
+    ВТ: {
+        next: 'СР',
+        previous: 'ПН'
+    },
+    СР: {
+        next: 'ЧТ',
+        previous: 'ВТ'
+    },
+    ЧТ: {
+        next: 'ПТ',
+        previous: 'СР'
+    },
+    ПТ: {
+        next: 'СБ',
+        previous: 'ЧТ'
+    },
+    СБ: {
+        next: 'ВС',
+        previous: 'ПТ'
+    },
+    ВС: {
+        next: 'ПН',
+        previous: 'СБ'
+    }
 };
 
 const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
@@ -62,10 +83,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let startHour = startTime.startHours;
             let startMinute = startTime.startMinutes;
             let startDay = startTime.day;
-            if (startHour <= 1) {
+            if (startHour.length <= 1) {
                 startHour = '0' + startHour;
             }
-            if (startMinute <= 1) {
+            if (startMinute.length <= 1) {
                 startMinute = '0' + startMinute;
             }
 
@@ -225,19 +246,19 @@ function equalizeShifts(scheduleBlock, mainShift) {
         let time = new Date();
         let difference = Number(getShift(segment)) - Number(mainShift);
 
-        time.setUTCHours(Number(getHours(segment.from)) - difference);
-        // console.info(time.getUTCHours() + ' - ' + time.getTime());
+        time.setHours(Number(getHours(segment.from)) - difference);
+        // console.info(time.getHours() + ' - ' + time.getTime());
         let newFrom = segment.from.replace(/\d\d:/,
-            time.getUTCHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getUTCHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
+            time.getHours() + ':').replace(/\+\d$/, '');
+        if (Number(time.getHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
             newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].next);
         }
 
-        time.setUTCHours(Number(getHours(segment.to)) - difference);
-        // console.info(time.getUTCHours() + ' - ' + time.getTime());
+        time.setHours(Number(getHours(segment.to)) - difference);
+        // console.info(time.getHours() + ' - ' + time.getTime());
         let newTo = segment.to.replace(/\d\d:/,
-            time.getUTCHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getUTCHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
+            time.getHours() + ':').replace(/\+\d$/, '');
+        if (Number(time.getHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
             newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].next);
         }
 
