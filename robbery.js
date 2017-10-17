@@ -40,7 +40,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
     var result = [];
     var intervals = [];
-    
+
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
         var day = str.split(' ')[0];
@@ -57,60 +57,60 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return (day + ' ' + newHours + ':' + time[1] + '+' + bankTimezone);
     }
 
-    function splitIntervalsOverDay() {
-        for (var robber in schedule) {
-            if (!schedule.hasOwnProperty(robber)) {
-                continue;
-            }
-            for (var record in schedule[robber]) {
-                if (!schedule[robber].hasOwnProperty(record)) {
-                    continue;
-                }
-                var dayOfWeek = schedule[robber][record].from.slice(0, 2);
-                if (dayOfWeek === 'ПН' && schedule[robber][record].to.slice(0, 2) === 'СР') {
-                    schedule[robber].push({
-                        from: 'СР 00:00+5',
-                        to: 'CP' + schedule[robber][record].to.slice(2)
-                    });
-                    schedule[robber].push({
-                        from: 'ВТ 00:00+5',
-                        to: 'ВТ 23:59+5'
-                    });
-                    schedule[robber][record].to = 'ПН 23:59+5';
-                } else if (dayOfWeek !== schedule[robber][record].to.slice(0, 2)) {
-                    schedule[robber].push({
-                        from: schedule[robber][record].to.slice(0, 2) + ' 00:00+5',
-                        to: schedule[robber][record].to
-                    });
-                    schedule[robber][record].to = dayOfWeek + ' 23:59+5';
-                }
-            }
+    function split() {
+
+    }
+
+    function splitIntervalsOverDay(robber, record) {
+        var dayOfWeek = schedule[robber][record].from.slice(0, 2);
+        if (dayOfWeek === 'ПН' && schedule[robber][record].to.slice(0, 2) === 'СР') {
+            schedule[robber].push({
+                from: 'СР 00:00+5',
+                to: 'CP' + schedule[robber][record].to.slice(2)
+            });
+            schedule[robber].push({
+                from: 'ВТ 00:00+5',
+                to: 'ВТ 23:59+5'
+            });
+            schedule[robber][record].to = 'ПН 23:59+5';
+        } else if (dayOfWeek !== schedule[robber][record].to.slice(0, 2)) {
+            schedule[robber].push({
+                from: schedule[robber][record].to.slice(0, 2) + ' 00:00+5',
+                to: schedule[robber][record].to
+            });
+            schedule[robber][record].to = dayOfWeek + ' 23:59+5';
         }
     }
 
-    function cutForBankHours() {
-        for (var robber in schedule) {
-            if (!schedule.hasOwnProperty(robber)) {
+    function cutForBankHours(robber, record) {
+        var from = convertToMinutes(schedule[robber][record].from.slice(3, 8));
+        var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
+        var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
+        var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+        if (from < bankFrom && to < bankFrom || from > bankTo && to > bankTo) {
+            schedule[robber].splice(record, 1);
+        }
+        if (from < bankFrom) {
+            schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
+                workingHours.from;
+        }
+        if (to > bankTo) {
+            schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) +
+                workingHours.to;
+        }
+    }
+
+    function addRecordInCorrectForm(robber) {
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
                 continue;
             }
-            for (var record in schedule[robber]) {
-                if (!schedule[robber].hasOwnProperty(record)) {
-                    continue;
-                }
-                var from = convertToMinutes(schedule[robber][record].from.slice(3, 8));
-                var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
-                var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
-                var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-                if (from < bankFrom && to < bankFrom || from > bankTo && to > bankTo) {
-                    schedule[robber].splice(record,1);
-                }
-                if (from < bankFrom) {
-                    schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) + workingHours.from;
-                }
-                if (to > bankTo) {
-                    schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) + workingHours.to;
-                }
-            }
+            schedule[robber][record].from =
+                convertToBankTimezone(schedule[robber][record].from);
+            schedule[robber][record].to =
+                convertToBankTimezone(schedule[robber][record].to);
+            splitIntervalsOverDay(robber, record);
+            cutForBankHours(robber, record);
         }
     }
 
@@ -119,17 +119,23 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
-            for (var record in schedule[robber]) {
-                if (!schedule[robber].hasOwnProperty(record)) {
-                    continue;
-                }
-                schedule[robber][record].from = convertToBankTimezone(schedule[robber][record].from);
-                schedule[robber][record].to = convertToBankTimezone(schedule[robber][record].to);
-            }
-
+            addRecordInCorrectForm(robber);
         }
-        splitIntervalsOverDay();
-        cutForBankHours();
+    }
+
+    function addRecordWhenBusy(day, robber) {
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
+                continue;
+            }
+            if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
+                intervals.push({
+                    day: day,
+                    from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
+                    to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
+                });
+            }
+        }
     }
 
     function createScheduleWhenBusy(day) {
@@ -137,18 +143,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
-            for (var record in schedule[robber]) {
-                if (!schedule[robber].hasOwnProperty(record)) {
-                    continue;
-                }
-                if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
-                    intervals.push({
-                        day: day,
-                        from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
-                        to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
-                    });
-                }
-            }
+            addRecordWhenBusy(day, robber);
         }
     }
 
@@ -180,7 +175,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var i = 1; i < intervals.length; i++) {
             var intervalFrom = intervals[i - 1].to.match(/\d{1,2}/g).join('');
             var intervalTo = intervals[i].from.match(/\d{1,2}/g).join('');
-            if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i-1].to) >=
+            if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) >=
                 duration) {
                 result.push({
                     day: DAYS_OF_WEEK[day],
@@ -229,7 +224,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (convertToMinutes(result[i].to) - convertToMinutes(result[i].from) >=
                 duration + 30) {
                 var cur = convertToMinutes(result[i].from);
-                getResultsForTryLater(cur, result[i])
+                getResultsForTryLater(cur, result[i]);
 
             }
         }
