@@ -184,8 +184,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var hour = parseInt(startInterval.start / MINUTES_IN_HOUR, 10) - day * HOURS_IN_DAY;
             var minutes = startInterval.start % MINUTES_IN_HOUR;
 
-            return template.replace('%DD', DAYS_NAMES[day])
-                .replace('%HH', timeToString(hour))
+            return template.replace('%DD', DAYS_NAMES[day]).replace('%HH', timeToString(hour))
                 .replace('%MM', timeToString(minutes));
         },
 
@@ -196,9 +195,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             var startInterval = timeIntervals[0];
-            var a = timeIntervals.length > 1;
-            var b = startInterval.getLength() >= duration + MINUTES_TO_START_LATER;
-            if (this.exists() && (a || b)) {
+            if (this.exists() && (timeIntervals.length > 1 ||
+                    startInterval.getLength() >= duration + MINUTES_TO_START_LATER)) {
                 startInterval.start += MINUTES_TO_START_LATER;
                 timeIntervals = removeSmallIntervals(timeIntervals, duration);
 
