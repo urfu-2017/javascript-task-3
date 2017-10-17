@@ -52,7 +52,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (appropriateMoments === 0) {
+            if (appropriateMoments.length === 0) {
                 return false;
             }
 
