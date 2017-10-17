@@ -21,7 +21,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let LinusBusy = timeWhenSomeoneIsBusy(schedule.Linus);
     let workTimelines = workingHoursToTimelines(workingHours);
     let busyTime = DannyBusy.concat(RustyBusy.concat(LinusBusy));
-    let start = getStart(workTimelines, busyTime, duration);
+    let start = -1;
+    if (typeof (duration) === 'number' && duration >= 0) {
+        start = getStart(workTimelines, busyTime, duration);
+    }
 
     return {
 
@@ -178,5 +181,3 @@ function partOfNoteToTimelines(part) {
 
     return ours * 60 + Timelines - timezone * 60;
 }
-
-
