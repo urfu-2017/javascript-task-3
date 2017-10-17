@@ -57,13 +57,16 @@ exports.changeTimeZone = function (dateTime, newTimeZone) {
 exports.addMinutes = function (dateTime, minutes) {
     dateTime.minutes += minutes;
     if (dateTime.minutes > MAX_MINUTE) {
-        dateTime.hours += 1;
-        dateTime.minutes = dateTime.minutes % MAX_MINUTE;
+        dateTime.hours += Math.floor(dateTime.minutes / (MAX_MINUTE + 1));
+        dateTime.minutes = dateTime.minutes % (MAX_MINUTE + 1);
     }
 
     if (dateTime.hours > MAX_HOUR) {
-        dateTime.hours = dateTime.minutes % MAX_HOUR;
-        moveOnOneDay(dateTime, 1);
+        dateTime.hours = dateTime.hours % (MAX_HOUR + 1);
+        let daysCount = Math.floor(dateTime.hours / (MAX_HOUR + 1));
+        for (let i = 0; i < daysCount; i++) {
+            moveOnOneDay(dateTime, 1);
+        }
     }
 };
 
