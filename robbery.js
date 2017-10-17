@@ -6,18 +6,18 @@
  */
 exports.isStar = true;
 const DAYS_OF_THE_WEEK = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
-const robbersTimeFormat = /^([А-Я][А-Я])\s(\d\d):(\d\d)\+(\d+)$/;
-const bankTimeFormat = /^(\d\d):(\d\d)\+(\d+)$/;
+const ROBBERS_TIME_FORMAT = /^([А-Я][А-Я])\s(\d\d):(\d\d)\+(\d+)$/;
+const BANK_TIME_FORMAT = /^(\d\d):(\d\d)\+(\d+)$/;
 const DAYS_IN_WEEK = 7;
 const HOURS_IN_DAY = 24;
 const MINUTES_IN_HOUR = 60;
 const MINUTES_IN_WEEK = DAYS_IN_WEEK * HOURS_IN_DAY * MINUTES_IN_HOUR;
-const END_OF_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
+const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 const HALF_AN_HOUR = 30;
 
 function getBankScheduleAndTimeZone(workingHours) {
-    let [, hoursFrom, minutesFrom, zone] = workingHours.from.match(bankTimeFormat);
-    let [, hoursTo, minutesTo] = workingHours.to.match(bankTimeFormat);
+    let [, hoursFrom, minutesFrom, zone] = workingHours.from.match(BANK_TIME_FORMAT);
+    let [, hoursTo, minutesTo] = workingHours.to.match(BANK_TIME_FORMAT);
     let schedule = [];
     for (let i = 0; i < 3; i++) {
         let fromInMinutes = (i * HOURS_IN_DAY + parseInt(hoursFrom)) *
@@ -31,7 +31,7 @@ function getBankScheduleAndTimeZone(workingHours) {
 }
 
 function robberTimeToMinutes(time, bankTimeZone) {
-    let [, dayOfWeek, hh, mm, zone] = time.match(robbersTimeFormat);
+    let [, dayOfWeek, hh, mm, zone] = time.match(ROBBERS_TIME_FORMAT);
     let diff = bankTimeZone - zone;
     let result = ((DAYS_OF_THE_WEEK[dayOfWeek] * HOURS_IN_DAY + parseInt(hh) +
         parseInt(diff)) * MINUTES_IN_HOUR) + parseInt(mm);
@@ -48,6 +48,7 @@ function getGeneralSchedule(schedule, bankTimeZone) {
             generalSchedule.push({ from: beginTime, to: endTime });
         });
     });
+    generalSchedule = generalSchedule.sort((a, b) => a.from - b.from);
 
     return generalSchedule;
 }
@@ -98,7 +99,7 @@ function getIntervals(timeline, duration) {
             if (i - tempFrom >= duration) {
                 intervals.push({ from: tempFrom, to: i });
             }
-        } else if (i !== 0 && (i % END_OF_DAY === 0)) {
+        } else if (i !== 0 && (i % MINUTES_IN_DAY === 0)) {
             inInterval = false;
             if (i - tempFrom >= duration && inInterval) {
                 intervals.push({ from: tempFrom, to: i });
@@ -107,6 +108,54 @@ function getIntervals(timeline, duration) {
     });
 
     return intervals;
+}
+
+function joinSchedule(generalSchedule) {
+    let joinedSchedule = [];
+    joinedSchedule.push(generalSchedule[0]);
+    for (let i = 1; i < generalSchedule.length; i++) {
+        let current = joinedSchedule[joinedSchedule.length - 1];
+        if (isIntersected(current, generalSchedule[i])) {
+            current.to = Math.max(generalSchedule[i].to, current.to);
+        } else {
+            joinedSchedule.push(generalSchedule[i]);
+        }
+    }
+
+    return joinedSchedule;
+}
+
+function getReflectedSchedule(joinedSchedule) {
+    let reflectedSchedule = [];
+    reflectedSchedule.push({ from: 0, to: joinedSchedule[0].from });
+    for (let i = 0; i < joinedSchedule.length - 1; i++) {
+        reflectedSchedule.push({ from: joinedSchedule[i].to, to: joinedSchedule[i + 1].from });
+    }
+    reflectedSchedule.push({
+        from: joinedSchedule[joinedSchedule.length - 1].to, to: MINUTES_IN_DAY * 3
+    });
+
+    return reflectedSchedule;
+}
+
+function getRobberyIntervals(bankSchedule, reflectedSchedule, duration) {
+    let result = [];
+    bankSchedule.forEach(function (curBank) {
+        reflectedSchedule.forEach(function (curRob) {
+            if (isIntersected(curBank, curRob)) {
+                let a = Math.max(curBank.from, curRob.from);
+                let b = Math.min(curBank.to, curRob.to);
+                result.push({ from: a, to: b });
+            }
+        });
+    });
+    result = result.filter(x => x.to - x.from >= duration);
+
+    return result;
+}
+
+function isIntersected(first, second) {
+    return first.to >= second.from && second.to >= first.from;
 }
 
 /**
@@ -119,12 +168,23 @@ function getIntervals(timeline, duration) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [bankSchedule, zone] = getBankScheduleAndTimeZone(workingHours);
+    // console.info(JSON.stringify(bankSchedule));
     let generalSchedule = getGeneralSchedule(schedule, zone);
+    console.info('generalSchedule ' + JSON.stringify(generalSchedule));
+    let joinedSchedule = joinSchedule(generalSchedule);
+    console.info('joinedSchedule ' + JSON.stringify(joinedSchedule));
+    let reflectedSchedule = getReflectedSchedule(joinedSchedule);
+    console.info('reflectedSchedule ' + JSON.stringify(reflectedSchedule));
+    let robberyIntervals = getRobberyIntervals(bankSchedule, reflectedSchedule, duration);
+    console.info('robberyIntervals ' + JSON.stringify(robberyIntervals));
+
+
     let [bankTimeLine, robbersTimeLine] = getTimeLines(bankSchedule, generalSchedule);
     let timeline = getTimeLine(bankTimeLine, robbersTimeLine);
     let intervals = getIntervals(timeline, duration);
     console.info(JSON.stringify(intervals));
     let niceTime = intervals[0];
+
 
     return {
 
