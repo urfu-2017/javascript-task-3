@@ -54,7 +54,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                     minute = '0' + minute;
                 }
                 if (Number(hour) < 10) {
-                    minute = '0' + hour;
+                    hour = '0' + hour;
                 }
 
                 return template.replace('%DD', day)
