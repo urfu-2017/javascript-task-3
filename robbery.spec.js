@@ -27,6 +27,7 @@ describe('robbery.getAppropriateMoment()', function () {
             { from: '10:00+5', to: '18:00+5' }
         );
     }
+
     it('должен форматировать существующий момент', function () {
         var moment = getMomentFor(90);
 
@@ -72,5 +73,4 @@ describe('robbery.getAppropriateMoment()', function () {
             assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 10:00');
         });
     }
-})
-;
+});
