@@ -80,12 +80,12 @@ function minutesToData(minutes, workingHours) {
     let day = 'ПН';
     let hour = String(Math.floor(minutes / 60) + Number(workingHours.to.slice(6, 8)));
     let minute = String(minutes % 60);
-    if (Number(hour) / 24 === 1) {
+    if (Number(hour) / 24 >= 1 && Number(hour) / 24 < 2)  {
         day = 'ВТ';
         hour = String(Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60);
     }
-    if (Number(hour) / 24 === 2) {
+    if (Number(hour) / 24 >= 2) {
         day = 'СР';
         hour = String(Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 48 * 60 - Math.floor((minutes - 48 * 60) / 60) * 60);
