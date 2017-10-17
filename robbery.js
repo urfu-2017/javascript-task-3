@@ -6,6 +6,18 @@
  */
 exports.isStar = true;
 
+var HALF_HOUR = 30 * 60 * 1000;
+var ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
+var DAYS_OF_WEEK = {
+    'ПН': 1,
+    'ВТ': 2,
+    'СР': 3,
+    'ЧТ': 4,
+    'ПТ': 5,
+    'СБ': 6,
+    'ВС': 7
+};
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -15,7 +27,32 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+
+    var durationMs = duration * 60 * 1000;
+
+    var workTime = parseTask(workingHours, getTimezone(workingHours.from));
+    var workTimeWeek = getWorkTimeWeek(workTime);
+
+    var sortedTasks = parseSchedule(schedule, workingHours);
+    var robberyTimes = getRobberyTimes(sortedTasks, workTimeWeek);
+    var availableTimes = splitContinuousTimeOnDays(robberyTimes, workTimeWeek)
+        .map(function (time) {
+
+            var earlyWorkingHours = workTimeWeek[time[0].getDate()].from;
+            var laterWorkingHours = workTimeWeek[time[1].getDate()].to;
+
+            if (time[0] < earlyWorkingHours) {
+                time[0] = earlyWorkingHours;
+            } else if (time[1] > laterWorkingHours) {
+                time[1] = laterWorkingHours;
+            }
+
+            return time;
+        })
+        .filter(function (time) {
+            return time[1] - time[0] >= durationMs;
+        });
+
 
     return {
 
@@ -24,7 +61,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return availableTimes.length !== 0;
         },
 
         /**
@@ -35,7 +72,22 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (!this.exists()) {
+                return '';
+            }
+
+            var startRobberyTime = availableTimes[0][0];
+            var hours = startRobberyTime.getHours();
+            var minutes = startRobberyTime.getMinutes();
+            var day = ROBBERY_DAYS[startRobberyTime.getDate() - 1];
+
+            hours = (hours < 10 ? '0' : '') + hours;
+            minutes = (minutes < 10 ? '0' : '') + minutes;
+
+            return template
+                .replace('%HH', hours)
+                .replace('%MM', minutes)
+                .replace('%DD', day);
         },
 
         /**
@@ -44,7 +96,146 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (!this.exists()) {
+                return false;
+            }
+
+            if (availableTimes[0][1] - availableTimes[0][0] - HALF_HOUR >= durationMs) {
+                availableTimes[0][0] = new Date(availableTimes[0][0].getTime() + HALF_HOUR);
+
+                return true;
+            } else if (availableTimes.length > 1) {
+                availableTimes.shift();
+
+                return true;
+            }
+
             return false;
         }
     };
 };
+
+function getWorkTimeWeek(workTime) {
+    var workTimeWeek = [];
+    Object.keys(DAYS_OF_WEEK).forEach(function (day) {
+        var dayNumber = DAYS_OF_WEEK[day];
+        var copyWorkTime = Object.assign({}, workTime);
+        workTimeWeek[dayNumber] = {
+            from: new Date(copyWorkTime.from.setDate(dayNumber)),
+            to: new Date(copyWorkTime.to.setDate(dayNumber))
+        };
+    });
+
+    return workTimeWeek;
+}
+
+function getRobberyTimes(sortedTasks, workTimeWeek) {
+    var endOfCurRobbery = workTimeWeek[DAYS_OF_WEEK['ПН']].from;
+
+    var robberyTimes = [];
+    sortedTasks.forEach(function (task) {
+        if (isTaskAfterDeadline(task)) {
+            return;
+        }
+
+        if (task.from > endOfCurRobbery) {
+            robberyTimes.push([endOfCurRobbery, task.from]);
+            endOfCurRobbery = task.to;
+        } else if (task.to > endOfCurRobbery) {
+            endOfCurRobbery = task.to;
+        }
+    });
+    var lastMomentToRobbery = workTimeWeek[DAYS_OF_WEEK['СР']].to;
+    if (endOfCurRobbery < lastMomentToRobbery) {
+        robberyTimes.push([endOfCurRobbery, lastMomentToRobbery]);
+    }
+
+    return robberyTimes;
+}
+
+function isTaskAfterDeadline(task) {
+    return task.from.getDate() > DAYS_OF_WEEK['СР'] && task.to.getDate() > DAYS_OF_WEEK['СР'];
+}
+
+function splitContinuousTimeOnDays(robberyTime, workTimeWeek) {
+    for (var i = 0; i < robberyTime.length; i++) {
+        var isSplit = false;
+
+        var time = robberyTime[i];
+        if (time[0].getDate() !== time[1].getDate()) {
+            isSplit = true;
+
+            var endCurDay = workTimeWeek[time[0].getDate()].to;
+            var startNextDay = workTimeWeek[time[0].getDate() + 1].from;
+            robberyTime.splice(i, 1, [time[0], endCurDay], [startNextDay, time[1]]);
+        }
+        // на тот случай, если startNextDay будет меньше, чем time[1].getDate()
+        i = isSplit ? 0 : i;
+    }
+
+    return robberyTime;
+}
+
+function parseSchedule(schedule, workingHours) {
+    var result = [];
+    var timezone = getTimezone(workingHours.from);
+    Object.keys(schedule).forEach(function (name) {
+        schedule[name].forEach(function (task) {
+            result.push(parseTask(task, timezone));
+        });
+    });
+
+    return result
+        .sort(function (a, b) {
+            return a.from - b.from;
+        });
+}
+
+function getTimezone(time) {
+    return parseInt(time.split('+')[1], 10);
+}
+
+function parseTask(task, requierdTimezone) {
+    var timezone = getTimezone(task.from);
+    var parsedTask = {
+        from: parseTime(task.from),
+        to: parseTime(task.to)
+    };
+    if (parsedTask.from > parsedTask.to) {
+        parsedTask.from.setDate(parsedTask.from.getDate() - DAYS_OF_WEEK['ВС']);
+    }
+
+    return convertToTimezone(parsedTask, timezone, requierdTimezone);
+}
+
+function parseTime(time) {
+    var parts = time.split(' ');
+    var onlyTime = parts[parts.length - 1];
+    var match = onlyTime.match(/([\d]{2}):([\d]{2})\+([\d]{1,2})$/);
+
+    var day = parts.length === 2 ? DAYS_OF_WEEK[parts[0].toUpperCase()] : 1;
+    var hours = parseInt(match[1], 10);
+    var minutes = parseInt(match[2], 10);
+
+    // Для удобства сопоставим 1ое января 2007 года (понедельник) с ПН из задачи
+    return new Date(2007, 0, day, hours, minutes, 0);
+}
+
+function convertToTimezone(task, curTimezone, requierdTimezone) {
+    if (curTimezone === requierdTimezone) {
+        return task;
+    }
+
+    return {
+        from: changeTimezone(task.from, curTimezone, requierdTimezone),
+        to: changeTimezone(task.to, curTimezone, requierdTimezone)
+    };
+}
+
+function changeTimezone(time, curTimezone, requierdTimezone) {
+    var diffTimezone = curTimezone - requierdTimezone;
+    var translatedHours = time.getHours() - diffTimezone;
+    time.setHours(translatedHours);
+
+    return time;
+}
