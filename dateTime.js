@@ -82,7 +82,7 @@ function moveOnOneDay(dateTime, direction) {
         dateTime.minutes = MAX_MINUTE;
     } else {
         dateTime.day = DAYS[indexOfCurrentDay + direction];
-        dateTime.hours = dateTime.hours - direction * 24;
+        dateTime.hours = dateTime.hours - direction * (MAX_HOUR + 1);
     }
 }
 

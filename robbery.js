@@ -52,6 +52,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (appropriateMoments === 0) {
+                return false;
+            }
+
             let startTime = appropriateMoments[this.currentMomentIndex].from;
             let waitingTime = this.robberyTimeout;
             for (let i = this.currentMomentIndex; i < appropriateMoments.length; i++) {
