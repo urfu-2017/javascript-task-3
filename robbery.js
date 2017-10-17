@@ -138,6 +138,9 @@ function intersect(timeline1, timeline2) {
     if (timeline1[1] < timeline2[1] && timeline1[1] > timeline2[0]) {
         return true;
     }
+    if (timeline1[1] === timeline2[1] && timeline1[0] === timeline2[0]) {
+        return true;
+    }
 
     return false;
 }
