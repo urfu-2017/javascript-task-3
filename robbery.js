@@ -37,6 +37,10 @@ function convertToHours(mins) {
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
+    var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+    var intervals = [];
+    var result = [];
+
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
         var day = str.split(' ')[0];
@@ -127,10 +131,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         splitIntervalsOverDay();
         cutForBankHours();
     }
-
-    var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
-    var intervals = [];
-    var result = [];
 
     function createScheduleWhenBusy(day) {
         for (var robber in schedule) {
