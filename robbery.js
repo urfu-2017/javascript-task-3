@@ -63,14 +63,14 @@ function makeDateObj(time, banksTimeZone) {
 
 function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
-    Object.keys(schedule).forEach(robber => {
-        schedule[robber].forEach(occupiedTime => {
+    Object.keys(schedule).forEach(robber =>
+        schedule[robber].forEach(occupiedTime =>
             allSchedule.push({
                 from: makeDateObj(occupiedTime.from, banksTimeZone),
                 to: makeDateObj(occupiedTime.to, banksTimeZone)
-            });
-        });
-    });
+            })
+        )
+    );
 
     return allSchedule;
 }
