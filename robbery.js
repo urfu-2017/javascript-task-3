@@ -126,7 +126,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
                 intervals.push({
-                    day: day,
+                    day: DAYS_OF_WEEK[day],
                     from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
                     to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
                 });
@@ -221,7 +221,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 duration + 30) {
                 var cur = convertToMinutes(result[i].from);
                 getResultsForTryLater(cur, result[i]);
-
             }
         }
         result.sort(customSort);
@@ -265,7 +264,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (!this.exists()) {
+            if (result.length === 0) {
                 return ('');
             }
             var res = template.replace('%HH', result[0].from.split(':')[0])
@@ -282,7 +281,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return result.length > 0;
+            return result.length > 1;
         }
     };
 };
