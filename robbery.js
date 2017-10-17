@@ -20,23 +20,24 @@ function getMinutes(time) {
 
 const createDateForBank = (day, hours, minutes) => Date.UTC(YEAR, MONTH, day, hours, minutes);
 
-function getDatesForBank(workingHours, timeZone) {
-    let dateFrom;
-    let dateTo;
-    let date;
+const getDatesForBank = (workingHours, timeZone) =>
+    WEEK_DAYS.map((day, idx) => {
+        const from = createDateForBank(
+            idx + 1,
+            getHours(workingHours.from),
+            getMinutes(workingHours.from),
+            timeZone
+        );
+        const to = createDateForBank(
+            idx + 1,
+            getHours(workingHours.to),
+            getMinutes(workingHours.to),
+            timeZone
+        );
 
-    let datesArray = WEEK_DAYS.map((day, idx) => {
-        dateFrom = createDateForBank(idx + 1, getHours(workingHours.from),
-            getMinutes(workingHours.from), timeZone);
-        dateTo = createDateForBank(idx + 1, getHours(workingHours.to),
-            getMinutes(workingHours.to), timeZone);
-        date = { from: dateFrom, to: dateTo };
-
-        return date;
+        return { from, to };
     });
 
-    return datesArray;
-}
 
 function getWeekDay(currentDay) {
     let weekDay;
