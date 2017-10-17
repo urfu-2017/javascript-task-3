@@ -165,7 +165,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return !timeIntervals.length;
+            return timeIntervals.length;
         },
 
         /**
