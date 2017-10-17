@@ -28,6 +28,28 @@ describe('robbery.getAppropriateMoment()', function () {
         );
     }
 
+    function getMomentFor1(time) {
+        return robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 00:00+5', to: 'ВТ 00:10+5' }
+                    // ВС 22:00 до ПН 22:10
+                ]
+            },
+            time,
+            { from: '01:00+3', to: '23:59+3' }
+        );
+    }
+
+    it('должен форматировать существующий момент', function () {
+        var moment = getMomentFor1(30);
+
+        assert.ok(moment.exists());
+        assert.strictEqual(
+            moment.format('Метим на %DD, старт в %HH:%MM!'),
+            'Метим на ПН, старт в 22:10!'
+        );
+    });
     it('должен форматировать существующий момент', function () {
         var moment = getMomentFor(90);
 

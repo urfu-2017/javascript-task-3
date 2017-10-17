@@ -9,7 +9,7 @@ exports.isStar = true;
 const RUSSIAN_WEEK = {
     ПН: {
         next: 'ВТ',
-        previous: ''
+        previous: 'ВС'
     },
     ВТ: {
         next: 'СР',
@@ -145,8 +145,11 @@ function findRobberyTime(scheduleOfDay, duration, workingHours) {
     });
 
     scheduleOfDay.map(segment => {
+        let hours = getHours(segment.from);
+        let minutes = getMinutes(segment.from);
+
         return {
-            from: new Date(0, 0, 0, getHours(segment.from), getMinutes(segment.from)),
+            from: new Date(0, 0, 0, hours, minutes),
             to: new Date(0, 0, 0, getHours(segment.to), getMinutes(segment.to))
         };
     }).forEach(busyTime => {
@@ -253,6 +256,10 @@ function equalizeShifts(scheduleBlock, mainShift) {
         if (Number(time.getHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
             newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].next);
         }
+        if (Number(getHours(segment.from)) - Number(time.getHours()) < 0 && difference > 0) {
+            let day = getDay(segment.from);
+            newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[day].previous);
+        }
 
         time.setHours(Number(getHours(segment.to)) - difference);
         // console.info(time.getHours() + ' - ' + time.getTime());
@@ -260,6 +267,9 @@ function equalizeShifts(scheduleBlock, mainShift) {
             time.getHours() + ':').replace(/\+\d$/, '');
         if (Number(time.getHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
             newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].next);
+        }
+        if (Number(getHours(segment.to)) - Number(time.getHours()) < 0 && difference > 0) {
+            newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].previous);
         }
 
         return {
@@ -313,11 +323,11 @@ function getTime(time) {
 }
 
 function getHours(time) {
-    return getTime(time).substr(0, 2);
+    return getTime(time).split(':')[0];
 }
 
 function getMinutes(time) {
-    return getTime(time).substr(3, 2);
+    return getTime(time).split(':')[1];
 }
 
 function getShift(time) {
