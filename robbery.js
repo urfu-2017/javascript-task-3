@@ -36,7 +36,7 @@ class AppropriateMoment {
         duration = duration * MILLIS_OF_MIN;
 
         this._moments = bankSchedule.reduce((result, workDay) => {
-            for (let from = workDay.from; from <= workDay.to - duration; from += TRY_COOLDOWN) {
+            for (let from = workDay.from; from <= workDay.to - duration; from += MILLIS_OF_MIN) {
                 const candidate = { from, to: from + duration };
 
                 if (!gangSchedule.some((timeline) => this._areIntersected(timeline, candidate))) {
@@ -45,9 +45,9 @@ class AppropriateMoment {
             }
 
             return result;
-        }, []).reverse();
+        }, []);
 
-        this._moment = this._moments.pop();
+        this._moment = this._moments[0];
         this._bankTimezone = Number(workingHours.to.split('+')[1]);
     }
 
@@ -87,10 +87,12 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     tryLater() {
-        if (this.exists() && this._moments.length !== 0) {
-            this._moment = this._moments.pop();
+        for (const moment of this._moments) {
+            if (moment >= this._moment + TRY_COOLDOWN) {
+                this._moment = moment;
 
-            return Boolean(this._moment);
+                return true;
+            }
         }
 
         return false;
