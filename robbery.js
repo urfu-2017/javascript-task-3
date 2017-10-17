@@ -9,6 +9,129 @@ exports.isStar = true;
 var MIN_PER_DAY = 1440;
 var MIN_PER_HOUR = 60;
 var DAYS = ['ПН', 'ВТ', 'СР'];
+var TIME_INTERVAL = 30;
+
+/**
+ * объединяем соседние временные диапазоны
+ * @param {Array} array
+ * @returns {Array}
+ */
+function mergeRange(array) {
+    var sortedArray = array.sort(function (a, b) {
+        return a[0] - b[0];
+    });
+    var resultArray = [];
+    var prevStart = sortedArray[0][0];
+    var prevFinish = sortedArray[0][1];
+    for (var i = 1; i < sortedArray.length; i++) {
+        if (sortedArray[i][0] <= prevFinish) {
+            prevFinish = Math.max(sortedArray[i][1], prevFinish);
+        } else {
+            resultArray.push([prevStart, prevFinish]);
+            prevStart = sortedArray[i][0];
+            prevFinish = sortedArray[i][1];
+        }
+    }
+    resultArray.push([prevStart, prevFinish]);
+
+    return resultArray;
+}
+
+/**
+ * Извлекает из строки со временим значение часового пояса
+ * @param {String} stringTime строка формата 'ПН 12:00+5'
+ * @returns {Number}
+ */
+function getUTC(stringTime) {
+    return stringTime.match(/\d+$/);
+}
+
+function getGoodTimeIntervals(freeTimeIntervals, duration) {
+    var firstFreeTime = !freeTimeIntervals.length ? -1 : freeTimeIntervals[0][0];
+    var resultArray = [];
+
+    if (firstFreeTime < 0) {
+        return [];
+    }
+
+    for (var i = 0; i < freeTimeIntervals.length; i ++) {
+        firstFreeTime = freeTimeIntervals[i][0];
+        while (firstFreeTime + duration <= freeTimeIntervals[i][1]) {
+            resultArray.push(firstFreeTime);
+            firstFreeTime += TIME_INTERVAL;
+        }
+    }
+    resultArray.splice(0, 1);
+
+    return resultArray;
+}
+
+/**
+ * Получает из записи типа 'ПН 09:00+3' колличество минут
+ * @param {String} stringTime записи типа 'ПН 09:00+3'
+ * @param {Number} utc часовой пояс банка
+ * @returns {Number} колличество минут понедельника 00:00 в часовом поясе банка
+ */
+function getTimestamp(stringTime, utc = null) {
+    var reg = /^(ПН|ВТ|СР)?\s?(\d{2}):(\d{2})\+(\d+)$/;
+    var time = stringTime.match(reg);
+    var day = time[1] ? MIN_PER_DAY * DAYS.indexOf(time[1]) : 0;
+    var hours = Number(time[2]);
+    var minutes = Number(time[3]);
+    var localUtc = Number(time[4]);
+    utc = utc ? utc : localUtc;
+
+    return minutes + MIN_PER_HOUR * (hours + (utc - localUtc)) + day;
+}
+
+function getBusyIntervals(schedule, workingHours) {
+
+    var arrIntervals = [];
+
+    for (var friend in schedule) {
+        if (schedule.hasOwnProperty(friend)) {
+            arrIntervals = arrIntervals.concat(getBusyInterval(schedule[friend], workingHours));
+        }
+    }
+
+    var bankStartWork = getTimestamp(workingHours.from);
+    var bankFinishWork = getTimestamp(workingHours.to);
+    arrIntervals.push([0, bankStartWork], [bankFinishWork, bankStartWork + MIN_PER_DAY],
+        [bankFinishWork + MIN_PER_DAY, bankStartWork + MIN_PER_DAY * 2],
+        [bankFinishWork + MIN_PER_DAY * 2, MIN_PER_DAY * 3 - 1]);
+
+    return arrIntervals;
+}
+
+function getBusyInterval(scheduleArray, workingHours) {
+    var timeArray = [];
+
+    scheduleArray.forEach(function (item) {
+        timeArray.push(
+            [getTimestamp (item.from, getUTC(workingHours.from)),
+                getTimestamp (item.to, getUTC(workingHours.from))]);
+    });
+
+    return timeArray;
+}
+
+function getFreeTimeIntervals(schedule, duration, workingHours) {
+    var busyIntervals = getBusyIntervals(schedule, workingHours);
+    var sortBusyIntervals = mergeRange(busyIntervals);
+    var start = sortBusyIntervals[0][1];
+    var finish = 0;
+    var resArray = [];
+
+    sortBusyIntervals.forEach(function (item) {
+        finish = item[0];
+        if (finish - start >= duration) {
+            resArray.push([start, finish]);
+        }
+        start = item[1];
+    });
+
+    return resArray;
+}
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -20,139 +143,13 @@ var DAYS = ['ПН', 'ВТ', 'СР'];
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
-    var answerArray = getAnswerArray();
+    var freeTimeIntervals = getFreeTimeIntervals(schedule, duration, workingHours);
 
-    var answer = answerArray.length === 0 ? -1 : answerArray[0][0];
+    var firstFreeTime = !freeTimeIntervals.length ? -1 : freeTimeIntervals[0][0];
 
-    var arrayOfGoodTime = getArrOfGoodTime();
+    var goodTimeIntervals = getGoodTimeIntervals(freeTimeIntervals, duration);
 
     var tryLaterCounter = 0;
-
-    function getArrOfGoodTime() {
-        if (answer < 0) {
-            return [];
-        }
-        var resultArray = [];
-        var arr = answerArray;
-        var ans = answer;
-        for (var i = 0; i < arr.length; i ++) {
-            ans = arr[i][0];
-            while (ans + duration <= arr[i][1]) {
-                resultArray.push(ans);
-                ans += 30;
-            }
-        }
-        resultArray.splice(0, 1);
-
-        return resultArray;
-    }
-
-    function getBusyIntervals() {
-
-        var arrIntervals = [];
-
-        for (var friend in schedule) {
-            if ({}.hasOwnProperty.call(schedule, friend)) {
-                arrIntervals = arrIntervals.concat(getArrayOfBusyInterval(schedule[friend]));
-            }
-        }
-
-        var bankStartWork = getTimestamp(workingHours.from);
-        var bankFinishWork = getTimestamp(workingHours.to);
-        arrIntervals.push([0, bankStartWork], [bankFinishWork, bankStartWork + MIN_PER_DAY],
-            [bankFinishWork + MIN_PER_DAY, bankStartWork + MIN_PER_DAY * 2],
-            [bankFinishWork + MIN_PER_DAY * 2, MIN_PER_DAY * 3 - 1]);
-
-        return arrIntervals;
-    }
-
-    function getAnswerArray() {
-        var busyIntervals = getBusyIntervals();
-
-        var sortAndMergeArray = mergeRange(busyIntervals);
-
-        var start = sortAndMergeArray[0][1];
-        var finish = 0;
-        var resArray = [];
-        for (var i = 1; i < sortAndMergeArray.length; i++) {
-            finish = sortAndMergeArray[i][0];
-            if (finish - start >= duration) {
-                resArray.push([start, finish]);
-            }
-            start = sortAndMergeArray[i][1];
-        }
-
-        return resArray;
-    }
-
-
-    function getArrayOfBusyInterval(scheduleArray) {
-        var timeArray = [];
-        for (var i = 0; i < scheduleArray.length; i++) {
-            timeArray.push(
-                [getTimestamp(scheduleArray[i].from),
-                    getTimestamp(scheduleArray[i].to)
-                ]);
-        }
-
-        return timeArray;
-    }
-
-    function mergeRange(array) {
-        var sortedArray = array.sort(function (a, b) {
-            return a[0] - b[0];
-        });
-        var resultArray = [];
-        var prevStart = sortedArray[0][0];
-        var prevFinish = sortedArray[0][1];
-        for (var i = 1; i < sortedArray.length; i++) {
-            if (sortedArray[i][0] <= prevFinish) {
-                prevFinish = Math.max(sortedArray[i][1], prevFinish);
-            } else {
-                resultArray.push([prevStart, prevFinish]);
-                prevStart = sortedArray[i][0];
-                prevFinish = sortedArray[i][1];
-            }
-        }
-        resultArray.push([prevStart, prevFinish]);
-
-        return resultArray;
-    }
-
-    /**
-     * Извлекает из строки со временим значение часового пояса
-     * @param {String} stringTime строка формата 'ПН 12:00+5'
-     * @returns {Number}
-     */
-    function getUTC(stringTime) {
-        return Number(stringTime.substring(stringTime.length - 1));
-    }
-
-    /**
-     * Получает из записи типа 'ПН 09:00+3' колличество минут // todo заменить всё регуляркой
-     * @param {String} stringTime
-     * @returns {Number} колличество минут
-     */
-    function getTimestamp(stringTime) {
-        var mainUTC = getUTC(workingHours.from);
-        if (stringTime.length === 7) {
-            var h = Number(stringTime.substring(0, 2));
-            var m = Number(stringTime.substring(3, 5));
-
-            return m + MIN_PER_HOUR * h;
-        }
-        var day = 0;
-        if (stringTime.substring(0, 2) === 'ВТ') {
-            day = MIN_PER_DAY;
-        } else if (stringTime.substring(0, 2) === 'СР') {
-            day = MIN_PER_DAY * 2;
-        }
-        var UTC = getUTC(stringTime);
-        var hours = Number(stringTime.substring(3, 5));
-        var minuts = Number(stringTime.substring(6, 8));
-
-        return minuts + MIN_PER_HOUR * hours + MIN_PER_HOUR * (mainUTC - UTC) + day;
-    }
 
     return {
 
@@ -161,7 +158,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return answer >= 0;
+            return firstFreeTime >= 0;
         },
 
         /**
@@ -175,9 +172,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            var day = Math.floor(answer / MIN_PER_DAY);
-            var hours = Math.floor((answer - day * MIN_PER_DAY) / MIN_PER_HOUR);
-            var minutes = answer - day * MIN_PER_DAY - hours * MIN_PER_HOUR;
+            var day = Math.floor(firstFreeTime / MIN_PER_DAY);
+            var hours = Math.floor((firstFreeTime - day * MIN_PER_DAY) / MIN_PER_HOUR);
+            var minutes = firstFreeTime - day * MIN_PER_DAY - hours * MIN_PER_HOUR;
 
             var dayStr = DAYS[day];
 
@@ -199,10 +196,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (!this.exists() || arrayOfGoodTime.length === tryLaterCounter) {
+            if (!this.exists() || goodTimeIntervals.length === tryLaterCounter) {
                 return false;
             }
-            answer = arrayOfGoodTime[tryLaterCounter];
+            firstFreeTime = goodTimeIntervals[tryLaterCounter];
             tryLaterCounter++;
 
             return true;
