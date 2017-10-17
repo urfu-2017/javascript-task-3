@@ -38,9 +38,9 @@ function convertToMinutes(time) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
-    var intervals = [];
     var result = [];
-
+    var intervals = [];
+    
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
         var day = str.split(' ')[0];
