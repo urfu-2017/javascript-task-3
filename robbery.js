@@ -169,6 +169,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (robberyMoments.length === 0) {
+                return false;
+            }
             let nextMomentStart = robberyMoments[0].start + 30;
             let postponedMoments = robberyMoments.filter(m => {
                 return nextMomentStart + duration <= m.end;
