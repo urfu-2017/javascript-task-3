@@ -134,13 +134,13 @@ function getFreeSchedule(gangSchedule) {
     for (var i = 0; i < freeSchedule.length; i++) {
         if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
             freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
-                to: [freeSchedule[i].from[0], MINUTES_IN_DAY] },
+                to: [freeSchedule[i].from[0], MINUTES_IN_DAY - 1] },
             { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
             i++;
         } else if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
             freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
-                to: [freeSchedule[i].from[0], MINUTES_IN_DAY] },
-            { from: [1, 0], to: [1, MINUTES_IN_DAY] },
+                to: [freeSchedule[i].from[0], MINUTES_IN_DAY - 1] },
+            { from: [1, 0], to: [1, MINUTES_IN_DAY - 1] },
             { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
             i += 2;
         }
