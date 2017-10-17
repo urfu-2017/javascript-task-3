@@ -78,17 +78,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
 function minutesToData(minutes, workingHours) {
     let day = 'ПН';
-    let hour = String(Math.floor(minutes / 60) + workingHours.to.slice(9, 10));
+    let hour = String(Math.floor(minutes / 60) + workingHours.to.slice(6, 8));
     let minute = String(minutes % 60);
     if (Math.floor(minutes / 24 / 60) === 1) {
         day = 'ВТ';
-        hour = String(Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 7)));
+        hour = String(Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60);
     }
     if (Math.floor(minutes / 24 / 60) === 2) {
         day = 'СР';
-        hour = String(Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 7)));
+        hour = String(Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 48 * 60 - Math.floor((minutes - 48 * 60) / 60) * 60);
+    }
+    if (minutes > 24 * 3 * 60) {
+        return [];
     }
 
     return [day, hour, minute];
@@ -149,7 +152,7 @@ function workingHoursToTimelines(workingHours) {
 function partWorkingHoursToTimelines(part) {
     let ours = Number(part.slice(0, 2));
     let Timelines = Number(part.slice(3, 5));
-    let timezone = Number(part.slice(6, 7));
+    let timezone = Number(part.slice(6, 8));
 
     return ours * 60 + Timelines - timezone * 60;
 }
@@ -171,10 +174,7 @@ function partOfNoteToMinutes(part) {
     let day = part.slice(0, 2);
     let ours = Number(part.slice(3, 5));
     let minutes = Number(part.slice(6, 8));
-    let timezone = Number(part.slice(9, 10));
-    if (part.length === 11) {
-        timezone = Number(part.slice(9, 11));
-    }
+    let timezone = Number(part.slice(9, 11));
     if (day === 'ВТ') {
         ours += 24;
     }
@@ -186,5 +186,7 @@ function partOfNoteToMinutes(part) {
     }
 
     return ours * 60 + minutes - timezone * 60;
+}
+
 }
 
