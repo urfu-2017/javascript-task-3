@@ -86,7 +86,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            let result;
+            let result = null;
             if (currentTime !== null) {
                 result = findPeriod(currentTime + 30, periodsToFind, excludePeriods, duration);
             }
@@ -112,7 +112,7 @@ function createTimeParts(day, hours, minutes, timezone) {
 }
 
 function parseTimeParts(timeStr) {
-    let [, dayStr, hours, minutes, timezone] = /(?:(\S{2}) )?(\d\d):(\d\d)\+(\d)/.exec(timeStr);
+    let [, dayStr, hours, minutes, timezone] = /(?:(\S{2}) )?(\d\d):(\d\d)\+(\d+)/.exec(timeStr);
     let day = DAY_NAMES.indexOf(dayStr);
     if (day === -1) {
         day = undefined;
