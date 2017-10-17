@@ -6,6 +6,12 @@
  */
 exports.isStar = true;
 
+var daysOfWeeksToHours = {
+    'ПН': 0,
+    'ВТ': 24,
+    'СР': 24*2
+};
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -15,79 +21,57 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let [hours, minutes, timezone] = workingHours.from.split(/:|\+/).map(x=> Number(x));
+    let [bankHoursFrom, bankMinutesFrom, bankTimezone] = workingHours.from.split(/:|\+/).map(x=> Number(x));
+    let [bankHoursTo, bankMinutesTo] = workingHours.from.split(/:|\+/).map(x=> Number(x));
     
     let danny = schedule.Danny;
     let rusty = schedule.Rusty;
     let linus = schedule.Linus;
 
-    let s1 = danny.filter(x => x.from.includes('ПН'))
-        .map(function (x) {
-            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            let timezoneDiff = timezone - timezoneFrom;
+    let s3 = linus
+    .map(parseScheduleEntry)
+    .map(x => getTimeInBankTimezone(x, bankTimezone));;
 
-            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            timezoneDiff = timezone - timezoneFrom;
-            if (x.to.substring(0, 2) !== 'ПН') {
-                hoursTo = hours;
-                minutesTo = minutes;
-            }
+    let s1 = danny
+        .map(parseScheduleEntry)
+        .map(x => getTimeInBankTimezone(x, bankTimezone));
+    let s2 = rusty
+        .map(parseScheduleEntry)
+        .map(x => getTimeInBankTimezone(x, bankTimezone));
 
-            return {
-                hoursFrom: hoursFrom - timezoneDiff,
-                minutesFrom: minutesFrom,
-                hoursTo: hoursTo,
-                minutesTo: minutesTo
-            };
-        });
-    let s2 = rusty.filter(x => x.from.includes('ПН'))
-        .map(function (x) {
-            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            let timezoneDiff = timezone - timezoneFrom;
-
-            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            timezoneDiff = timezone - timezoneFrom;
-            if (x.to.substring(0, 2) !== 'ПН') {
-                    hoursTo = hours;
-                    minutesTo = minutes;
-                }
-    
-                return {
-                    hoursFrom: hoursFrom - timezoneDiff,
-                    minutesFrom: minutesFrom,
-                    hoursTo: hoursTo,
-                    minutesTo: minutesTo
-                };
-            });
-
-    let s3 = linus.filter(x => x.from.includes('ПН'))
-        .map(function (x) {
-            let [hoursFrom, minutesFrom, timezoneFrom] = x.from.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            let timezoneDiff = timezone - timezoneFrom;
-
-            let [hoursTo, minutesTo, timezoneTo] = x.to.substring(2).split(/:|\+/)
-                .map(y => Number(y));
-            timezoneDiff = timezone - timezoneFrom;
-            if (x.to.substring(0, 2) !== 'ПН') {
-                hoursTo = hours;
-                minutesTo = minutes;
-            }
-
-            return {
-                hoursFrom: hoursFrom - timezoneDiff,
-                minutesFrom: minutesFrom,
-                hoursTo: hoursTo,
-                minutesTo: minutesTo
-            };
-        });
 
     let rez = s1.concat(s2).concat(s3);
 
+    let rs = rez.sort((a,b) => a.totalMinutesFrom > b.totalMinutesFrom);
+    
+    let newRs = [];
+    var currentTimePeriod = rs[0];
+    var currentStart = currentTimePeriod.totalMinutesFrom;
+    var currentFinish = currentTimePeriod.totalMinutesTo;
+    for (var i = 1; i < rs.length; i++) {
+        var element = rs[i];
+        if (currentFinish > element.totalMinutesTo) {
+            continue;
+        }
+        if (currentFinish >= element.totalMinutesFrom) {
+            currentFinish = element.totalMinutesTo;
+        }
+        else {
+            newRs.push({
+                start: currentStart,
+                finish: currentFinish
+            })
+
+            var currentStart = element.totalMinutesFrom;
+            var currentFinish = element.totalMinutesTo;
+        }
+    }
+    newRs.push({
+        start: currentStart,
+        finish: currentFinish
+    })
+
+    let ff = newRs.sort((a,b) => a.totalMinutesFrom > b.totalMinutesFrom);
     return {
 
         /**
@@ -119,3 +103,39 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
+
+
+function parseScheduleEntry(x) {
+    let startDay = x.from.substring(0, 2);
+    let [hoursFrom, minutesFrom, robberTimezone] = x.from.substring(2).split(/:|\+/)
+        .map(y => Number(y));
+
+    let endDay = x.to.substring(0, 2);
+    let [hoursTo, minutesTo] = x.to.substring(2).split(/:|\+/)
+        .map(y => Number(y));
+
+    return {
+        startDay,
+        hoursFrom,
+        minutesFrom,
+        endDay,
+        hoursTo,
+        minutesTo,
+        robberTimezone
+    };
+};
+
+function getTimeInBankTimezone(x, bankTimezone) {
+    let timezoneDiff = bankTimezone - x.robberTimezone;
+
+    let totalHoursFrom = x.hoursFrom - timezoneDiff + daysOfWeeksToHours[x.startDay];
+    let totalHoursTo = x.hoursTo - timezoneDiff + daysOfWeeksToHours[x.endDay];
+
+    let totalMinutesFrom = totalHoursFrom * 60 + x.minutesFrom;
+    let totalMinutesTo = totalHoursTo * 60 + x.minutesTo;
+
+    return {
+        totalMinutesFrom,
+        totalMinutesTo
+    }
+}
