@@ -196,9 +196,17 @@ function checkOutdating([, day, hours, minutes], dif) {
     if (time + dif > MINUTES_IN_DAY - 1) {
         time = time + dif - MINUTES_IN_DAY;
         day = DAYS.indexOf(day) + 1;
+        if (day >= DAYS.length) {
+            time = MINUTES_IN_DAY - 1;
+            day = DAYS.length - 1;
+        }
     } else if (time + dif < 0) {
         time = MINUTES_IN_DAY + time + dif;
         day = DAYS.indexOf(day) - 1;
+        if (day < 0) {
+            time = 0;
+            day = 0;
+        }
     } else {
         time = time + dif;
         day = DAYS.indexOf(day);
