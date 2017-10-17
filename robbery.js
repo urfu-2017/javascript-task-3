@@ -187,6 +187,3 @@ function partOfNoteToMinutes(part) {
 
     return ours * 60 + minutes - timezone * 60;
 }
-
-}
-
