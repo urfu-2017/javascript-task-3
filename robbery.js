@@ -6,7 +6,7 @@
  */
 exports.isStar = true;
 
-const DAY_NAMES = ['ПН', 'ВТ', 'СР'];
+const DAY_NAMES = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
@@ -43,7 +43,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     let baseTimezone = parseTimeParts(workingHours.from).timezone;
-    let periodsToFind = parsePeriods(DAY_NAMES.map(day => appendDay(day, workingHours)));
+    let periodsToFind = parsePeriods(
+        DAY_NAMES.slice(0, 3).map(day => appendDay(day, workingHours)));
     let excludePeriods = parsePeriods(Object.values(schedule).reduce((a, b) => a.concat(b)));
     let firstPossibleTime = findPeriod(
         periodsToFind[0].from, periodsToFind, excludePeriods, duration);
