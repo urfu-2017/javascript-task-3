@@ -11,6 +11,10 @@ function parseDate(date) {
     return Date.UTC(2017, 4, DAYS[day], hours - timezone, minutes);
 }
 
+function normalizeTimeline(timeline) {
+    return { from: parseDate(timeline.from), to: parseDate(timeline.to) };
+}
+
 class AppropriateMoment {
 
     /**
@@ -26,17 +30,13 @@ class AppropriateMoment {
             to: parseDate(`${day} ${workingHours.to}`)
         }));
 
-        const gangSchedule = this._mergeTimelines(Object.values(schedule)
-            .map(robber => robber.map(t => ({
-                from: parseDate(t.from),
-                to: parseDate(t.to)
-            })))
-        );
+        const gangSchedule = Object.values(schedule).reduce((result, timeline) =>
+            result.concat(timeline.map(normalizeTimeline)), []);
 
         duration = duration * MILLIS_OF_MIN;
 
         this._moments = bankSchedule.reduce((result, day) => {
-            for (let from = day.from; from <= day.to - duration; from += TRY_COOLDOWN) {
+            for (let from = day.from; from <= day.to - duration; from += MILLIS_OF_MIN) {
                 const candidate = { from, to: from + duration };
 
                 if (!gangSchedule.some((timeline) => this._areIntersected(timeline, candidate))) {
@@ -45,9 +45,9 @@ class AppropriateMoment {
             }
 
             return result;
-        }, []).reverse();
+        }, []);
 
-        this._moment = this._moments.pop();
+        this._moment = this._moments[0];
         this._bankTimezone = Number(workingHours.to.split('+')[1]);
     }
 
@@ -56,7 +56,7 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     exists() {
-        return Boolean(this._moment);
+        return this._moments.length !== 0;
     }
 
     /**
@@ -86,10 +86,12 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     tryLater() {
-        if (this.exists() && this._moments.length !== 0) {
-            this._moment = this._moments.pop();
+        for (const moment of this._moments) {
+            if (moment >= this._moment + TRY_COOLDOWN) {
+                this._moment = moment;
 
-            return true;
+                return true;
+            }
         }
 
         return false;
@@ -124,12 +126,7 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     _areIntersected(timeline1, timeline2) {
-        return (
-            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
-            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
-            (timeline1.from < timeline2.from && timeline1.to > timeline2.from) ||
-            (timeline1.to > timeline2.to && timeline1.from < timeline2.to)
-        );
+        return timeline1.from < timeline2.to && timeline1.to > timeline2.from;
     }
 }
 
