@@ -78,26 +78,27 @@ function getRobbersTime(schedule, banksTimeZone) {
 const areIntersected = (firstRange, secondRange) => firstRange.to >= secondRange.from;
 
 function mergeRanges(ranges) {
-    let result = [];
     let top;
+    const arrayCopy = [...ranges].sort((firstDate, secondDate) => firstDate.from - secondDate.from);
 
-    ranges.sort((firstDate, secondDate) => {
-        return firstDate.from - secondDate.from;
-    });
-    result.push({
-        from: ranges[0].from,
-        to: ranges[0].to
-    });
-    ranges.slice(1).forEach(range => {
-        top = result[result.length - 1];
-        if (!areIntersected(top, range)) {
-            result.push(range);
-        } else if (top.to < range.to) {
-            top.to = range.to;
-        }
-    });
+    return arrayCopy
+        .slice(1)
+        .reduce(
+            (result, range) => {
+                top = result[result.length - 1];
+                if (!areIntersected(top, range)) {
+                    result.push(range);
+                } else if (top.to < range.to) {
+                    top.to = range.to;
+                }
 
-    return result;
+                return result;
+            },
+            [{
+                from: arrayCopy[0].from,
+                to: arrayCopy[0].to
+            }]
+        );
 }
 
 function reverseRanges(ranges, from, to) {
@@ -117,9 +118,7 @@ function reverseRanges(ranges, from, to) {
 
 function intersectWithBanksTime(available, banksWorkingHours) {
     const combinedRanges = available.concat(banksWorkingHours)
-        .sort((firstDate, secondDate) => {
-            return firstDate.from - secondDate.from;
-        });
+        .sort((firstDate, secondDate) => firstDate.from - secondDate.from);
     let intersected = [];
     let top = combinedRanges[0];
 
