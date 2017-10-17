@@ -197,7 +197,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var startInterval = timeIntervals[0];
             var isItLongEnough = startInterval.getLength() >= (duration + MINUTES_TO_START_LATER);
             var anotherIntervalExist = timeIntervals.length > 1;
-            if (this.exists() && (isItLongEnough || anotherIntervalExist)) {
+            if (this.exists() && (anotherIntervalExist || isItLongEnough)) {
                 startInterval.start += MINUTES_TO_START_LATER;
                 timeIntervals = removeSmallIntervals(timeIntervals, duration);
 
