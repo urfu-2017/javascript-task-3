@@ -270,7 +270,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var res = template.replace('%HH', result[0].from.split(':')[0])
                 .replace('%MM', result[0].from.split(':')[1])
                 .replace('%DD', result[0].day);
-            result.shift();
+
 
             return res;
         },
@@ -281,7 +281,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return result.length > 1;
+            var willLater = result.length > 1;
+            if (result.length > 1) {
+                result.shift();
+            }
+            return willLater;
         }
     };
 };
