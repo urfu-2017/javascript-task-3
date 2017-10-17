@@ -22,7 +22,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let workTimelines = workingHoursToTimelines(workingHours);
     let busyTime = DannyBusy.concat(RustyBusy.concat(LinusBusy));
     let start = -1;
-    if (typeof (duration) === 'number' && duration >= 0) {
+    if (typeof (duration) === 'number' && duration > 0) {
         start = getStart(workTimelines, busyTime, duration);
     }
 
@@ -80,12 +80,12 @@ function minutesToData(minutes, workingHours) {
     let day = 'ПН';
     let hour = String(Math.floor(minutes / 60) + Number(workingHours.to.slice(6, 8)));
     let minute = String(minutes % 60);
-    if (Number(hour) / 24 >= 1) {
+    if (Number(hour) / 24 === 1) {
         day = 'ВТ';
         hour = String(Math.floor((minutes - 24 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 24 * 60 - Math.floor((minutes - 24 * 60) / 60) * 60);
     }
-    if (Number(hour) / 24 >= 2) {
+    if (Number(hour) / 24 === 2) {
         day = 'СР';
         hour = String(Math.floor((minutes - 48 * 60) / 60) + Number(workingHours.to.slice(6, 8)));
         minute = String(minutes - 48 * 60 - Math.floor((minutes - 48 * 60) / 60) * 60);
