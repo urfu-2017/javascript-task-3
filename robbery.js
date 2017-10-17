@@ -50,11 +50,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         format: function (template) {
             if (start !== -1) {
                 let [day, hour, minute] = minutesToData(start, workingHours);
-                if (minute === '0') {
-                    minute += '0';
+                if (Number(minute) < 10) {
+                    minute = '0' + minute;
                 }
-                if (hour === '0') {
-                    hour += '0';
+                if (Number(hour) < 10) {
+                    minute = '0' + hour;
                 }
 
                 return template.replace('%DD', day)
@@ -151,10 +151,10 @@ function workingHoursToTimelines(workingHours) {
 
 function partWorkingHoursToTimelines(part) {
     let ours = Number(part.slice(0, 2));
-    let Timelines = Number(part.slice(3, 5));
+    let minutes = Number(part.slice(3, 5));
     let timezone = Number(part.slice(6, 8));
 
-    return ours * 60 + Timelines - timezone * 60;
+    return ours * 60 + minutes - timezone * 60;
 }
 
 function timeWhenSomeoneIsBusy(manSchedule) {
