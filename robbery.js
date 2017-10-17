@@ -58,6 +58,17 @@ function strToDate(strDate) {
     return dateInfo;
 }
 
+function getGangsterNames(schedule) {
+    var gangsterNames = [];
+    for (var gangsterName in schedule) {
+        if (schedule.hasOwnProperty(gangsterName)) {
+            gangsterNames.push(gangsterName);
+        }
+    }
+
+    return gangsterNames;
+}
+
 function createTimeIntervalShifted(time, shift) {
     var from = strToDate(time.from).intValue + shift;
     var to = strToDate(time.to).intValue + shift;
@@ -153,7 +164,7 @@ function timeToString(time) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    var gangsterNames = Object.keys(schedule);
+    var gangsterNames = getGangsterNames(schedule);
     var scheduleObj = createScheduleObj(schedule, workingHours, gangsterNames);
     var timeIntervals = createTimeIntervals(scheduleObj, gangsterNames);
     timeIntervals = removeSmallIntervals(timeIntervals, duration);
