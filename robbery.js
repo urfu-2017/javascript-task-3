@@ -32,7 +32,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let groupFreeTimes = groupMinutes(freeTime); // Группирую свободные минуты в интервалы(массивы)
     let startTimes = findTimeToStart(groupFreeTimes, duration); // Массив стартовых минут
 
-    let MEGACOUNTER = 0; // Счетчик для вывода нужного стартового времени(Смотри методы ниже)
+    let startTimeCounter = 0; // Счетчик для вывода нужного стартового времени(Смотри методы ниже)
 
     return {
 
@@ -57,11 +57,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             if (startTimes.length) {
-                template = template.replace('%HH', startTimes[MEGACOUNTER][1]);
-                template = template.replace('%MM', startTimes[MEGACOUNTER][2]);
-                template = template.replace('%DD', startTimes[MEGACOUNTER][0]);
-
-                return template;
+                return template
+                    .replace('%HH', startTimes[startTimeCounter][1])
+                    .replace('%MM', startTimes[startTimeCounter][2])
+                    .replace('%DD', startTimes[startTimeCounter][0]);
             }
 
             return '';
@@ -75,8 +74,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             // Если существует следующий элемент, то значит альтернатива
             // Есть и счетчик стартовыхВремен ++ 
-            if (startTimes[MEGACOUNTER + 1]) {
-                MEGACOUNTER += 1;
+            if (startTimes[startTimeCounter + 1]) {
+                startTimeCounter += 1;
 
                 return true;
             }
@@ -91,75 +90,69 @@ function createRasp(schedule, GMT, workingHours) {
     for (const person in schedule) {
         if (person) {
             rasp[person] = [];
-            schedule[person].forEach((info) => {
+            schedule[person].forEach(info => {
                 let fromData = info.from.match(/\d+/g); // Пример ['12', '30', '5']
                 let toData = info.to.match(/\d+/g);
-                let delta = Number(GMT) - Number(fromData[2]); // Считаю разницу в часовых поясах
+                let delta = GMT - fromData[2]; // Считаю разницу в часовых поясах
 
                 let fromDay = info.from.split(' ')[0]; // Пример 'ПН'
                 let toDay = info.to.split(' ')[0];
 
-                let fromDataToTime = minuteCounter(fromData, delta, fromDay); // Перевожу в минуты
-                let toDataToTime = minuteCounter(toData, delta, toDay); // Перевожу в минуты
+                let fromDataToTime = dateToMinutes(fromData, delta, fromDay); // Перевожу в минуты
+                let toDataToTime = dateToMinutes(toData, delta, toDay); // Перевожу в минуты
 
                 rasp[person].push([fromDataToTime, toDataToTime]); // Пушу новый ОТиДО
             });
         }
     }
 
-    addBankToRasp(rasp, workingHours, GMT); // Отдельно добавляю банк
-
+    rasp.Bank = addBankToRasp(workingHours, GMT); // Отдельно добавляю банк
 
     return rasp;
 }
 
-function minuteCounter(timeData, delta, Day) {
+function dateToMinutes(timeData, delta, Day) {
     // Формирю время в минутах как (ЧАСЫ + дельтаЧасовыхПоясов) * на 60 минут + минуты
-    let time = Number((Number(timeData[0]) + delta) * 60 + Number(timeData[1]));
+    let time = (Number(timeData[0]) + Number(delta)) * 60 + Number(timeData[1]);
     if (Day === 'ВТ') { // Если день вторник, то накинуть ко времени еще сутки(в минутах)
-        time += (24 * 60);
+        time += 24 * 60;
     }
     if (Day === 'СР') { // Аналогично
-        time += (48 * 60);
+        time += 48 * 60;
     }
     // Обрабатываю, если вышло за грани начшего часового пояса, то ставить границу
     if (time < 0) {
         time = 0;
     }
 
-    if (time > (72 * 60)) {
+    if (time > 72 * 60) {
         time = 72 * 60;
     }
 
     return time;
 }
 
-function addBankToRasp(rasp, workingHours, GMT) {
-    rasp.Bank = [];
+function addBankToRasp(workingHours, GMT) {
     let fromData = workingHours.from.match(/\d+/g);
     let toData = workingHours.to.match(/\d+/g);
     let delta = Number(GMT) - Number(fromData[2]);
-    let fromDataToTime = minuteCounter(fromData, delta, 'ПН'); // Т.к. банк ежедневный -> ПН пойдет
-    let toDataToTime = minuteCounter(toData, delta, 'ПН');
+    let fromDataToTime = dateToMinutes(fromData, delta, 'ПН'); // Т.к. банк ежедневный -> ПН пойдет
+    let toDataToTime = dateToMinutes(toData, delta, 'ПН');
 
     if (fromDataToTime !== toDataToTime) {
-        // Добавляю свободные часы банка на каждый день
-        rasp.Bank.push([fromDataToTime, toDataToTime]);
-        rasp.Bank.push([fromDataToTime + (24 * 60), toDataToTime + (24 * 60)]);
-        rasp.Bank.push([fromDataToTime + (48 * 60), toDataToTime + (48 * 60)]);
+        // Возвращаю свободные часы банка на каждый день
+        return [[fromDataToTime, toDataToTime],
+            [fromDataToTime + (24 * 60), toDataToTime + (24 * 60)],
+            [fromDataToTime + (48 * 60), toDataToTime + (48 * 60)]];
     }
 
-    return true;
+    return [];
 }
 
 function elementInInterval(el, intervals) {
     // Есть ли минута(ее номер) в заданом интервале [от;до)
     let booleanReturn = false;
-    intervals.forEach((interval) => {
-        if (el >= interval[0] && el < interval[1]) {
-            booleanReturn = true;
-        }
-    });
+    booleanReturn = intervals.some(interval => el >= interval[0] && el < interval[1]);
 
     return booleanReturn;
 }
