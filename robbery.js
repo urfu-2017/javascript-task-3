@@ -85,22 +85,22 @@ function addMinuteToIntervals(intervals, minute) {
     }
 }
 
-function isGangstersNotBusy(schedule, gangsterNames, time) {
-    var gangstersIsNotBusy = true;
+function isGangstersBusy(schedule, gangsterNames, time) {
+    var gangstersIsBusy = false;
     gangsterNames.forEach(function (gangster) {
         if (isTimeInIntervals(schedule[gangster], time)) {
-            gangstersIsNotBusy = false;
+            gangstersIsBusy = true;
         }
     });
 
-    return gangstersIsNotBusy;
+    return gangstersIsBusy;
 }
 
 function createTimeIntervals(schedule, gangsterNames) {
     var goodTimeIntervals = [];
 
     for (var i = 0; i < DAYS_TO_HACK * MINUTES_IN_DAY; i++) {
-        if (isGangstersNotBusy(schedule, gangsterNames, i) && isTimeInIntervals(schedule.Bank, i)) {
+        if (!isGangstersBusy(schedule, gangsterNames, i) && isTimeInIntervals(schedule.Bank, i)) {
             addMinuteToIntervals(goodTimeIntervals, i);
         }
 
