@@ -9,7 +9,7 @@ const WEEK_DAYS = ['ПН', 'ВТ', 'СР'];
 
 const getBanksTimeZone = banksTime => banksTime.split('+')[1];
 
-const getHours = (time) => Number(time.split(':')[0]);
+const getHours = time => Number(time.split(':')[0]);
 
 function getMinutes(time) {
     const minsAndZone = time.split(':')[1];
@@ -61,8 +61,8 @@ function makeDateObj(time, banksTimeZone) {
 
 function getRobbersTime(schedule, banksTimeZone) {
     let allSchedule = [];
-    Object.keys(schedule).forEach((robber) => {
-        schedule[robber].forEach((occupiedTime) => {
+    Object.keys(schedule).forEach(robber => {
+        schedule[robber].forEach(occupiedTime => {
             allSchedule.push({
                 from: makeDateObj(occupiedTime.from, banksTimeZone),
                 to: makeDateObj(occupiedTime.to, banksTimeZone)
@@ -86,7 +86,7 @@ function mergeRanges(ranges) {
         from: ranges[0].from,
         to: ranges[0].to
     });
-    ranges.slice(1).forEach((range) => {
+    ranges.slice(1).forEach(range => {
         top = result[result.length - 1];
         if (!areIntersected(top, range)) {
             result.push(range);
@@ -103,7 +103,7 @@ function reverseRanges(ranges, from, to) {
     let start = from;
     let reversedRange;
 
-    ranges.forEach((range) => {
+    ranges.forEach(range => {
         reversedRange = { from: start, to: range.from };
         start = range.to;
         reversed.push(reversedRange);
@@ -144,7 +144,7 @@ function intersectWithBanksTime(available, banksWorkingHours) {
 
 function findRangesForRobbery(available, duration) {
     let difference;
-    let rangesForRobbery = available.filter((range) => {
+    let rangesForRobbery = available.filter(range => {
         difference = range.to - range.from;
 
         return difference >= (duration * MINUTES_TO_MILLISECONDS);
