@@ -58,17 +58,6 @@ function strToDate(strDate) {
     return dateInfo;
 }
 
-function getGangsterNames(schedule) {
-    var gangsterNames = [];
-    for (var gangsterName in schedule) {
-        if (schedule.hasOwnProperty(gangsterName)) {
-            gangsterNames.push(gangsterName);
-        }
-    }
-
-    return gangsterNames;
-}
-
 function createTimeIntervalShifted(time, shift) {
     var from = strToDate(time.from).intValue + shift;
     var to = strToDate(time.to).intValue + shift;
@@ -77,14 +66,14 @@ function createTimeIntervalShifted(time, shift) {
 }
 
 function removeSmallIntervals(intervals, minLength) {
-    var timeIntervals = [];
-    intervals.forEach(function (interval) {
-        if (interval.getLength() >= minLength) {
-            timeIntervals.push(interval);
+    var newTimeIntervals = [];
+    intervals.forEach(function (timeInterval) {
+        if (timeInterval.getLength() >= minLength) {
+            newTimeIntervals.push(timeInterval);
         }
     });
 
-    return timeIntervals;
+    return newTimeIntervals;
 }
 
 function addMinuteToIntervals(intervals, minute) {
@@ -96,22 +85,21 @@ function addMinuteToIntervals(intervals, minute) {
     }
 }
 
-function isGangstersBusy(schedule, gangsterNames, time) {
-    var gangstersIsBusy = false;
-    gangsterNames.forEach(function (gangster) {
-        if (isTimeInIntervals(schedule[gangster], time)) {
-            gangstersIsBusy = true;
+function isGangstersNotBusy(schedule, gangsterNames, time) {
+    for (var gangsterName of gangsterNames) {
+        if (isTimeInIntervals(schedule[gangsterName], time)) {
+            return false;
         }
-    });
+    }
 
-    return gangstersIsBusy;
+    return true;
 }
 
 function createTimeIntervals(schedule, gangsterNames) {
     var goodTimeIntervals = [];
 
     for (var i = 0; i < DAYS_TO_HACK * MINUTES_IN_DAY; i++) {
-        if (!isGangstersBusy(schedule, gangsterNames, i) && isTimeInIntervals(schedule.Bank, i)) {
+        if (isGangstersNotBusy(schedule, gangsterNames, i) && isTimeInIntervals(schedule.Bank, i)) {
             addMinuteToIntervals(goodTimeIntervals, i);
         }
 
@@ -164,7 +152,7 @@ function timeToString(time) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    var gangsterNames = getGangsterNames(schedule);
+    var gangsterNames = Object.keys(schedule);
     var scheduleObj = createScheduleObj(schedule, workingHours, gangsterNames);
     var timeIntervals = createTimeIntervals(scheduleObj, gangsterNames);
     timeIntervals = removeSmallIntervals(timeIntervals, duration);
@@ -176,7 +164,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return timeIntervals.length;
+            return timeIntervals.length !== 0;
         },
 
         /**
