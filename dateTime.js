@@ -62,7 +62,6 @@ exports.addMinutes = function (dateTime, minutes) {
     }
 
     if (dateTime.hours > MAX_HOUR) {
-        dateTime.hours = dateTime.hours % (MAX_HOUR + 1);
         let daysCount = Math.floor(dateTime.hours / (MAX_HOUR + 1));
         for (let i = 0; i < daysCount; i++) {
             moveOnOneDay(dateTime, 1);
