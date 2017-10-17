@@ -3,7 +3,7 @@
 const DATE_FORMAT = /(ПН|ВТ|СР)\s(\d\d):(\d\d)\+(\d)/;
 const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03' };
 const MILLIS_OF_MIN = 60000;
-const TRY_COOLDOWN = 30 * MILLIS_OF_MIN;
+const HOUR_AS_MILLIS = 60 * MILLIS_OF_MIN;
 
 function parseDate(date) {
     const [, day, hours, minutes, timezone] = date.match(DATE_FORMAT);
@@ -36,7 +36,7 @@ class AppropriateMoment {
         duration = duration * MILLIS_OF_MIN;
 
         this._moments = bankSchedule.reduce((result, workDay) => {
-            for (let from = workDay.from; from <= workDay.to - duration; from += TRY_COOLDOWN) {
+            for (let from = workDay.from; from <= workDay.to - duration; from += MILLIS_OF_MIN) {
                 const candidate = { from, to: from + duration };
 
                 if (!gangSchedule.some((timeline) => this._areIntersected(timeline, candidate))) {
@@ -71,12 +71,12 @@ class AppropriateMoment {
             return '';
         }
 
-        const offsetInMillis = this._bankTimezone * 60 * MILLIS_OF_MIN;
-        const date = new Date(this._moment + offsetInMillis);
+        const date = new Date(this._moment);
+        const timezone = this._bankTimezone + date.getTimezoneOffset() / 60;
+        date.setTime(this._moment + timezone * HOUR_AS_MILLIS);
 
-        return template
-            .replace('%HH', date.getUTCHours())
-            .replace('%MM', String(date.getUTCMinutes()).padStart(2, '0'))
+        return template.replace('%HH', ('0' + date.getHours()).slice(-2))
+            .replace('%MM', ('0' + date.getMinutes()).slice(-2))
             .replace('%DD', Object.keys(DAYS)[date.getDay()]);
     }
 
