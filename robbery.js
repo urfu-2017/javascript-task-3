@@ -248,21 +248,16 @@ function equalizeShifts(scheduleBlock, mainShift) {
     return scheduleBlock.map(segment => {
         let time = new Date();
         let difference = Number(getShift(segment)) - Number(mainShift);
-
         time.setHours(Number(getHours(segment.from)) - difference);
-        // console.info(time.getHours() + ' - ' + time.getTime());
         let newFrom = segment.from.replace(/\d\d:/,
             time.getHours() + ':').replace(/\+\d$/, '');
         if (Number(time.getHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
             newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].next);
         }
         if (Number(getHours(segment.from)) - Number(time.getHours()) < 0 && difference > 0) {
-            let day = getDay(segment.from);
-            newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[day].previous);
+            newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].previous);
         }
-
         time.setHours(Number(getHours(segment.to)) - difference);
-        // console.info(time.getHours() + ' - ' + time.getTime());
         let newTo = segment.to.replace(/\d\d:/,
             time.getHours() + ':').replace(/\+\d$/, '');
         if (Number(time.getHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
@@ -273,11 +268,9 @@ function equalizeShifts(scheduleBlock, mainShift) {
         }
 
         return {
-            from: newFrom,
-            to: newTo
+            from: newFrom, to: newTo
         };
     });
-
 }
 
 function separateSegment(segment) {
