@@ -265,8 +265,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (result.length === 0) {
-                return '';
+            if (!this.exists()) {
+                return ('');
             }
             var res = template.replace('%HH', result[0].from.split(':')[0])
                 .replace('%MM', result[0].from.split(':')[1])
