@@ -9,7 +9,17 @@ exports.isStar = true;
 var daysOfWeeksToHours = {
     'ПН': 0,
     'ВТ': 24,
-    'СР': 24*2
+    'СР': 24 * 2
+};
+
+var numberDayToDayWeek = {
+    0: 'ПН',
+    1: 'ВТ',
+    2: 'СР',
+    3: 'ЧТ',
+    4: 'ПТ',
+    5: 'СБ',
+    6: 'ВС'
 };
 
 /**
@@ -21,57 +31,20 @@ var daysOfWeeksToHours = {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let [bankHoursFrom, bankMinutesFrom, bankTimezone] = workingHours.from.split(/:|\+/).map(x=> Number(x));
-    let [bankHoursTo, bankMinutesTo] = workingHours.from.split(/:|\+/).map(x=> Number(x));
-    
-    let danny = schedule.Danny;
-    let rusty = schedule.Rusty;
-    let linus = schedule.Linus;
+    let [, , bankTimezone] = workingHours.from.split(/:|\+/)
+        .map(x => Number(x));
 
-    let s3 = linus
-    .map(parseScheduleEntry)
-    .map(x => getTimeInBankTimezone(x, bankTimezone));;
-
-    let s1 = danny
+    let sortedTimeIntervals = getAllScheduleEntries(schedule)
         .map(parseScheduleEntry)
-        .map(x => getTimeInBankTimezone(x, bankTimezone));
-    let s2 = rusty
-        .map(parseScheduleEntry)
-        .map(x => getTimeInBankTimezone(x, bankTimezone));
+        .map(x => getTimeInBankTimezone(x, bankTimezone))
+        .sort((a, b) => a.totalMinutesFrom > b.totalMinutesFrom);
 
+    let mergedIntervals = getMergeTimeIntervals(sortedTimeIntervals);
+    let bankWorkIntervals = getbankWorkIntervals(workingHours);
 
-    let rez = s1.concat(s2).concat(s3);
+    let results = getAppropriateMoments(mergedIntervals, bankWorkIntervals);
+    let answer = results.filter(x => x.different >= duration);
 
-    let rs = rez.sort((a,b) => a.totalMinutesFrom > b.totalMinutesFrom);
-    
-    let newRs = [];
-    var currentTimePeriod = rs[0];
-    var currentStart = currentTimePeriod.totalMinutesFrom;
-    var currentFinish = currentTimePeriod.totalMinutesTo;
-    for (var i = 1; i < rs.length; i++) {
-        var element = rs[i];
-        if (currentFinish > element.totalMinutesTo) {
-            continue;
-        }
-        if (currentFinish >= element.totalMinutesFrom) {
-            currentFinish = element.totalMinutesTo;
-        }
-        else {
-            newRs.push({
-                start: currentStart,
-                finish: currentFinish
-            })
-
-            var currentStart = element.totalMinutesFrom;
-            var currentFinish = element.totalMinutesTo;
-        }
-    }
-    newRs.push({
-        start: currentStart,
-        finish: currentFinish
-    })
-
-    let ff = newRs.sort((a,b) => a.totalMinutesFrom > b.totalMinutesFrom);
     return {
 
         /**
@@ -79,7 +52,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return answer.length !== 0;
         },
 
         /**
@@ -90,7 +63,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (answer.length === 0) {
+                return '';
+            }
+
+            let startTimeInMinutes = answer[0].startMoment;
+            let minutes = startTimeInMinutes % 60;
+            let totalHours = Math.floor(startTimeInMinutes / 60);
+            let day = Math.floor(totalHours / 24);
+            let hours = totalHours % 24;
+
+            return template
+                .replace('%HH', hours > 9 ? hours : `0${hours}`)
+                .replace('%MM', minutes > 9 ? minutes : `0${hours}`)
+                .replace('%DD', numberDayToDayWeek[day]);
         },
 
         /**
@@ -123,13 +109,13 @@ function parseScheduleEntry(x) {
         minutesTo,
         robberTimezone
     };
-};
+}
 
 function getTimeInBankTimezone(x, bankTimezone) {
     let timezoneDiff = bankTimezone - x.robberTimezone;
 
-    let totalHoursFrom = x.hoursFrom - timezoneDiff + daysOfWeeksToHours[x.startDay];
-    let totalHoursTo = x.hoursTo - timezoneDiff + daysOfWeeksToHours[x.endDay];
+    let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay];
+    let totalHoursTo = x.hoursTo + timezoneDiff + daysOfWeeksToHours[x.endDay];
 
     let totalMinutesFrom = totalHoursFrom * 60 + x.minutesFrom;
     let totalMinutesTo = totalHoursTo * 60 + x.minutesTo;
@@ -137,5 +123,123 @@ function getTimeInBankTimezone(x, bankTimezone) {
     return {
         totalMinutesFrom,
         totalMinutesTo
+    };
+}
+
+function getAllScheduleEntries(schedule) {
+    return [].concat(schedule.Danny, schedule.Rusty, schedule.Linus);
+}
+
+function getTotalMinutesFromStartWeek(hours, minutes, dayWeek) {
+    return (hours + daysOfWeeksToHours[dayWeek]) * 60 + minutes;
+}
+
+function getMergeTimeIntervals(sortedTimeIntervals) {
+    let mergeTimeIntervals = [];
+    let currentTimeInterval = sortedTimeIntervals[0];
+    let start = currentTimeInterval.totalMinutesFrom;
+    let end = currentTimeInterval.totalMinutesTo;
+    for (var i = 1; i < sortedTimeIntervals.length; i++) {
+        currentTimeInterval = sortedTimeIntervals[i];
+        if (end > currentTimeInterval.totalMinutesTo) {
+            continue;
+        }
+        if (end >= currentTimeInterval.totalMinutesFrom) {
+            end = currentTimeInterval.totalMinutesTo;
+        } else {
+            mergeTimeIntervals.push({ start, end });
+
+            start = currentTimeInterval.totalMinutesFrom;
+            end = currentTimeInterval.totalMinutesTo;
+        }
     }
+    mergeTimeIntervals.push({ start, end });
+
+    return mergeTimeIntervals;
+}
+
+function getbankWorkIntervals(workingHours) {
+    let [bankHoursFrom, bankMinutesFrom] = workingHours.from.split(/:|\+/)
+        .map(x => Number(x));
+    let [bankHoursTo, bankMinutesTo] = workingHours.to.split(/:|\+/)
+        .map(x => Number(x));
+
+    let bankWorkIntervals = [];
+    let workDays = ['ПН', 'ВТ', 'СР'];
+
+    workDays.forEach(function (workDay) {
+        bankWorkIntervals.push({
+            start: getTotalMinutesFromStartWeek(bankHoursFrom, bankMinutesFrom, workDay),
+            end: getTotalMinutesFromStartWeek(bankHoursTo, bankMinutesTo, workDay)
+        });
+    });
+
+    return bankWorkIntervals;
+}
+
+function getResult(bankWorkInterval, intervals) {
+    let appropriateMoments = [];
+    if (intervals.length === 0) {
+        return appropriateMoments;
+    }
+
+    let currentInterval = intervals[0];
+
+    let startMoment = getStartMoment(currentInterval, bankWorkInterval);
+    let endMoment = getEndMoment(currentInterval, bankWorkInterval);
+
+    if (intervals.length === 1) {
+        return [{
+            startMoment,
+            endMoment,
+            different: endMoment - startMoment
+        }];
+    }
+
+    for (var i = 1; i < intervals.length; i++) {
+        currentInterval = intervals[i];
+        endMoment = getEndMoment(currentInterval, bankWorkInterval);
+
+        appropriateMoments.push({
+            startMoment,
+            endMoment,
+            different: endMoment - startMoment
+        });
+
+        startMoment = currentInterval.end;
+    }
+
+
+    return appropriateMoments;
+}
+
+function getAppropriateMoments(mergedIntervals, bankWorkIntervals) {
+    let results = [];
+
+    for (let i = 0; i < bankWorkIntervals.length; i++) {
+        let bankWorkInterval = bankWorkIntervals[i];
+
+        let start = bankWorkInterval.start;
+        let end = bankWorkInterval.end;
+
+        let intervals = mergedIntervals.filter(x => {
+            return (x.start > start && x.start < end) ||
+                (x.end > start && x.end < end);
+        });
+
+        let res = getResult(bankWorkInterval, intervals);
+        results = results.concat(res);
+    }
+
+    return results;
+}
+
+function getStartMoment(currentInterval, bankWorkInterval) {
+    return currentInterval.start < bankWorkInterval.start ? currentInterval.end
+        : bankWorkInterval.start;
+}
+
+function getEndMoment(currentInterval, bankWorkInterval) {
+    return currentInterval.start < bankWorkInterval.end ? currentInterval.start
+        : bankWorkInterval.end;
 }
