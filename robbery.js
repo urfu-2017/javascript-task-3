@@ -66,14 +66,14 @@ function createTimeIntervalShifted(time, shift) {
 }
 
 function removeSmallIntervals(intervals, minLength) {
-    var newTimeIntervals = [];
-    intervals.forEach(function (timeInterval) {
-        if (timeInterval.getLength() >= minLength) {
-            newTimeIntervals.push(timeInterval);
+    var timeIntervals = [];
+    intervals.forEach(function (interval) {
+        if (interval.getLength() >= minLength) {
+            timeIntervals.push(interval);
         }
     });
 
-    return newTimeIntervals;
+    return timeIntervals;
 }
 
 function addMinuteToIntervals(intervals, minute) {
@@ -86,13 +86,14 @@ function addMinuteToIntervals(intervals, minute) {
 }
 
 function isGangstersNotBusy(schedule, gangsterNames, time) {
-    for (var gangsterName of gangsterNames) {
-        if (isTimeInIntervals(schedule[gangsterName], time)) {
-            return false;
+    var gangstersIsNotBusy = true;
+    gangsterNames.forEach(function (gangster) {
+        if (isTimeInIntervals(schedule[gangster], time)) {
+            gangstersIsNotBusy = false;
         }
-    }
+    });
 
-    return true;
+    return gangstersIsNotBusy;
 }
 
 function createTimeIntervals(schedule, gangsterNames) {
@@ -164,7 +165,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return timeIntervals.length !== 0;
+            return !timeIntervals.length;
         },
 
         /**
