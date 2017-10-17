@@ -15,13 +15,14 @@ exports.isStar = true;
  * @returns {Object}
  */
 const MILLIS_IN_MINUTE = 60 * 1000;
+const START_DAY = 16;
+const START_MONTH = 9;
+const START_YEAR = 2017;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
     let bankOffset = getBankOffset(workingHours.from);
     let timespans = parseShedule(schedule);
-    unionTimespans(timespans);
     let infos = getInfos(timespans, workingHours);
-    fillFree(infos);
     let durationInMillis = duration * MILLIS_IN_MINUTE;
     let goodTime = searchStart(infos, durationInMillis);
 
@@ -52,7 +53,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            let frees = getFrees(infos);
+            let frees = extractFrees(infos);
             if (frees.length === 0) {
                 return false;
             }
@@ -88,7 +89,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function checkPossible(frees, nextPossible) {
-        let nextIndex = getIndex(frees, nextPossible);
+        let nextIndex = getIndexByTime(frees, nextPossible);
         if (nextIndex === false) {
             return false;
         }
@@ -101,7 +102,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 
-function getFrees(infos) {
+function extractFrees(infos) {
     let frees = [];
     infos.forEach(function (currentDay) {
         frees = frees.concat(currentDay.free);
@@ -110,7 +111,7 @@ function getFrees(infos) {
     return frees;
 }
 
-function getIndex(frees, time) {
+function getIndexByTime(frees, time) {
     let indexFree = 0;
     while (time < frees[indexFree].from || time > frees[indexFree].to) {
         indexFree++;
@@ -123,14 +124,16 @@ function getIndex(frees, time) {
 }
 
 function getInfos(timespans, workingHours) {
+    combineTimespans(timespans);
     let infoOnDay = [];
     for (var day = 0; day < 3; day++) {
         infoOnDay[day] = {};
         let startWork = parseWorkTime(workingHours.from, day);
         let endWork = parseWorkTime(workingHours.to, day);
-        infoOnDay[day].crosses = crossesWorkingHours(timespans, startWork, endWork);
+        infoOnDay[day].crosses = filterCrossesWorkHours(timespans, startWork, endWork);
         infoOnDay[day].start = startWork;
         infoOnDay[day].end = endWork;
+        infoOnDay[day].free = getFrees(infoOnDay[day]);
     }
 
     return infoOnDay;
@@ -141,13 +144,13 @@ function parseShedule(schedule) {
     for (var man in schedule) {
         if (schedule.hasOwnProperty(man)) {
             let times = schedule[man];
-            fillTimespans(times, timespans);
+            parseTimesToArray(times, timespans);
         }
     }
 
     return timespans;
 
-    function fillTimespans(times, array) {
+    function parseTimesToArray(times, array) {
         for (let time of times) {
             let timespan = {};
             timespan.from = parseTime(time.from);
@@ -166,7 +169,7 @@ function parseTime(time) {
     let minutes = Number(result[3]);
     let offset = Number(result[4]);
 
-    return Date.UTC(2017, 9, 16 + day, hours - offset, minutes);
+    return Date.UTC(START_YEAR, START_MONTH, START_DAY + day, hours - offset, minutes);
 }
 
 function parseWorkTime(time, day = 0) {
@@ -175,14 +178,14 @@ function parseWorkTime(time, day = 0) {
     let minutes = Number(result[2]);
     let offset = Number(result[3]);
 
-    return Date.UTC(2017, 9, 16 + day, hours - offset, minutes);
+    return Date.UTC(START_YEAR, START_MONTH, START_DAY + day, hours - offset, minutes);
 }
 
 function getBankOffset(time) {
     return Number(time.substring(6));
 }
 
-function unionTimespans(timespans) {
+function combineTimespans(timespans) {
     timespans.sort((a, b) => a.from - b.from);
     for (let i = 0; i + 1 < timespans.length; i++) {
         if (timespans[i].to >= timespans[i + 1].from) {
@@ -198,13 +201,13 @@ function unionTimespans(timespans) {
     }
 }
 
-function crossesWorkingHours(timespans, startWork, endWork) {
+function filterCrossesWorkHours(timespans, startWork, endWork) {
     return timespans.filter(timespan => {
         return !(timespan.to <= startWork || timespan.from >= endWork);
     }).sort((a, b) => a.from - b.from);
 }
 
-let startWeek = Date.UTC(2017, 9, 16);
+let startWeek = Date.UTC(START_YEAR, START_MONTH, START_DAY);
 let startWeekDate = new Date(startWeek);
 function formatTime(template, time, offset) {
     if (!time) {
@@ -225,9 +228,9 @@ function formatTime(template, time, offset) {
     return template;
 }
 
-function getFree(currentDay) {
+function getFrees(currentDay) {
     let frees = [];
-    let points = getPoints(currentDay);
+    let points = getBoundaryPoints(currentDay);
     for (let i = 0; i + 1 < points.length; i += 2) {
         frees.push({
             from: points[i],
@@ -238,13 +241,7 @@ function getFree(currentDay) {
     return frees;
 }
 
-function fillFree(infos) {
-    for (let [day, currentDay] of infos.entries()) {
-        infos[day].free = getFree(currentDay);
-    }
-}
-
-function getPoints(currentDay) {
+function getBoundaryPoints(currentDay) {
     let points = [];
     let crosses = currentDay.crosses;
     if (currentDay.crosses.length === 0) {
@@ -280,20 +277,10 @@ function searchStart(infos, duration) {
 
 function getNiceStart(frees, duration) {
     for (let timespan of frees) {
-        if (checkFreeSize(timespan, duration)) {
+        if (timespan.to - timespan.from >= duration) {
             return timespan.from;
         }
     }
 
     return null;
-}
-
-/**
- * 
- * @param {Object} timespan 
- * @param {Number} duration in millis
- * @returns {Boolean}
- */
-function checkFreeSize(timespan, duration) {
-    return timespan.to - timespan.from >= duration;
 }
