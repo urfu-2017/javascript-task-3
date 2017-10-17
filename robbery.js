@@ -57,7 +57,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         availableTime[day] = [...findRobberyTime(robberyDaysSchedule[day], duration, workingHours)];
     });
     let startTimesGenerator = startTimeGenerator(getStartTimes(availableTime, ROBBERY_DAYS));
-    let startTime = startTimesGenerator.next().value;
+    let timeExist = startTimesGenerator.next();
+    let startTime = timeExist.value;
 
     return {
 
@@ -66,7 +67,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return startTime && true;
+            return !timeExist.done;
         },
 
         /**
@@ -109,8 +110,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return !next.done;
         }
     };
-}
-;
+};
+
 
 function* startTimeGenerator(startTimes) {
     for (let i = 0; i < startTimes.length; i++) {
@@ -145,11 +146,8 @@ function findRobberyTime(scheduleOfDay, duration, workingHours) {
     });
 
     scheduleOfDay.map(segment => {
-        let hours = getHours(segment.from);
-        let minutes = getMinutes(segment.from);
-
         return {
-            from: new Date(0, 0, 0, hours, minutes),
+            from: new Date(0, 0, 0, getHours(segment.from), getMinutes(segment.from)),
             to: new Date(0, 0, 0, getHours(segment.to), getMinutes(segment.to))
         };
     }).forEach(busyTime => {
@@ -193,7 +191,6 @@ function mergeAvailableAndBusyTime(availableTime, busyTime) {
         if (availableTime.to.getTime() > busyTime.to.getTime()) {
             availableTime.from = busyTime.to;
             separatedAvailableTime.push(availableTime);
-
         }
     } else if (availableTime.to.getTime() <= busyTime.to.getTime()) {
         availableTime.to = busyTime.from;
@@ -246,31 +243,28 @@ function normalizeSchedule(schedule, workingHours) {
 
 function equalizeShifts(scheduleBlock, mainShift) {
     return scheduleBlock.map(segment => {
-        let time = new Date();
         let difference = Number(getShift(segment)) - Number(mainShift);
-        time.setHours(Number(getHours(segment.from)) - difference);
-        let newFrom = segment.from.replace(/\d\d:/,
-            time.getHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getHours()) - Number(getHours(segment.from)) < 0 && difference < 0) {
-            newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].next);
-        }
-        if (Number(getHours(segment.from)) - Number(time.getHours()) < 0 && difference > 0) {
-            newFrom = newFrom.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.from)].previous);
-        }
-        time.setHours(Number(getHours(segment.to)) - difference);
-        let newTo = segment.to.replace(/\d\d:/,
-            time.getHours() + ':').replace(/\+\d$/, '');
-        if (Number(time.getHours()) - Number(getHours(segment.to)) < 0 && difference < 0) {
-            newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].next);
-        }
-        if (Number(getHours(segment.to)) - Number(time.getHours()) < 0 && difference > 0) {
-            newTo = newTo.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(segment.to)].previous);
-        }
 
         return {
-            from: newFrom, to: newTo
+            from: shiftDate(difference, segment.from),
+            to: shiftDate(difference, segment.to)
         };
     });
+}
+
+function shiftDate(difference, date) {
+    let time = new Date();
+    time.setHours(Number(getHours(date)) - difference);
+    let newDate = date.replace(/\d\d:/,
+        time.getHours() + ':').replace(/\+\d$/, '');
+    if (Number(time.getHours()) - Number(getHours(date)) < 0 && difference < 0) {
+        newDate = newDate.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(date)].next);
+    }
+    if (Number(getHours(date)) - Number(time.getHours()) < 0 && difference > 0) {
+        newDate = newDate.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(date)].previous);
+    }
+
+    return newDate;
 }
 
 function separateSegment(segment) {
