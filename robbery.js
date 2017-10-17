@@ -27,7 +27,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const mergedSchedule = mergeGangSchedule(gangSchedule);
     const freeSchedule = getFreeSchedule(mergedSchedule);
     const robberyTimes = getRobberyTimes(freeSchedule, bankSchedule, duration);
-    console.info(robberyTimes);
 
     return {
 
@@ -158,6 +157,19 @@ function parseGangSchedule(schedule, timezone) {
         MINUTES_IN_HOUR;
         prop = prop.map(function (interval) {
             return changeDay(interval, timezoneDifferene);
+        });
+        prop.sort(function (a, b) {
+            if (a.to[0] < b.from[0]) {
+                return -1;
+            } else if (a.to[0] > b.from[0]) {
+                return 1;
+            } else if (a.to[1] < b.from[1]) {
+                return -1;
+            } else if (a.to[1] > b.from[1]) {
+                return 1;
+            }
+
+            return 0;
         });
         newSchedule.push(prop);
     }
