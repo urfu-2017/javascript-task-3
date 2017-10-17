@@ -18,6 +18,7 @@ var gangSchedule = {
     ]
 };
 
+
 var bankWorkingHours = {
     from: '10:00+5',
     to: '18:00+5'
@@ -39,22 +40,22 @@ console.info(moment.format('Метим на %DD, старт в %HH:%MM!'));
 
 if (robbery.isStar) {
     // Вернет true
-    moment.tryLater();
+    console.info(moment.tryLater());
     // "ВТ 16:00"
     console.info(moment.format('%DD %HH:%MM'));
 
     // Вернет true
-    moment.tryLater();
+    console.info(moment.tryLater());
     // "ВТ 16:30"
     console.info(moment.format('%DD %HH:%MM'));
 
     // Вернет true
-    moment.tryLater();
+    console.info(moment.tryLater());
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
 
     // Вернет false
-    moment.tryLater();
+    console.info(moment.tryLater());
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
 }

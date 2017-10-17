@@ -152,6 +152,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
+    function customSortByToField(x, y) {
+        var timeToX = x.to.match(/\d{1,2}/g).join('');
+        var timeToY = y.to.match(/\d{1,2}/g).join('');
+
+        return timeToX - timeToY;
+    }
+
     function customSort(x, y) {
         var dayFromX = x.day;
         var dayFromY = y.day;
@@ -165,13 +172,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (timeFromX !== timeFromY) {
             return timeFromX - timeFromY;
         }
-
-        return timeToX - timeToY;
-    }
-
-    function customSortByToField(x, y) {
-        var timeToX = x.to.match(/\d{1,2}/g).join('');
-        var timeToY = y.to.match(/\d{1,2}/g).join('');
 
         return timeToX - timeToY;
     }
