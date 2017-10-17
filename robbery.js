@@ -78,7 +78,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
 function minutesToData(minutes, workingHours) {
     let day = 'ПН';
-    let hour = String(Math.floor(minutes / 60) + workingHours.to.slice(6, 8));
+    let hour = String(Math.floor(minutes / 60) + Number(workingHours.to.slice(6, 8)));
     let minute = String(minutes % 60);
     if (Math.floor(minutes / 24 / 60) === 1) {
         day = 'ВТ';
@@ -187,3 +187,4 @@ function partOfNoteToMinutes(part) {
 
     return ours * 60 + minutes - timezone * 60;
 }
+
