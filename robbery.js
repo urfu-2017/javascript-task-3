@@ -1,9 +1,5 @@
 'use strict';
 
-/**
- * Сделано задание на звездочку
- * Реализовано оба метода и tryLater
- */
 exports.isStar = true;
 var dateTime = require('./dateTime');
 
@@ -28,9 +24,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         robberyDuration: duration,
         currentMomentIndex: 0,
         moments: appropriateMoments,
+        robberyTimeout: 30,
 
         /**
-         * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
@@ -38,9 +34,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         },
 
         /**
-         * Возвращает отформатированную строку с часами для ограбления
-         * Например,
-         *   "Начинаем в %HH:%MM (%DD)" -> "Начинаем в 14:59 (СР)"
          * @param {String} template
          * @returns {String}
          */
@@ -56,25 +49,22 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         },
 
         /**
-         * Попробовать найти часы для ограбления позже [*]
-         * @star
          * @returns {Boolean}
          */
         tryLater: function () {
             let startTime = appropriateMoments[this.currentMomentIndex].from;
-
-            let minutesForNextAttempt = 30;
+            let waitingTime = this.robberyTimeout;
             for (let i = this.currentMomentIndex; i < appropriateMoments.length; i++) {
                 let moment = appropriateMoments[i];
-                minutesForNextAttempt -= dateTime.getElapsedMinutes(startTime, moment.from);
+                waitingTime -= dateTime.getElapsedMinutes(startTime, moment.from);
                 let momentDuration = getMomentDurationInMinutes(moment);
-                if (momentDuration >= this.robberyDuration + minutesForNextAttempt) {
-                    this.currentMomentIndex = i;
-                    dateTime.addMinutes(moment.from,
-                        minutesForNextAttempt > 0 ? minutesForNextAttempt : 0);
-
-                    return true;
+                if (momentDuration < this.robberyDuration + waitingTime) {
+                    continue;
                 }
+                this.currentMomentIndex = i;
+                dateTime.addMinutes(moment.from, waitingTime > 0 ? waitingTime : 0);
+
+                return true;
             }
 
             return false;

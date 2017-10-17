@@ -9,8 +9,7 @@ exports.compareDatetimes = function (dateTime1, dateTime2) {
     let indexOfDay1 = DAYS.indexOf(dateTime1.day);
     let indexOfDay2 = DAYS.indexOf(dateTime2.day);
 
-    if (indexOfDay1 === indexOfDay2 && dateTime1.hours === dateTime2 &&
-        dateTime1.minutes === dateTime2.minutes) {
+    if (this.equals(dateTime1, dateTime2)) {
         return 0;
     }
 
@@ -20,20 +19,15 @@ exports.compareDatetimes = function (dateTime1, dateTime2) {
 };
 
 exports.equals = function (dateTime1, dateTime2) {
-    return dateTime1.hours === dateTime2.hours &&
-    dateTime1.minutes === dateTime2.minutes &&
+    return dateTime1.hours === dateTime2.hours && dateTime1.minutes === dateTime2.minutes &&
     dateTime1.day === dateTime2.day;
 };
 
 exports.parse = function (datetime) {
     let match = DATETIME_PATTERN.exec(datetime);
 
-    return {
-        day: match[1],
-        hours: Number(match[2]),
-        minutes: Number(match[3]),
-        timeZone: Number(match[4])
-    };
+    return { day: match[1], hours: Number(match[2]),
+        minutes: Number(match[3]), timeZone: Number(match[4]) };
 };
 
 exports.getElapsedMinutes = function (startDatetime, endDatetime) {
@@ -48,8 +42,7 @@ exports.getElapsedMinutesSinceBeginOfWeek = function (dateTime) {
 };
 
 exports.changeTimeZone = function (dateTime, newTimeZone) {
-    let offset = newTimeZone - dateTime.timeZone;
-    dateTime.hours += offset;
+    dateTime.hours += newTimeZone - dateTime.timeZone;
     dateTime.timeZone = newTimeZone;
 
     if (dateTime.hours > MAX_HOUR) {
