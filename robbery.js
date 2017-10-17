@@ -132,11 +132,17 @@ function getFreeSchedule(gangSchedule) {
     freeSchedule.push({ from: gangSchedule[gangSchedule.length - 1].to,
         to: [DAYS.length - 1, MINUTES_IN_DAY] });
     for (var i = 0; i < freeSchedule.length; i++) {
-        if (freeSchedule[i].from[0] !== freeSchedule[i].to[0]) {
+        if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
             freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
                 to: [freeSchedule[i].from[0], MINUTES_IN_DAY] },
             { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
             i++;
+        } else if (freeSchedule[i].from[0] - freeSchedule[i].to[0] === -1) {
+            freeSchedule.splice(i, 1, { from: freeSchedule[i].from,
+                to: [freeSchedule[i].from[0], MINUTES_IN_DAY] },
+            { from: [1, 0], to: [1, MINUTES_IN_DAY] },
+            { from: [freeSchedule[i].to[0], 0], to: freeSchedule[i].to });
+            i += 2;
         }
     }
 
@@ -222,15 +228,12 @@ function mergePersons(prev, cur) {
     for (var i = 0; i < cur.length; i++) {
         let fromMin = findMin(prev, cur[i]);
         let toMax = findMax(prev, cur[i].to);
-        console.info('Min =' + fromMin);
-        console.info('Max =' + toMax);
         if (toMax[1] === -1) {
             tempSchedule.unshift({ from: fromMin[0], to: toMax[0] });
         } else {
             tempSchedule.splice(fromMin[1], toMax[1] - fromMin[1] + 1,
                 { from: fromMin[0], to: toMax[0] });
         }
-        console.info(tempSchedule);
     }
 
     return tempSchedule;
