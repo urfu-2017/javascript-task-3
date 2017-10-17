@@ -14,7 +14,6 @@ var MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 var MINUTES_TO_START_LATER = 30;
 var DAYS_TO_HACK = 3;
 
-
 function TimeInterval(start, end) {
     this.start = start;
     this.end = end;
@@ -32,9 +31,9 @@ function TimeInterval(start, end) {
     };
 }
 
-function isTimeInIntervals(timeIntervalsArray, time) {
-    for (var i = 0; i < timeIntervalsArray.length; i++) {
-        if (timeIntervalsArray[i].isTimeInInterval(time)) {
+function isTimeInIntervals(intervals, time) {
+    for (var i = 0; i < intervals.length; i++) {
+        if (intervals[i].isTimeInInterval(time)) {
             return true;
         }
     }
@@ -42,7 +41,7 @@ function isTimeInIntervals(timeIntervalsArray, time) {
     return false;
 }
 
-function strDateToDateObj(strDate) {
+function strToDate(strDate) {
     var strDateCopy = strDate.slice();
     if (DAYS_INDEXES[strDateCopy.slice(0, 2)] === undefined) {
         strDateCopy = 'ПН ' + strDateCopy;
@@ -59,26 +58,17 @@ function strDateToDateObj(strDate) {
     return dateInfo;
 }
 
-function getGangsterNames(schedule) {
-    var gangsterNames = [];
-    for (var gangsterName in schedule) {
-        if (schedule.hasOwnProperty(gangsterName)) {
-            gangsterNames.push(gangsterName);
-        }
-    }
+function createTimeIntervalShifted(time, shift) {
+    var from = strToDate(time.from).intValue + shift;
+    var to = strToDate(time.to).intValue + shift;
 
-    return gangsterNames;
+    return new TimeInterval(from, to);
 }
 
-function createTimeIntervalWithShift(time, shift) {
-    return new TimeInterval(strDateToDateObj(time.from).intValue + shift,
-        strDateToDateObj(time.to).intValue + shift);
-}
-
-function simplifyTimesIntervals(timeIntervals, duration) {
+function removeSmallIntervals(intervals, minLength) {
     var newTimeIntervals = [];
-    timeIntervals.forEach(function (timeInterval) {
-        if (timeInterval.getLength() >= duration) {
+    intervals.forEach(function (timeInterval) {
+        if (timeInterval.getLength() >= minLength) {
             newTimeIntervals.push(timeInterval);
         }
     });
@@ -86,48 +76,45 @@ function simplifyTimesIntervals(timeIntervals, duration) {
     return newTimeIntervals;
 }
 
-function addOrChangeLastTimeInterval(arrayIntervals, timeToStartNewInterval) {
-    var arrayLen = arrayIntervals.length;
-    if (arrayLen === 0 || arrayIntervals[arrayLen - 1].end !== timeToStartNewInterval - 1) {
-        arrayIntervals.push(new TimeInterval(timeToStartNewInterval, timeToStartNewInterval));
+function addMinuteToIntervals(intervals, minute) {
+    var arrayLen = intervals.length;
+    if (arrayLen === 0 || intervals[arrayLen - 1].end !== minute - 1) {
+        intervals.push(new TimeInterval(minute, minute));
     } else {
-        arrayIntervals[arrayLen - 1].end += 1;
+        intervals[arrayLen - 1].end += 1;
     }
 }
 
 function isGangstersNotBusy(schedule, gangsterNames, time) {
-    var gangstersIsNotBusy = true;
-    gangsterNames.forEach(function (gangster) {
-        if (isTimeInIntervals(schedule[gangster], time)) {
-            gangstersIsNotBusy = false;
-        }
-    });
-
-    return gangstersIsNotBusy;
-}
-
-function getGoodTimeIntervals(schedule, gangsterNames) {
-    var goodTimesIntervals = [];
-
-    for (var i = 0; i < DAYS_TO_HACK * MINUTES_IN_DAY; i++) {
-        if (!isTimeInIntervals(schedule.Bank, i)) {
-            continue;
-        }
-        if (isGangstersNotBusy(schedule, gangsterNames, i)) {
-            addOrChangeLastTimeInterval(goodTimesIntervals, i);
+    for (var gangsterName of gangsterNames) {
+        if (isTimeInIntervals(schedule[gangsterName], time)) {
+            return false;
         }
     }
 
-    return goodTimesIntervals;
+    return true;
 }
 
-function createGangsterScheduleWithTimeIntervals(schedule, gangsterNames, bankShift) {
+function createTimeIntervals(schedule, gangsterNames) {
+    var goodTimeIntervals = [];
+
+    for (var i = 0; i < DAYS_TO_HACK * MINUTES_IN_DAY; i++) {
+        if (isGangstersNotBusy(schedule, gangsterNames, i) && isTimeInIntervals(schedule.Bank, i)) {
+            addMinuteToIntervals(goodTimeIntervals, i);
+        }
+
+    }
+
+    return goodTimeIntervals;
+}
+
+function createGangsterSchedule(schedule, gangsterNames, bankShift) {
     var newSchedule = {};
 
     gangsterNames.forEach(function (gangsterName) {
         newSchedule[gangsterName] = [];
         schedule[gangsterName].forEach(function (time) {
-            var intervalWithShift = createTimeIntervalWithShift(time, bankShift);
+            var intervalWithShift = createTimeIntervalShifted(time, bankShift);
             intervalWithShift.start++;
             intervalWithShift.end--;
             newSchedule[gangsterName].push(intervalWithShift);
@@ -137,19 +124,19 @@ function createGangsterScheduleWithTimeIntervals(schedule, gangsterNames, bankSh
     return newSchedule;
 }
 
-function addToScheduleBankTimeIntervals(schedule, bankWorkingHours, bankShift) {
-    schedule.Bank = [createTimeIntervalWithShift(bankWorkingHours, bankShift)];
+function addBankToSchedule(schedule, bankWorkingHours, bankShift) {
+    schedule.Bank = [createTimeIntervalShifted(bankWorkingHours, bankShift)];
     for (var dayIndex = 0; dayIndex < DAYS_TO_HACK - 1; dayIndex++) {
         schedule.Bank.push(schedule.Bank[schedule.Bank.length - 1].getNextDay());
     }
 }
 
-function createScheduleWithTimeIntervals(bankWorkingHours, schedule, gangsterNames) {
-    var bankShift = strDateToDateObj(bankWorkingHours.from).timezone * MINUTES_IN_HOUR;
-    var newSchedule = createGangsterScheduleWithTimeIntervals(schedule, gangsterNames, bankShift);
-    addToScheduleBankTimeIntervals(newSchedule, bankWorkingHours, bankShift);
+function createScheduleObj(schedule, bankWorkingHours, gangsterNames) {
+    var bankShift = strToDate(bankWorkingHours.from).timezone * MINUTES_IN_HOUR;
+    var scheduleObj = createGangsterSchedule(schedule, gangsterNames, bankShift);
+    addBankToSchedule(scheduleObj, bankWorkingHours, bankShift);
 
-    return newSchedule;
+    return scheduleObj;
 }
 
 function timeToString(time) {
@@ -165,10 +152,10 @@ function timeToString(time) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    var gangsterNames = getGangsterNames(schedule);
-    var newSchedule = createScheduleWithTimeIntervals(workingHours, schedule, gangsterNames);
-    var goodTimesIntervals = getGoodTimeIntervals(newSchedule, gangsterNames);
-    var goodTimesIntervalsWithGoodDuration = simplifyTimesIntervals(goodTimesIntervals, duration);
+    var gangsterNames = Object.keys(schedule);
+    var scheduleObj = createScheduleObj(schedule, workingHours, gangsterNames);
+    var timeIntervals = createTimeIntervals(scheduleObj, gangsterNames);
+    timeIntervals = removeSmallIntervals(timeIntervals, duration);
 
     return {
 
@@ -177,7 +164,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return goodTimesIntervalsWithGoodDuration.length !== 0;
+            return timeIntervals.length !== 0;
         },
 
         /**
@@ -192,7 +179,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            var startInterval = goodTimesIntervalsWithGoodDuration[0];
+            var startInterval = timeIntervals[0];
             var day = parseInt(startInterval.start / (MINUTES_IN_DAY), 10);
             var hour = parseInt(startInterval.start / MINUTES_IN_HOUR, 10) - day * HOURS_IN_DAY;
             var minutes = startInterval.start % MINUTES_IN_HOUR;
@@ -207,12 +194,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var startInterval = goodTimesIntervalsWithGoodDuration[0];
-            if (this.exists() && (goodTimesIntervalsWithGoodDuration.length > 1 ||
-                startInterval.getLength() >= duration + MINUTES_TO_START_LATER)) {
+            var startInterval = timeIntervals[0];
+            var isItLongEnough = startInterval.getLength() >= duration + MINUTES_TO_START_LATER;
+            var anotherIntervalExists = timeIntervals.length > 1;
+            if (this.exists() && (isItLongEnough || anotherIntervalExists)) {
                 startInterval.start += MINUTES_TO_START_LATER;
-                goodTimesIntervalsWithGoodDuration = simplifyTimesIntervals(
-                    goodTimesIntervalsWithGoodDuration, duration);
+                timeIntervals = removeSmallIntervals(timeIntervals, duration);
 
                 return true;
             }
