@@ -116,7 +116,7 @@ function checkDuration(schedule, duration) {
     for (var i = 0; i < schedule.length; i++) {
         if (schedule[i].to[1] - schedule[i].from[1] < duration) {
             schedule.splice(i, 1);
-            i--;
+            i -= 1;
         }
     }
 
