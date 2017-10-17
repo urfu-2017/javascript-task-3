@@ -71,7 +71,6 @@ class AppropriateMoment {
             return '';
         }
 
-
         const offsetInMillis = this._bankTimezone * 60 * MILLIS_OF_MIN;
         const date = new Date(this._moment + offsetInMillis);
 
@@ -125,7 +124,12 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     _areIntersected(timeline1, timeline2) {
-        return timeline1.from < timeline2.to && timeline1.to > timeline2.from;
+        return (
+            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
+            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
+            (timeline1.from < timeline2.from && timeline1.to > timeline2.from) ||
+            (timeline1.to > timeline2.to && timeline1.from < timeline2.to)
+        );
     }
 }
 
