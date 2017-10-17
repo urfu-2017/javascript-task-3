@@ -93,7 +93,7 @@ function isGangstersBusy(schedule, gangsterNames, time) {
         }
     });
 
-    return Boolean(gangstersIsBusy);
+    return gangstersIsBusy;
 }
 
 function createTimeIntervals(schedule, gangsterNames) {
