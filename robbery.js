@@ -6,8 +6,7 @@
  */
 exports.isStar = true;
 
-var DAYS_INDEXES = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
-var DAYS_NAMES = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+var DAYS = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
 var MINUTES_IN_HOUR = 60;
 var HOURS_IN_DAY = 24;
 var MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
@@ -43,11 +42,11 @@ function isTimeInIntervals(intervals, time) {
 
 function strToDate(strDate) {
     var strDateCopy = strDate.slice();
-    if (DAYS_INDEXES[strDateCopy.slice(0, 2)] === undefined) {
+    if (DAYS[strDateCopy.slice(0, 2)] === undefined) {
         strDateCopy = 'ПН ' + strDateCopy;
     }
     var dateInfo = {
-        day: DAYS_INDEXES[strDateCopy.slice(0, 2)],
+        day: DAYS[strDateCopy.slice(0, 2)],
         hours: parseInt(strDateCopy.slice(3, 5), 10),
         minutes: parseInt(strDateCopy.slice(6, 8), 10),
         timezone: parseInt(strDateCopy.slice(9, strDateCopy.length), 10)
@@ -184,7 +183,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var hour = parseInt(startInterval.start / MINUTES_IN_HOUR, 10) - day * HOURS_IN_DAY;
             var minutes = startInterval.start % MINUTES_IN_HOUR;
 
-            return template.replace('%DD', DAYS_NAMES[day]).replace('%HH', timeToString(hour))
+            return template.replace('%DD', Object.keys(DAYS)[day])
+                .replace('%HH', timeToString(hour))
                 .replace('%MM', timeToString(minutes));
         },
 
