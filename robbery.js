@@ -43,7 +43,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let bankWorkIntervals = getbankWorkIntervals(workingHours);
 
     let results = getAppropriateMoments(mergedIntervals, bankWorkIntervals);
-    let answer = results.filter(x => x.different >= duration);
+    let answer = results.filter(x => x.different >= duration)
+        .map((x, i) => {
+            x.next = i + 1;
+
+            return x;
+        });
+    let currentAnswer = answer[0];
 
     return {
 
@@ -67,7 +73,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            let startTimeInMinutes = answer[0].startMoment;
+            let startTimeInMinutes = currentAnswer.startMoment;
             let minutes = startTimeInMinutes % 60;
             let totalHours = Math.floor(startTimeInMinutes / 60);
             let day = Math.floor(totalHours / 24);
@@ -75,7 +81,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             return template
                 .replace('%HH', hours > 9 ? hours : `0${hours}`)
-                .replace('%MM', minutes > 9 ? minutes : `0${hours}`)
+                .replace('%MM', minutes > 9 ? minutes : `0${minutes}`)
                 .replace('%DD', numberDayToDayWeek[day]);
         },
 
@@ -85,6 +91,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (answer.length === 0 || answer.length === 1) {
+                return false;
+            }
+            let nextAnswer = answer[currentAnswer.next];
+            if (typeof nextAnswer === 'undefined') {
+                return false;
+            }
+
+            if ((currentAnswer.endMoment - nextAnswer.startMoment) <= 30) {
+                currentAnswer = nextAnswer;
+
+                return true;
+            }
+
             return false;
         }
     };
@@ -179,9 +199,6 @@ function getbankWorkIntervals(workingHours) {
 
 function getResult(bankWorkInterval, intervals) {
     let appropriateMoments = [];
-    if (intervals.length === 0) {
-        return appropriateMoments;
-    }
 
     let currentInterval = intervals[0];
 
@@ -189,11 +206,13 @@ function getResult(bankWorkInterval, intervals) {
     let endMoment = getEndMoment(currentInterval, bankWorkInterval);
 
     if (intervals.length === 1) {
-        return [{
+        appropriateMoments.push({
             startMoment,
             endMoment,
             different: endMoment - startMoment
-        }];
+        });
+
+        startMoment = currentInterval.end;
     }
 
     for (var i = 1; i < intervals.length; i++) {
@@ -208,7 +227,13 @@ function getResult(bankWorkInterval, intervals) {
 
         startMoment = currentInterval.end;
     }
-
+    if (startMoment < bankWorkInterval.end) {
+        appropriateMoments.push({
+            startMoment,
+            endMoment: bankWorkInterval.end,
+            different: bankWorkInterval.end - startMoment
+        });
+    }
 
     return appropriateMoments;
 }
