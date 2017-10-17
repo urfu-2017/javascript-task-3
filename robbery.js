@@ -35,8 +35,8 @@ class AppropriateMoment {
 
         duration = duration * MILLIS_OF_MIN;
 
-        this._moments = bankSchedule.reduce((result, workDay) => {
-            for (let from = workDay.from; from <= workDay.to - duration; from += MILLIS_OF_MIN) {
+        this._moments = bankSchedule.reduce((result, day) => {
+            for (let from = day.from; from <= day.to - duration; from += TRY_COOLDOWN) {
                 const candidate = { from, to: from + duration };
 
                 if (!gangSchedule.some((timeline) => this._areIntersected(timeline, candidate))) {
@@ -45,9 +45,9 @@ class AppropriateMoment {
             }
 
             return result;
-        }, []);
+        }, []).reverse();
 
-        this._moment = this._moments[0];
+        this._moment = this._moments.pop();
         this._bankTimezone = Number(workingHours.to.split('+')[1]);
     }
 
@@ -87,12 +87,10 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     tryLater() {
-        for (const moment of this._moments) {
-            if (moment >= this._moment + TRY_COOLDOWN) {
-                this._moment = moment;
+        if (this.exists() && this._moments.length !== 0) {
+            this._moment = this._moments.pop();
 
-                return true;
-            }
+            return true;
         }
 
         return false;
@@ -104,18 +102,20 @@ class AppropriateMoment {
      * @returns {Array} 
      */
     _mergeTimelines(timelines) {
-        return timelines.slice()
-            .sort((a, b) => a.from - b.from)
-            .reduce((result, timeline) => {
-                const last = result[result.lenght - 1];
-                if (!last || !this._areIntersected(last, timeline)) {
-                    return result.concat(timeline);
+        const merged = timelines.reduce((result, timeline) => {
+            for (const mergedTimeline of result) {
+                if (this._areIntersected(mergedTimeline, timeline)) {
+                    mergedTimeline.from = Math.min(mergedTimeline.from, timeline.from);
+                    mergedTimeline.to = Math.max(mergedTimeline.to, timeline.to);
+
+                    return result;
                 }
+            }
 
-                last.to = Math.max(last.to, timeline.to);
+            return result.concat(timeline);
+        }, []);
 
-                return result;
-            }, []);
+        return (merged.length === timelines.length) ? merged : this._mergeTimelines(merged);
     }
 
     /**
