@@ -1,14 +1,14 @@
 'use strict';
 
 const DATE_FORMAT = /(ПН|ВТ|СР)\s(\d\d):(\d\d)\+(\d)/;
-const DAYS = { 'ПН': 1, 'ВТ': 2, 'СР': 3 };
+const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03' };
 const MILLIS_OF_MIN = 60000;
 const TRY_COOLDOWN = 30 * MILLIS_OF_MIN;
 
 function parseDate(date) {
     const [, day, hours, minutes, timezone] = date.match(DATE_FORMAT);
 
-    return Date.UTC(2017, 4, DAYS[day], hours - timezone, minutes);
+    return Date.parse(`${DAYS[day]} Jan 2017 ${hours}:${minutes}:00 GMT+${timezone}`);
 }
 
 class AppropriateMoment {
@@ -78,7 +78,7 @@ class AppropriateMoment {
         return template
             .replace('%HH', date.getUTCHours())
             .replace('%MM', String(date.getUTCMinutes()).padStart(2, '0'))
-            .replace('%DD', Object.keys(DAYS)[date.getUTCDay() - 1]);
+            .replace('%DD', Object.keys(DAYS)[date.getDay()]);
     }
 
     /**
