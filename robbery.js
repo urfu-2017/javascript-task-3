@@ -6,156 +6,113 @@
  */
 exports.isStar = true;
 const DAYS_OF_THE_WEEK = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
-const ROBBERS_TIME_FORMAT = /^([А-Я][А-Я])\s(\d\d):(\d\d)\+(\d+)$/;
-const BANK_TIME_FORMAT = /^(\d\d):(\d\d)\+(\d+)$/;
-const DAYS_IN_WEEK = 7;
+const TIME_FORMAT = /^(\d\d):(\d\d)\+(\d+)$/;
 const HOURS_IN_DAY = 24;
 const MINUTES_IN_HOUR = 60;
-const MINUTES_IN_WEEK = DAYS_IN_WEEK * HOURS_IN_DAY * MINUTES_IN_HOUR;
 const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 const HALF_AN_HOUR = 30;
+const DAYS_FOR_ROBBERY = 3;
 
-function getBankScheduleAndTimeZone(workingHours) {
-    let [, hoursFrom, minutesFrom, zone] = workingHours.from.match(BANK_TIME_FORMAT);
-    let [, hoursTo, minutesTo] = workingHours.to.match(BANK_TIME_FORMAT);
-    let schedule = [];
-    for (let i = 0; i < 3; i++) {
-        let fromInMinutes = (i * HOURS_IN_DAY + parseInt(hoursFrom)) *
-            MINUTES_IN_HOUR + parseInt(minutesFrom);
-        let toInMinutes = (i * HOURS_IN_DAY + parseInt(hoursTo)) *
-            MINUTES_IN_HOUR + parseInt(minutesTo);
-        schedule.push({ from: fromInMinutes, to: toInMinutes });
-    }
+let isIntersected = (first, second) => first.to >= second.from && second.to >= first.from;
 
-    return [schedule, parseInt(zone)];
+function parseTime(stringTime) {
+    let [, hoursFrom, minutesFrom, timeZone] = stringTime.match(TIME_FORMAT);
+
+    return [parseInt(hoursFrom), parseInt(minutesFrom), parseInt(timeZone)];
 }
 
-function robberTimeToMinutes(time, bankTimeZone) {
-    let [, dayOfWeek, hh, mm, zone] = time.match(ROBBERS_TIME_FORMAT);
-    let diff = bankTimeZone - zone;
-    let result = ((DAYS_OF_THE_WEEK[dayOfWeek] * HOURS_IN_DAY + parseInt(hh) +
-        parseInt(diff)) * MINUTES_IN_HOUR) + parseInt(mm);
+let timeToMinutes = (dayNumber, hh, mm, diff) =>
+    ((dayNumber * HOURS_IN_DAY + hh + diff) * MINUTES_IN_HOUR) + mm;
+
+function minutesToTime(startMinute) {
+    let mm = startMinute % MINUTES_IN_HOUR;
+    let hh = ((startMinute - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY;
+    let dayNumber = Math.floor(((startMinute - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
+    let dd = Object.keys(DAYS_OF_THE_WEEK)[dayNumber];
+    hh = ('0' + hh).slice(-2);
+    mm = ('0' + mm).slice(-2);
+
+    return [dd, hh, mm];
+}
+
+function getBankScheduleAndTimeZone(workingHours) {
+    let [hoursFrom, minutesFrom, timeZone] = parseTime(workingHours.from);
+    let [hoursTo, minutesTo] = parseTime(workingHours.to);
+    let bankSchedule = [];
+    for (let i = 0; i < DAYS_FOR_ROBBERY; i++) {
+        let fromInMinutes = timeToMinutes(i, hoursFrom, minutesFrom, 0);
+        let toInMinutes = timeToMinutes(i, hoursTo, minutesTo, 0);
+        bankSchedule.push({ from: fromInMinutes, to: toInMinutes });
+    }
+
+    return [bankSchedule, timeZone];
+}
+
+function robberTimeInMinutes(time, bankTimeZone) {
+    let dayNumber = DAYS_OF_THE_WEEK[time.substring(0, 2)];
+    let [hh, mm, timeZone] = parseTime(time.substring(3));
+    let diff = bankTimeZone - timeZone;
+    let result = timeToMinutes(dayNumber, hh, mm, diff);
 
     return result;
 }
 
 function getGeneralSchedule(schedule, bankTimeZone) {
-    let generalSchedule = [];
+    let result = [];
     Object.keys(schedule).forEach(function (robber) {
         schedule[robber].forEach(function (time) {
-            let beginTime = robberTimeToMinutes(time.from, bankTimeZone, robber);
-            let endTime = robberTimeToMinutes(time.to, bankTimeZone, robber);
-            generalSchedule.push({ from: beginTime, to: endTime });
+            let from = robberTimeInMinutes(time.from, bankTimeZone);
+            let to = robberTimeInMinutes(time.to, bankTimeZone);
+            result.push({ from, to });
         });
     });
-    generalSchedule = generalSchedule.sort((a, b) => a.from - b.from);
-
-    return generalSchedule;
-}
-
-function getTimeLines(bankSchedule, generalSchedule) {
-    let bankTimeLine = [];
-    let robbersTimeLine = [];
-    for (let i = 0; i < MINUTES_IN_WEEK; i++) {
-        bankTimeLine.push(false);
-        robbersTimeLine.push(true);
-    }
-    for (let i = 0; i < bankSchedule.length; i++) {
-        let time = bankSchedule[i];
-        for (let j = time.from; j < time.to; j++) {
-            bankTimeLine[j] = true;
-        }
-    }
-    for (let i = 0; i < generalSchedule.length; i++) {
-        let time = generalSchedule[i];
-        for (let j = time.from; j < time.to; j++) {
-            robbersTimeLine[j] = false;
-        }
-    }
-
-    return [bankTimeLine, robbersTimeLine];
-}
-
-function getTimeLine(bankTimeLine, robbersTimeLine) {
-    let timeline = [];
-    for (let i = 0; i < MINUTES_IN_WEEK; i++) {
-        timeline.push(robbersTimeLine[i] && bankTimeLine[i]);
-    }
-
-    return timeline;
-}
-
-function getIntervals(timeline, duration) {
-    let intervals = [];
-    let tempFrom = 0;
-    let inInterval = false;
-
-    timeline.forEach(function (element, i) {
-        if (element && !inInterval) {
-            inInterval = true;
-            tempFrom = i;
-        } else if (!element && inInterval) {
-            inInterval = false;
-            if (i - tempFrom >= duration) {
-                intervals.push({ from: tempFrom, to: i });
-            }
-        } else if (i !== 0 && (i % MINUTES_IN_DAY === 0)) {
-            inInterval = false;
-            if (i - tempFrom >= duration && inInterval) {
-                intervals.push({ from: tempFrom, to: i });
-            }
-        }
-    });
-
-    return intervals;
-}
-
-function joinSchedule(generalSchedule) {
-    let joinedSchedule = [];
-    joinedSchedule.push(generalSchedule[0]);
-    for (let i = 1; i < generalSchedule.length; i++) {
-        let current = joinedSchedule[joinedSchedule.length - 1];
-        if (isIntersected(current, generalSchedule[i])) {
-            current.to = Math.max(generalSchedule[i].to, current.to);
-        } else {
-            joinedSchedule.push(generalSchedule[i]);
-        }
-    }
-
-    return joinedSchedule;
-}
-
-function getReflectedSchedule(joinedSchedule) {
-    let reflectedSchedule = [];
-    reflectedSchedule.push({ from: 0, to: joinedSchedule[0].from });
-    for (let i = 0; i < joinedSchedule.length - 1; i++) {
-        reflectedSchedule.push({ from: joinedSchedule[i].to, to: joinedSchedule[i + 1].from });
-    }
-    reflectedSchedule.push({
-        from: joinedSchedule[joinedSchedule.length - 1].to, to: MINUTES_IN_DAY * 3
-    });
-
-    return reflectedSchedule;
-}
-
-function getRobberyIntervals(bankSchedule, reflectedSchedule, duration) {
-    let result = [];
-    bankSchedule.forEach(function (curBank) {
-        reflectedSchedule.forEach(function (curRob) {
-            if (isIntersected(curBank, curRob)) {
-                let a = Math.max(curBank.from, curRob.from);
-                let b = Math.min(curBank.to, curRob.to);
-                result.push({ from: a, to: b });
-            }
-        });
-    });
-    result = result.filter(x => x.to - x.from >= duration);
+    result = result.sort((a, b) => a.from - b.from);
 
     return result;
 }
 
-function isIntersected(first, second) {
-    return first.to >= second.from && second.to >= first.from;
+function getJoinedSchedule(generalSchedule) {
+    let stack = [];
+    stack.push(generalSchedule[0]);
+    generalSchedule.forEach(function (current) {
+        let stackTop = stack[stack.length - 1];
+        if (isIntersected(stackTop, current)) {
+            stackTop.to = Math.max(current.to, stackTop.to);
+        } else {
+            stack.push(current);
+        }
+    });
+
+    return stack;
+}
+
+function getFreeTimes(joinedSchedule) {
+    let result = [];
+    let globalStart = 0;
+    let globalEnd = MINUTES_IN_DAY * DAYS_FOR_ROBBERY;
+    result.push({ from: globalStart, to: joinedSchedule[0].from });
+    for (let i = 0; i < joinedSchedule.length - 1; i++) {
+        result.push({ from: joinedSchedule[i].to, to: joinedSchedule[i + 1].from });
+    }
+    result.push({ from: joinedSchedule[joinedSchedule.length - 1].to, to: globalEnd });
+
+    return result;
+}
+
+function getRobberyIntervals(bankSchedule, freeTimes, duration) {
+    let result = [];
+    bankSchedule.forEach(function (workingHours) {
+        freeTimes.forEach(function (freeTime) {
+            if (isIntersected(workingHours, freeTime)) {
+                let from = Math.max(workingHours.from, freeTime.from);
+                let to = Math.min(workingHours.to, freeTime.to);
+                result.push({ from, to });
+            }
+        });
+    });
+    result = result.filter(interval => interval.to - interval.from >= duration);
+
+    return result;
 }
 
 /**
@@ -167,24 +124,17 @@ function isIntersected(first, second) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let [bankSchedule, zone] = getBankScheduleAndTimeZone(workingHours);
-    // console.info(JSON.stringify(bankSchedule));
-    let generalSchedule = getGeneralSchedule(schedule, zone);
+    let [bankSchedule, timeZone] = getBankScheduleAndTimeZone(workingHours);
+    console.info('bankSchedule ' + JSON.stringify(bankSchedule));
+    let generalSchedule = getGeneralSchedule(schedule, timeZone);
     console.info('generalSchedule ' + JSON.stringify(generalSchedule));
-    let joinedSchedule = joinSchedule(generalSchedule);
+    let joinedSchedule = getJoinedSchedule(generalSchedule);
     console.info('joinedSchedule ' + JSON.stringify(joinedSchedule));
-    let reflectedSchedule = getReflectedSchedule(joinedSchedule);
-    console.info('reflectedSchedule ' + JSON.stringify(reflectedSchedule));
-    let robberyIntervals = getRobberyIntervals(bankSchedule, reflectedSchedule, duration);
-    console.info('robberyIntervals ' + JSON.stringify(robberyIntervals));
-
-
-    let [bankTimeLine, robbersTimeLine] = getTimeLines(bankSchedule, generalSchedule);
-    let timeline = getTimeLine(bankTimeLine, robbersTimeLine);
-    let intervals = getIntervals(timeline, duration);
-    console.info(JSON.stringify(intervals));
-    let niceTime = intervals[0];
-
+    let freeTimes = getFreeTimes(joinedSchedule);
+    console.info('freeTimes ' + JSON.stringify(freeTimes));
+    let intervals = getRobberyIntervals(bankSchedule, freeTimes, duration);
+    console.info('intervals ' + JSON.stringify(intervals));
+    let robberyTime = intervals[0];
 
     return {
 
@@ -207,18 +157,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            let startMinute = niceTime.from;
-            let mm = startMinute % MINUTES_IN_HOUR;
-            let hh = ((startMinute - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY;
-            let dayNumber = Math.floor(((startMinute - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
-            let dd = Object.keys(DAYS_OF_THE_WEEK)[dayNumber];
-            mm = ('0' + mm).slice(-2);
-            hh = ('0' + hh).slice(-2);
+            let robberyTimeStart = robberyTime.from;
+            let [dd, hh, mm] = minutesToTime(robberyTimeStart);
 
             return template
-                .replace('%MM', mm)
+                .replace('%DD', dd)
                 .replace('%HH', hh)
-                .replace('%DD', dd);
+                .replace('%MM', mm);
         },
 
         /**
@@ -230,7 +175,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return false;
             }
-            intervals = intervals.filter(x => x.to - x.from >= duration);
+            intervals = intervals.filter(interval => interval.to - interval.from >= duration);
             if (intervals.length === 1 &&
                 (intervals[0].to - intervals[0].from - HALF_AN_HOUR < duration)) {
                 return false;
@@ -239,11 +184,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             for (let i = 0; i < intervals.length; i++) {
                 intervals[i].from += HALF_AN_HOUR;
                 if (intervals[i].to - intervals[i].from >= duration) {
-                    niceTime = intervals[i];
+                    robberyTime = intervals[i];
 
                     return true;
                 } else if (intervals[i + 1]) {
-                    niceTime = intervals[i + 1];
+                    robberyTime = intervals[i + 1];
 
                     return true;
                 }
