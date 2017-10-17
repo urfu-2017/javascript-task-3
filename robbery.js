@@ -54,8 +54,9 @@ function makeDateObj(time, banksTimeZone) {
     const currentTimeZone = time.split('+')[1];
     const hours = getHours(hrsAndMins);
     const minutes = getMinutes(hrsAndMins);
-    let timeDifference = currentTimeZone * HOURS_IN_MILLISECONDS -
-    banksTimeZone * HOURS_IN_MILLISECONDS;
+    const banksZoneMillisec = banksTimeZone * HOURS_IN_MILLISECONDS;
+    const currentZoneMillisec = currentTimeZone * HOURS_IN_MILLISECONDS;
+    let timeDifference = currentZoneMillisec - banksZoneMillisec;
 
     return Date.UTC(YEAR, MONTH, day, hours, minutes) - timeDifference;
 }
@@ -122,7 +123,6 @@ function intersectWithBanksTime(available, banksWorkingHours) {
     let intersected = [];
     let top = combinedRanges[0];
 
-    // for (let i = 1; i < combinedRanges.length; i++) {
     combinedRanges.slice(1).forEach((range, i) => {
         if (!areIntersected(top, combinedRanges[i + 1])) {
             top = combinedRanges[i + 1];
