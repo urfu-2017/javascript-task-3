@@ -128,7 +128,7 @@ function findCompatibleInterval(allIntervals, workingInterval, duration) {
         if (currentInterval.start.compareTo(lastIntervalEnd) >= duration) {
             return currentInterval.start;
         }
-        var newAllIntervals = getNewAllIntervals(allIntervals, lastIntervalEnd);
+        var newAllIntervals = getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval);
         allIntervals = newAllIntervals.sort(function (a, b) {
             return a.start.compareTo(b.start);
         });
