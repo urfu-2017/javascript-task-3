@@ -85,7 +85,7 @@ function timeFormat(firstTime) {
         day = 'ПН';
     }
     if (goodTime >= 1440 && goodTime < 2880) {
-        day = 'Вт';
+        day = 'ВТ';
         goodTime -= 1440;
     }
     if (goodTime >= 2880 && goodTime < 4320) {
