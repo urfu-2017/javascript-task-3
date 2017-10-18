@@ -202,9 +202,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template
                 .replace('%DD', robberyStart.day.text)
                 .replace('%HH', robberyStart.hours < 10
-                    ? "0" + robberyStart.hours : robberyStart.hours)
+                    ? '0' + robberyStart.hours : robberyStart.hours)
                 .replace('%MM', robberyStart.minutes < 10
-                    ? "0" + robberyStart.minutes : robberyStart.minutes);
+                    ? '0' + robberyStart.minutes : robberyStart.minutes);
         },
 
         /**
