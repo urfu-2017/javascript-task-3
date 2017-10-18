@@ -158,21 +158,22 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+
             if (intervalsForRobbery.length === 0) {
                 return false;
             }
-            intervalsForRobbery[0].start += 30;
-            let postponedIntervalsForRobbery = intervalsForRobbery
-                .filter(interval => interval.end - interval.start >= duration);
-            if (postponedIntervalsForRobbery.length !== 0) {
-                intervalsForRobbery = postponedIntervalsForRobbery;
-
-                return true;
+            let nextMomentStart = intervalsForRobbery[0].start + 30;
+            let postponedMoments = intervalsForRobbery.filter(interval => {
+                return nextMomentStart + duration <= interval.end;
+            });
+            if (postponedMoments.length !== 0) {
+                intervalsForRobbery = postponedMoments;
+                console.info(intervalsForRobbery[0].start, nextMomentStart);
+                intervalsForRobbery[0].start = Math.max(
+                    intervalsForRobbery[0].start, nextMomentStart);
             }
-            intervalsForRobbery[0].start -= 30;
 
-            return false;
-
+            return postponedMoments.length !== 0;
         }
     };
 };
