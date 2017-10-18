@@ -6,6 +6,8 @@
  */
 exports.isStar = true;
 
+let daysOfWeek = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -15,15 +17,14 @@ exports.isStar = true;
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let currentRobbery = 0;
-    let availableTimes = [];
+    let currentRobberyIndex = 0;
+    let availableRobberyDates = [];
     let bankTimezone = getTimezoneFromString(workingHours.from);
     let timesegments = convertScheduleToSegments(schedule, bankTimezone);
     let banksegments = convertBankTimeToSegments(workingHours, bankTimezone);
     timesegments = timesegments.concat(banksegments);
     let timePoints = convertSegmentsToTimes(timesegments);
-    availableTimes = searchFreeDates(timePoints, duration);
-    console.info(availableTimes);
+    availableRobberyDates = searchFreeDates(timePoints, duration);
 
     return {
 
@@ -32,7 +33,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return availableTimes.length > currentRobbery;
+            return availableRobberyDates.length > currentRobberyIndex;
         },
 
         /**
@@ -47,7 +48,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            return formatTime(availableTimes[currentRobbery], template);
+            return formatTime(availableRobberyDates[currentRobberyIndex], template);
         },
 
         /**
@@ -56,11 +57,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            currentRobbery++;
+            currentRobberyIndex++;
             if (this.exists()) {
                 return true;
             }
-            currentRobbery--;
+            currentRobberyIndex--;
 
             return false;
         }
@@ -78,36 +79,38 @@ function getRobberyTimesFromFreeSegment(segment, robberyDuration) {
     return times;
 }
 
-function searchFreeSegments(timepoints) {
+function searchFreeSegments(timePoints) {
     let currentNesting = 1;
     let freeSegments = [];
     let currentStartTime = 0;
-    for (let i = 0; i < timepoints.length; i++) {
-        if (timepoints[i].isStart) {
+    for (let timePoint of timePoints) {
+        if (currentNesting === 0) {
+            freeSegments.push({ from: currentStartTime, to: timePoint.minutes });
+        }
+        if (timePoint.isStart) {
             currentNesting++;
         } else {
             currentNesting--;
         }
-        if (currentNesting === 1 && timepoints[i].isStart) {
-            freeSegments.push({ from: currentStartTime, to: timepoints[i].minutes });
-        }
-        currentStartTime = timepoints[i].minutes;
+        currentStartTime = timePoint.minutes;
     }
 
     return freeSegments;
 }
 
-function searchFreeDates(timePoints, duration) {
-    timePoints.sort(function (a, b) {
-        if (a.minutes < b.minutes) {
-            return -1;
-        }
-        if (a.minutes > b.minutes) {
-            return 1;
-        }
+function compareTimes(time1, time2) {
+    if (time1.minutes < time2.minutes) {
+        return -1;
+    }
+    if (time1.minutes > time2.minutes) {
+        return 1;
+    }
 
-        return 0;
-    });
+    return 0;
+}
+
+function searchFreeDates(timePoints, duration) {
+    timePoints.sort(compareTimes);
     let freeSegments = searchFreeSegments(timePoints);
     let robberyTimes = [];
     for (let segment of freeSegments) {
@@ -169,10 +172,10 @@ function normalizeTime(time, defaultTimezone) {
 }
 
 function convertToMinutes(time) {
-    let daysOrder = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
     let hours = time.hours;
-    if (daysOrder.indexOf(time.day) !== -1) {
-        hours += daysOrder.indexOf(time.day) * 24;
+    let indexOfDayInWeek = daysOfWeek.indexOf(time.day);
+    if (indexOfDayInWeek !== -1) {
+        hours += indexOfDayInWeek * 24;
     }
 
     return hours * 60 + time.minutes;
@@ -187,10 +190,9 @@ function convertToTimeSegment(time, bankTimezone) {
 
 function convertScheduleToSegments(schedule, bankTimezone) {
     let timesegments = [];
-    let robbers = Object.keys(schedule);
-    for (let i = 0; i < robbers.length; i++) {
-        for (let j = 0; j < schedule[robbers[i]].length; j++) {
-            timesegments.push(convertToTimeSegment(schedule[robbers[i]][j], bankTimezone));
+    for (let robber of Object.keys(schedule)) {
+        for (let robberyTime of schedule[robber]) {
+            timesegments.push(convertToTimeSegment(robberyTime, bankTimezone));
         }
     }
 
@@ -199,11 +201,11 @@ function convertScheduleToSegments(schedule, bankTimezone) {
 
 function convertBankTimeToSegments(bankTime, bankTimezone) {
     let segments = [];
-    let days = ['ПН', 'ВТ', 'СР'];
-    for (let i = 0; i < days.length; i++) {
+    let days = daysOfWeek.slice(0, 3);
+    for (let day of days) {
         let segment = convertToTimeSegment({
-            from: days[i] + ' ' + bankTime.from,
-            to: days[i] + ' ' + bankTime.to
+            from: `${day} ${bankTime.from}`,
+            to: `${day} ${bankTime.to}`
         },
         bankTimezone);
         segments.push({ from: segment.to, to: segment.from });
@@ -233,10 +235,9 @@ function convertStringTimeToMinutes(stringTime, bankTimezone) {
 }
 
 function convertMinutesToDate(minutes) {
-    let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
     let hours = Math.floor(minutes / 60);
     minutes %= 60;
-    let day = days[Math.floor(hours / 24)];
+    let day = daysOfWeek[Math.floor(hours / 24)];
     hours %= 24;
 
     return { day, hours, minutes };
