@@ -9,28 +9,28 @@ exports.isStar = false;
 var HOURS_IN_DAY = 24;
 var MINUTES_IN_HOUR = 60;
 var MINUTES_IN_DAY = HOURS_IN_DAY * 60;
-var DAYS_OF_THE_WEEK = ["ПН", "ВТ", "СР"];
+var DAYS_OF_THE_WEEK = ['ПН', 'ВТ', 'СР'];
 function DayOfTheWeek(dayText) {
     this.days = DAYS_OF_THE_WEEK;
-    this.getNumber = function() {
+    this.getNumber = function () {
         return this.days.indexOf(this.text);
-    }
+    };
     this.text = dayText;
-    this.addDays = function(days) {
+    this.addDays = function (days) {
         this.number += days % 7;
     };
-    this.getText = function() {
+    this.getText = function () {
         return this.days[this.number];
     };
-    
+
     return this;
-};
+}
 function DateTime(dateTimeString) {
     this.day = new DayOfTheWeek(dateTimeString.slice(0, 2));
     this.hours = parseInt(dateTimeString.slice(3, 5));
     this.minutes = parseInt(dateTimeString.slice(6, 8));
     this.timezone = parseInt(dateTimeString.split('+')[1]);
-    this.addMinutes = function(minutes) {
+    this.addMinutes = function (minutes) {
         var daysToAdd = Math.floor(minutes / MINUTES_IN_DAY);
         minutes -= MINUTES_IN_DAY * daysToAdd;
         var hoursToAdd = Math.floor(minutes / MINUTES_IN_HOUR);
@@ -39,59 +39,57 @@ function DateTime(dateTimeString) {
         this.minutes += minutesToAdd;
         this.hours += hoursToAdd;
         this.day.addDays(daysToAdd);
-        
+
         return;
     }
-    this.convertToTimezone = function(timezone) {
+    this.convertToTimezone = function (timezone) {
         var delta = timezone - this.timezone;
         this.addMinutes(delta * MINUTES_IN_HOUR);
         this.timezone = timezone;
     };
-    this.getMinutesCountFromWeekStart = function() {
+    this.getMinutesCountFromWeekStart = function () {
         return MINUTES_IN_DAY * this.day.getNumber() + MINUTES_IN_HOUR * this.hours + this.minutes;
     };
-    this.compareTo = function(other) {
+    this.compareTo = function (other) {
         return this.getMinutesCountFromWeekStart() - other.getMinutesCountFromWeekStart();
     };
-    
+
     return this;
 }
-
 function Interval(start, end) {
     this.start = start;
     this.end = end;
-    this.intersect = function(otherInterval) {
+    this.intersect = function (otherInterval) {
         var intersectionStart = this.start.compareTo(otherInterval.start) > 0 ? 
             this.start : otherInterval.start;
         var intersectionEnd = this.end.compareTo(otherInterval.end) < 0 ? 
             this.end : otherInterval.end;
         if(intersectionEnd.compareTo(intersectionStart) < 0)
             return null;
-        
+
         return new Interval(intersectionStart, intersectionEnd);
     };
-    this.union = function(otherInterval) {
+    this.union = function (otherInterval) {
         var intersectionStart = this.start.compareTo(otherInterval.start) < 0 ? 
             this.start : otherInterval.start;
         var intersectionEnd = this.end.compareTo(otherInterval.end) > 0 ? 
             this.end : otherInterval.end;
-        
+
         return new Interval(intersectionStart, intersectionEnd);
     };
-    
+
     return this;
 }
-
 function NormalizeSchedule(memberSchedule, workingInterval) {
     var newSchedule = [];
-    memberSchedule.forEach(function(busynessInfo) {
+    memberSchedule.forEach(function (busynessInfo) {
         var bankTimezone = workingInterval.start.timezone;
         var start = new DateTime(busynessInfo.from);
         var end = new DateTime(busynessInfo.to);
         start.convertToTimezone(bankTimezone);
         end.convertToTimezone(bankTimezone);
         var busynessInterval = new Interval(start, end);
-        DAYS_OF_THE_WEEK.forEach(function(dayOfTheWeek) {
+        DAYS_OF_THE_WEEK.forEach(function (dayOfTheWeek) {
             workingInterval.start.day = new DayOfTheWeek(dayOfTheWeek);
             workingInterval.end.day = new DayOfTheWeek(dayOfTheWeek);
             var intersection = busynessInterval.intersect(workingInterval);
@@ -99,18 +97,17 @@ function NormalizeSchedule(memberSchedule, workingInterval) {
                 newSchedule.push(intersection);
         });
     });
-    
+
     return newSchedule;
 }
-
 function GetRobberyStart(schedule, workingInterval, duration, day) {
     workingInterval.start.day = new DayOfTheWeek(day);
     workingInterval.end.day = new DayOfTheWeek(day);
     var allIntervals = schedule.Danny.concat(schedule.Rusty).concat(schedule.Linus);
-    allIntervals = allIntervals.filter(function(interval) {
+    allIntervals = allIntervals.filter(function (interval) {
         return interval.start.day.text == day;
     });
-    allIntervals = allIntervals.sort(function(a, b) {
+    allIntervals = allIntervals.sort(function (a, b) {
         return a.start.compareTo(b.start);
     });
     var result = null;
@@ -133,11 +130,11 @@ function GetRobberyStart(schedule, workingInterval, duration, day) {
             else
                 currentInterval = currentInterval.union(interval);
         };
-        allIntervals = newAllIntervals.sort(function(a, b) {
+        allIntervals = newAllIntervals.sort(function (a, b) {
             return a.start.compareTo(b.start);
         });
     }
-    
+
     return result;
 }
 
@@ -145,24 +142,23 @@ function GetRobberyStart(schedule, workingInterval, duration, day) {
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
  * @param {Object} workingHours – Время работы банка
- * @param {String} workingHours.from – Время открытия, например, "10:00+5"
- * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @param {String} workingHours.from – Время открытия, например, '10:00+5'
+ * @param {String} workingHours.to – Время закрытия, например, '18:00+5'
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    var bankStart = new DateTime("ПН " + workingHours.from);
-    var bankEnd = new DateTime("ПН " + workingHours.to);
+    var bankStart = new DateTime('ПН ' + workingHours.from);
+    var bankEnd = new DateTime('ПН ' + workingHours.to);
     var workingInterval = new Interval(bankStart, bankEnd);
     schedule.Danny = NormalizeSchedule(schedule.Danny, workingInterval);
     schedule.Rusty = NormalizeSchedule(schedule.Rusty, workingInterval);
     schedule.Linus = NormalizeSchedule(schedule.Linus, workingInterval);
     var robberyStart = null;
-    DAYS_OF_THE_WEEK.forEach(function(day) {
+    DAYS_OF_THE_WEEK.forEach(function (day) {
         robberyStart = GetRobberyStart(schedule, workingInterval, duration, day);
     });
-    
-    
+
     return {
 
         /**
@@ -176,18 +172,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         /**
          * Возвращает отформатированную строку с часами для ограбления
          * Например,
-         *   "Начинаем в %HH:%MM (%DD)" -> "Начинаем в 14:59 (СР)"
+         *   'Начинаем в %HH:%MM (%DD)' -> 'Начинаем в 14:59 (СР)'
          * @param {String} template
          * @returns {String}
          */
         format: function (template) {
             if (robberyStart == null)
-                return "";
-            
+                return '';
+
             return template
-                .replace("%DD", robberyStart.day.text)
-                .replace("%HH", robberyStart.hours)
-                .replace("%MM", robberyStart.minutes);
+                .replace('%DD', robberyStart.day.text)
+                .replace('%HH', robberyStart.hours)
+                .replace('%MM', robberyStart.minutes);
         },
 
         /**
