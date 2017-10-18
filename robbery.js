@@ -79,7 +79,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return false;
             }
-            
+
             return false;
         }
     };
