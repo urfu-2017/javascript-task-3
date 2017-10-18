@@ -30,7 +30,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (goal) {
+            if (goal || goal === 0) {
                 return true;
             }
 
@@ -123,7 +123,7 @@ function checkDuration(readyTime) {
             counter += 1;
             preMinute = minute;
         } else {
-            freeDurations.push({ duration: counter, from: Math.round(from) });
+            freeDurations.push({ duration: counter, from: from });
             counter = 1;
             preMinute = minute;
             from = minute;
