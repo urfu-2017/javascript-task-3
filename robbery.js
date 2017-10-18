@@ -126,16 +126,28 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 convertToBankTimezone(schedule[robber][record].to);
             splitIntervalsOverDay(robber, record);
         }
-        for (var field in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(field)) {
+    }
+
+    function convertByBankRange() {
+        for (var robber in schedule) {
+            if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
-            cutForBankHours(robber, field);
+            for (var field in schedule[robber]) {
+                if (!schedule[robber].hasOwnProperty(field)) {
+                    continue;
+                }
+                cutForBankHours(robber, field);
+            }
         }
     }
 
     function setScheduleCorrectForm() {
         for (var robber in schedule) {
+            if (!schedule.hasOwnProperty(robber)) {
+                continue;
+            }
+            addRecordInCorrectForm(robber);
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
@@ -150,9 +162,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return false;
             });
-
-            addRecordInCorrectForm(robber);
         }
+        convertByBankRange();
     }
 
     function addRecordWhenBusy(day, robber, intervals) {
