@@ -65,7 +65,7 @@ describe('time.Timedelta.intersect', function () {
             new Timestamp(0, 14, 0, 3),
         );
         assert.deepEqual(actual, expected);
-        assert.equal(expected.totalMinutes(), 0);
+        assert.equal(expected.totalMinutes(), 4 * 60);
     });
     it('intersecting many, reduce2', function() {
         var tds = [ 
@@ -80,6 +80,16 @@ describe('time.Timedelta.intersect', function () {
             new Timestamp(0, 14, 0, 3),
         );
         assert.deepEqual(actual, expected);
-        assert.equal(expected.totalMinutes(), 2 * 60);
+        assert.equal(expected.totalMinutes(), 4 * 60);
     });
-})
+});
+
+describe('totalMinutes', function() {
+    it('works well on offsets', function (){
+        var a = Timestamp.fromString('ВТ 09:30+3');
+        var b = Timestamp.fromString('ВТ 10:00+5');
+        var c = Timestamp.fromString('ВТ 13:00+5');
+        assert.equal(a.totalMinutes() - b.totalMinutes(), 90);
+        assert.equal(c.totalMinutes() - a.totalMinutes(), 90);
+    });
+});
