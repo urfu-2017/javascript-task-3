@@ -142,6 +142,21 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
+    function addRecordWhenBusy(day, robber, intervals) {
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
+                continue;
+            }
+            if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
+                intervals.push({
+                    day: DAYS_OF_WEEK[day],
+                    from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
+                    to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
+                });
+            }
+        }
+    }
+
     function setScheduleCorrectForm() {
         for (var robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
@@ -164,21 +179,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             });
         }
         convertByBankRange();
-    }
-
-    function addRecordWhenBusy(day, robber, intervals) {
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
-                continue;
-            }
-            if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
-                intervals.push({
-                    day: DAYS_OF_WEEK[day],
-                    from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
-                    to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
-                });
-            }
-        }
     }
 
     function createScheduleWhenBusy(day, intervals) {
