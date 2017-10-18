@@ -27,17 +27,14 @@ const NAME_BUDDY = ['Danny', 'Rusty', 'Linus'];
 const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
 const MS_IN_MINUTE = 60000;
 
-function createDate([day, hour, minute], seconds) {
-    if (!seconds) {
-        seconds = 0;
-    }
+function createDate([day, hour, minute]) {
     if (hour > 23 || hour < 0) {
         let sign = hour > 23 ? 1 : -1;
         hour -= 24 * sign;
         day += sign;
     }
 
-    return Date.parse(new Date(1970, 5, day, hour, minute, seconds));
+    return Date.parse(new Date(1970, 5, day, hour, minute, 0));
 }
 
 function parseInterval(time) {
@@ -93,7 +90,7 @@ function getClosedBank(workingHours) {
             },
             {
                 from: createDate([day, endBankInterval.hour, endBankInterval.minute]),
-                to: createDate([day, 23, 59], 59)
+                to: createDate([day, 24, 0])
             });
     });
 
@@ -206,6 +203,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (robberyMoments.length === 0) {
+                return false;
+            }
             if (this.exists) {
                 if (robberyMoments[0].from + (duration + 30) * MS_IN_MINUTE <=
                 robberyMoments[0].to) {
