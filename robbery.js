@@ -165,7 +165,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
                 var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
 
-                return !(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo)
+                return !(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo);
             });
         }
         convertByBankRange();
@@ -307,7 +307,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             return template.replace('%HH', this.daysForRobbery[0].from.split(':')[0])
                 .replace('%MM', this.daysForRobbery[0].from.split(':')[1])
-                .replace('%DD', this.daysForRobbery[0].day);;
+                .replace('%DD', this.daysForRobbery[0].day);
         },
 
         /**
