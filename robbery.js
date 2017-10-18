@@ -207,13 +207,19 @@ function getEventLength(event) {
 function shiftLater(event, hours, minutes) {
     event.from.hours += hours;
     event.from.minutes += minutes;
-    if (minutes >= 60) {
+    if (event.from.minutes >= 60) {
         event.from.hours++;
         event.from.minutes %= 60;
     }
 
     return event;
 }
+
+// function scheduleToString(schedule) {
+//     return (schedule.map(day => day.map(
+//         activity => `${activity.from.hours}:${activity.from.minutes}-
+// ${activity.to.hours}:${activity.to.minutes}`)));
+// }
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -227,9 +233,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     GANG_SCHEDULE = [[], [], [], [], []];
     const bankTimePattern = /(\d\d?):(\d\d?)/;
     transformSchedule(schedule, workingHours);
-    let freeTime = GANG_SCHEDULE.slice(1, -1).map(day => day.sort(sortEventsByEnd))
+    let freeTime = GANG_SCHEDULE.slice(1, 4).map(day => day.sort(sortEventsByEnd))
         .map(uniteActivities)
         .map(negateActivities);
+    // console.info(scheduleToString(freeTime));
     let transformedWorkingHours = transformBankTime(workingHours, bankTimePattern);
     let robberyTimesByDays = freeTime
         .map(day => intersectTimes(day, transformedWorkingHours)
@@ -244,7 +251,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return robberyTimes.length !== 0;
+            return robberyTimes.length !== 0 || this._currentTime !== undefined;
         },
 
         getFirstTime: function () {
@@ -262,7 +269,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             let time = this._currentTime;
-            if (time === undefined || time === null) {
+            if (!this.exists() || time === undefined || time === null) {
                 return '';
             }
             let hours = time.from.hours.toLocaleString(undefined, { minimumIntegerDigits: 2 });
@@ -295,20 +302,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             this._currentTime = nextTime;
 
             return true;
-            // let nextTime = this._currentTime;
-            //
-            // while (robberyTimes.length !== 0 &&
-            // getEventLength(nextTime) < duration + 30) {
-            //     robberyTimes.splice(0, 1);
-            //     nextTime = this.getFirstTime();
-            //     if (getEventLength(nextTime) >= duration) {
-            //         this._currentTime = nextTime;
-            //
-            //         return true;
-            //     }
-            // }
-
-            // return false;
         }
     };
 };
