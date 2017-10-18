@@ -112,16 +112,18 @@ function getGangShedule(sh, timeZone) {
     });
 
     Object.keys(clone).forEach(function (key) {
-        var robberTimezone = clone[key][0].from.slice(-1);
-        if (robberTimezone !== timeZone) {
-            clone[key] = normalizeTimezone(clone[key], robberTimezone - timeZone);
-        }
-        for (var i = 0; i < clone[key].length; i++) {
-            resultSchedule.push(
-                {
-                    from: toDate(clone[key][i].from),
-                    to: toDate(clone[key][i].to)
-                });
+        if (clone[key][0] !== undefined) {
+            var robberTimezone = clone[key][0].from.slice(-1);
+            if (robberTimezone !== timeZone) {
+                clone[key] = normalizeTimezone(clone[key], robberTimezone - timeZone);
+            }
+            for (var i = 0; i < clone[key].length; i++) {
+                resultSchedule.push(
+                    {
+                        from: toDate(clone[key][i].from),
+                        to: toDate(clone[key][i].to)
+                    });
+            }
         }
     });
 
@@ -200,10 +202,12 @@ function toDate(date) {
 
 }
 function getBusyTime(gangSchedule) {
+    if (gangSchedule[0] === undefined) {
+        return [];
+    }
     var resultSchedule = [gangSchedule[0]];
 
     for (var i = 1; i < gangSchedule.length; i++) {
-
         if (gangSchedule[i].from > resultSchedule[resultSchedule.length - 1].to) {
             resultSchedule.push({
                 from: gangSchedule[i].from,
