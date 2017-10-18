@@ -143,9 +143,9 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
             if (acc.from < item.from) {
                 if (item.from > bankTo) {
                     acc.to = bankTo;
-                    robbersFree.push({ day: localDayOfWeek, from: acc.from, to:acc.to });
+                    robbersFree.push({ day: localDayOfWeek, from: acc.from, to: acc.to });
                 } else {
-                    robbersFree.push({ day: localDayOfWeek, from: acc.from, to:item.from });
+                    robbersFree.push({ day: localDayOfWeek, from: acc.from, to: item.from });
                     acc.from = item.to;
                     acc.to = item.to;
                 }
@@ -163,7 +163,7 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
             }
 
             return acc;
-        }, { from:bankFrom, to:bankTo });
+        }, { from: bankFrom, to: bankTo });
     if (result.to <= bankTo) {
         robbersFree.push({ day: localDayOfWeek, from: result.from, to: result.to });
     }
@@ -201,8 +201,10 @@ function chushToTwoDays(timeFrom, timeTo) {
     timeToCopy[1] = '23';
     timeToCopy[2] = '59';
 
-    return [{ dayFrom: timeFrom[0], from: timeFrom[1] + timeFrom[2],
+    return [{
+        dayFrom: timeFrom[0], from: timeFrom[1] + timeFrom[2],
         dayTo: timeFrom[0], to: timeToCopy[1] + timeToCopy[2] },
         { dayFrom: timeTo[0], from: timeFromCopy[1] + timeFromCopy[2],
-            dayTo: timeTo[0], to: timeTo[1] + timeTo[2] }];
+            dayTo: timeTo[0], to: timeTo[1] + timeTo[2]
+        }];
 }
