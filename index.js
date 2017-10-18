@@ -19,8 +19,8 @@ var gangSchedule = {
 };
 
 var bankWorkingHours = {
-    from: '10:00+5',
-    to: '18:00+5'
+    from: '10:00+3',
+    to: '18:00+3'
 };
 
 // Время не существует
@@ -31,7 +31,7 @@ console.info(longMoment.exists());
 console.info(longMoment.format('Метим на %DD, старт в %HH:%MM!'));
 
 // Время существует
-var moment = robbery.getAppropriateMoment(gangSchedule, 90, bankWorkingHours);
+var moment = robbery.getAppropriateMoment(gangSchedule, 60, bankWorkingHours);
 
 // Выведется true и "Метим на ВТ, старт в 11:30!"
 console.info(moment.exists());

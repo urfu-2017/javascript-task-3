@@ -137,7 +137,12 @@ function getlRobberTimeInterval(x, bankTimezone) {
 
     let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay];
     let totalHoursTo = x.hoursTo + timezoneDiff + daysOfWeeksToHours[x.endDay];
-
+    if (totalHoursFrom < 0) {
+        totalHoursFrom = 0;
+    }
+    if (totalHoursTo < 0) {
+        totalHoursTo = 0;
+    }
     let totalMinutesFrom = totalHoursFrom * 60 + x.minutesFrom;
     let totalMinutesTo = totalHoursTo * 60 + x.minutesTo;
 
