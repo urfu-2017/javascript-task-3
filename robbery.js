@@ -232,7 +232,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function getRobberySchedule() {
         setScheduleCorrectForm();
-        console.error(schedule);
         var intervals = [];
         var result = [];
         for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
