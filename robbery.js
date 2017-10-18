@@ -5,11 +5,11 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = false;
-var YEAR = 2017;
-var MONTH = 9;
-var DAY = 2;
-var AMOUNT_OF_HOURS_IN_DAY = 24;
-var WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const YEAR = 2017;
+const MONTH = 9;
+const DAY = 2;
+const AMOUNT_OF_HOURS_IN_DAY = 24;
+const WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -22,16 +22,10 @@ var WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var timeZone = workingHours.from.slice(-1);
     var bankWorkingHours = getWorkingHours(workingHours);
-    // время работы банка в date
     var bankNotWorkingHours = getBusyBankTime(bankWorkingHours);
-    // время когда не работает банк
-
-    var gangShedule = getGangShedule(schedule, timeZone);
-    // перевод расписания в date
-    var timeNotToRob = getBusyTime(gangShedule);
-    // Время когда грабители не могут ограбить
+    var gangShe = getGangShedule(schedule, timeZone);
+    var timeNotToRob = getBusyTime(gangShe);
     var noRob = noRobbery(timeNotToRob, bankNotWorkingHours);
-    // и банк не работает и грабители не могут
     var timeToRob = itsTime(noRob, duration);
 
     return {
@@ -109,18 +103,24 @@ function toDateBank(date, i) {
 
 }
 
-function getGangShedule(schedule, timeZone) {
+function getGangShedule(sh, timeZone) {
+
     var resultSchedule = [];
-    Object.keys(schedule).forEach(function (key) {
-        var robberTimezone = schedule[key][0].from.slice(-1);
+    var clone = {};
+    Object.keys(sh).forEach(function (keys) {
+        clone[keys] = sh[keys];
+    });
+
+    Object.keys(clone).forEach(function (key) {
+        var robberTimezone = clone[key][0].from.slice(-1);
         if (robberTimezone !== timeZone) {
-            schedule[key] = normalizeTimezone(schedule[key], robberTimezone - timeZone);
+            clone[key] = normalizeTimezone(clone[key], robberTimezone - timeZone);
         }
-        for (var i = 0; i < schedule[key].length; i++) {
+        for (var i = 0; i < clone[key].length; i++) {
             resultSchedule.push(
                 {
-                    from: toDate(schedule[key][i].from),
-                    to: toDate(schedule[key][i].to)
+                    from: toDate(clone[key][i].from),
+                    to: toDate(clone[key][i].to)
                 });
         }
     });
