@@ -129,7 +129,6 @@ function checkDuration(readyTime) {
             from = minute;
         }
     }
-    console.info(freeDurations);
 
     return freeDurations;
 }
@@ -183,7 +182,7 @@ function robbersTimeInterval(schedule) {
 }
 
 function bankTimeToUtc(workingHours) {
-    const regExp = /(\d{2}):(\d{2})[+-](\d{1})/;
+    const regExp = /(\d{2}):(\d{2})[+-](\d+)/;
     const bankTime = [];
     let timeFrom = workingHours.from.match(regExp).map(Number);
     let timeTo = workingHours.to.match(regExp).map(Number);
@@ -218,7 +217,7 @@ function robbersTime(schedule) {
 
 function robbersTimeToUtc(robberTime, name) {
     let robber = [];
-    const regExp = /([А-Яа-я]{2})\s(\d{2}):(\d{2})[+-](\d{1})/;
+    const regExp = /([А-Яа-я]{2})\s(\d{2}):(\d{2})[+-](\d+)/;
     for (const key in robberTime) {
         if (key) {
             let timeFrom = robberTime[key].from.match(regExp);
