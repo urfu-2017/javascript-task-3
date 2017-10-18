@@ -135,6 +135,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 });
             }
         }
+
     }
 
     function addRecordInCorrectForm(robber) {
@@ -181,11 +182,19 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function createScheduleWhenFree(day, result, intervals) {
+        var maxFrom = 0;
         for (var i = 1; i < intervals.length; i++) {
+            intervals.sort(customSort);
             var intervalFrom = intervals[i - 1].to.match(/\d{1,2}/g).join('');
             var intervalTo = intervals[i].from.match(/\d{1,2}/g).join('');
+            if (maxFrom < convertToMinutes(intervals[i - 1].to)) {
+                maxFrom = convertToMinutes(intervals[i - 1].to);
+            }
             if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) >=
                 duration) {
+                if (maxFrom > convertToMinutes(intervals[i - 1].to)) {
+                    intervalFrom = convertToHours(p).match(/\d{1,2}/g).join('');
+                }
                 result.push({
                     day: DAYS_OF_WEEK[day],
                     from: intervalFrom.slice(0, 2) + ':' + intervalFrom.slice(2),
