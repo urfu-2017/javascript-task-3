@@ -23,6 +23,7 @@ function mergeRange(array) {
     var resultArray = [];
     var prevStart = sortedArray[0][0];
     var prevFinish = sortedArray[0][1];
+
     for (var i = 1; i < sortedArray.length; i++) {
         if (sortedArray[i][0] <= prevFinish) {
             prevFinish = Math.max(sortedArray[i][1], prevFinish);
@@ -32,6 +33,7 @@ function mergeRange(array) {
             prevFinish = sortedArray[i][1];
         }
     }
+
     resultArray.push([prevStart, prevFinish]);
 
     return resultArray;
@@ -61,6 +63,7 @@ function getGoodTimeIntervals(freeTimeIntervals, duration) {
             firstFreeTime += TIME_INTERVAL;
         }
     }
+
     resultArray.splice(0, 1);
 
     return resultArray;
@@ -86,21 +89,21 @@ function getTimestamp(stringTime, utc = null) {
 
 function getBusyIntervals(schedule, workingHours) {
 
-    var arrIntervals = [];
+    var intervals = [];
+    var bankStartWork = getTimestamp(workingHours.from);
+    var bankFinishWork = getTimestamp(workingHours.to);
 
     for (var friend in schedule) {
         if (schedule.hasOwnProperty(friend)) {
-            arrIntervals = arrIntervals.concat(getBusyInterval(schedule[friend], workingHours));
+            intervals = intervals.concat(getBusyInterval(schedule[friend], workingHours));
         }
     }
 
-    var bankStartWork = getTimestamp(workingHours.from);
-    var bankFinishWork = getTimestamp(workingHours.to);
-    arrIntervals.push([0, bankStartWork], [bankFinishWork, bankStartWork + MIN_PER_DAY],
+    intervals.push([0, bankStartWork], [bankFinishWork, bankStartWork + MIN_PER_DAY],
         [bankFinishWork + MIN_PER_DAY, bankStartWork + MIN_PER_DAY * 2],
         [bankFinishWork + MIN_PER_DAY * 2, MIN_PER_DAY * 3 - 1]);
 
-    return arrIntervals;
+    return intervals;
 }
 
 function getBusyInterval(scheduleArray, workingHours) {
@@ -144,11 +147,8 @@ function getFreeTimeIntervals(schedule, duration, workingHours) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     var freeTimeIntervals = getFreeTimeIntervals(schedule, duration, workingHours);
-
     var firstFreeTime = !freeTimeIntervals.length ? -1 : freeTimeIntervals[0][0];
-
     var goodTimeIntervals = getGoodTimeIntervals(freeTimeIntervals, duration);
-
     var tryLaterCounter = 0;
 
     return {
@@ -175,7 +175,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var day = Math.floor(firstFreeTime / MIN_PER_DAY);
             var hours = Math.floor((firstFreeTime - day * MIN_PER_DAY) / MIN_PER_HOUR);
             var minutes = firstFreeTime - day * MIN_PER_DAY - hours * MIN_PER_HOUR;
-
             var dayStr = DAYS[day];
 
             if (minutes < 10) {
