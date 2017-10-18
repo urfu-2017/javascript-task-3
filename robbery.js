@@ -126,7 +126,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var record in schedule[robber]) {
             if (!schedule[robber].hasOwnProperty(record)) {
                 continue;
-            }
+        }
             if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
                 intervals.push({
                     day: DAYS_OF_WEEK[day],
