@@ -97,8 +97,14 @@ function calculating(timeline, badTime) {
     for (var i = 0; i < badTime.from.length; i++) {
         if (badTime.from[i] < 0 && badTime.to[i] < 0) {
             continue;
+        } else if (badTime.to[i] > 4320 && badTime.from[i] > 4320) {
+            continue;
+        } else if (badTime.to[i] > 4320 && badTime.from[i] < 0) {
+            timeline = changeTimeline(0, 4320);
         } else if (badTime.from[i] < 0) {
             timeline = changeTimeline(0, badTime.to[i], timeline);
+        } else if (badTime.to[i] > 4320) {
+            timeline = changeTimeline(badTime.from[i], 4320);
         } else {
             timeline = changeTimeline(badTime.from[i], badTime.to[i], timeline);
         }
