@@ -102,7 +102,7 @@ function normalizeSchedule(memberSchedule, workingInterval) {
 
     return newSchedule;
 }
-function getNewAllIntervals(allIntervals, lastIntervalEnd) {
+function getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval) {
     var newAllIntervals = [];
     for (var i = 0; i < allIntervals.length; i += 1) {
         var interval = allIntervals[i];
@@ -111,8 +111,7 @@ function getNewAllIntervals(allIntervals, lastIntervalEnd) {
             lastIntervalEnd = currentInterval.end.compareTo(lastIntervalEnd) > 0
                 ? currentInterval.end : lastIntervalEnd;
             break;
-        }
-        else {
+        } else {
             currentInterval = currentInterval.union(interval);
         }
     }
@@ -148,7 +147,7 @@ function getRobberyStart(schedule, workingInterval, duration, day) {
         return a.start.compareTo(b.start);
     });
 
-    return findCompatibleInterval(allIntervals, workingInterval);
+    return findCompatibleInterval(allIntervals, workingInterval, duration);
 }
 
 /**
