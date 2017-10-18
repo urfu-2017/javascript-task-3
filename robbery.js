@@ -123,13 +123,13 @@ function checkDuration(readyTime) {
             counter += 1;
             preMinute = minute;
         } else {
-            freeDurations.push({ duration: counter, from: from });
+            freeDurations.push({ duration: counter, from: Math.round(from) });
             counter = 1;
             preMinute = minute;
             from = minute;
         }
     }
-
+    console.log(freeDurations);
     return freeDurations;
 }
 
