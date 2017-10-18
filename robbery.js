@@ -35,16 +35,16 @@ function convertToMinutes(time) {
     return hours * 60 + mins;
 }
 
+function customSortByToField(x, y) {
+    var timeToX = x.to.match(/\d{1,2}/g).join('');
+    var timeToY = y.to.match(/\d{1,2}/g).join('');
+
+    return timeToX - timeToY;
+}
+
 var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-
-    function customSortByToField(x, y) {
-        var timeToX = x.to.match(/\d{1,2}/g).join('');
-        var timeToY = y.to.match(/\d{1,2}/g).join('');
-
-        return timeToX - timeToY;
-    }
 
     function customSort(x, y) {
         var dayFromX = x.day;
@@ -100,18 +100,23 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function cutForBankHours(robber, record) {
-        var from = convertToMinutes(schedule[robber][record].from.slice(3, 8));
-        var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
-        var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
-        var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-        if (from < bankFrom) {
-            schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
-                workingHours.from;
-        }
-        if (to > bankTo) {
-            schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) +
-                workingHours.to;
+    function cutForBankHours(robber) {
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
+                continue;
+            }
+            var from = convertToMinutes(schedule[robber][record].from.slice(3, 8));
+            var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
+            var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
+            var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+            if (from < bankFrom) {
+                schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
+                    workingHours.from;
+            }
+            if (to > bankTo) {
+                schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) +
+                    workingHours.to;
+            }
         }
     }
 
@@ -120,13 +125,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
-            for (var field in schedule[robber]) {
-                if (!schedule[robber].hasOwnProperty(field)) {
-                    continue;
-                }
-                cutForBankHours(robber, field);
+            cutForBankHours(robber);
             }
-        }
     }
 
     function addRecordWhenBusy(day, robber, intervals) {
