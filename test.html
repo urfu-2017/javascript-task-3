@@ -10,7 +10,7 @@
     var HOURS_IN_DAY = 24;
     var MINUTES_IN_HOUR = 60;
     var MINUTES_IN_DAY = HOURS_IN_DAY * 60;
-    var DAYS_OF_THE_WEEK = ['ПН', 'ВТ', 'СР'];
+    var DAYS_OF_THE_WEEK = ['ПН', 'ВТ', 'СР', "ЧТ", "ПТ", "СБ", "ВС"];
     function DayOfTheWeek(dayText) {
         this.days = DAYS_OF_THE_WEEK;
         this.getNumber = function () {
@@ -91,7 +91,7 @@
             start.convertToTimezone(bankTimezone);
             end.convertToTimezone(bankTimezone);
             var busynessInterval = new Interval(start, end);
-            DAYS_OF_THE_WEEK.forEach(function (dayOfTheWeek) {
+            DAYS_OF_THE_WEEK.slice(0, 3).forEach(function (dayOfTheWeek) {
                 workingInterval.start.day = new DayOfTheWeek(dayOfTheWeek);
                 workingInterval.end.day = new DayOfTheWeek(dayOfTheWeek);
                 var intersection = busynessInterval.intersect(workingInterval);
@@ -128,7 +128,8 @@
             if (currentInterval.start.compareTo(lastIntervalEnd) >= duration) {
                 return lastIntervalEnd;
             }
-            var newAllIntervalsResult = getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval);
+            var newAllIntervalsResult = getNewAllIntervals(allIntervals,
+                lastIntervalEnd, currentInterval);
             var newAllIntervals = newAllIntervalsResult.intervals;
             lastIntervalEnd = newAllIntervalsResult.lastIntervalEnd;
             allIntervals = newAllIntervals.sort(function (a, b) {
@@ -169,7 +170,7 @@
         schedule.Rusty = normalizeSchedule(schedule.Rusty, workingInterval);
         schedule.Linus = normalizeSchedule(schedule.Linus, workingInterval);
         var robberyStart = null;
-        for (var i = 0; i < DAYS_OF_THE_WEEK.length; i += 1) {
+        for (var i = 0; i < DAYS_OF_THE_WEEK.slice(0, 3).length; i += 1) {
             var day = DAYS_OF_THE_WEEK[i];
             robberyStart = getRobberyStart(schedule, workingInterval, duration, day);
             if (robberyStart !== null) {
@@ -201,8 +202,10 @@
 
                 return template
                     .replace('%DD', robberyStart.day.text)
-                    .replace('%HH', robberyStart.hours)
-                    .replace('%MM', robberyStart.minutes);
+                    .replace('%HH', robberyStart.hours < 10
+                        ? '0' + robberyStart.hours : robberyStart.hours)
+                    .replace('%MM', robberyStart.minutes < 10
+                        ? '0' + robberyStart.minutes : robberyStart.minutes);
             },
 
             /**
@@ -215,6 +218,7 @@
             }
         };
     };
+    
     
     
     
