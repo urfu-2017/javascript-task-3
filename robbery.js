@@ -41,7 +41,7 @@ function DateTime(dateTimeString) {
         this.day.addDays(daysToAdd);
 
         return;
-    }
+    };
     this.convertToTimezone = function (timezone) {
         var delta = timezone - this.timezone;
         this.addMinutes(delta * MINUTES_IN_HOUR);
@@ -60,27 +60,28 @@ function Interval(start, end) {
     this.start = start;
     this.end = end;
     this.intersect = function (otherInterval) {
-        var intersectionStart = this.start.compareTo(otherInterval.start) > 0 ? 
-            this.start : otherInterval.start;
-        var intersectionEnd = this.end.compareTo(otherInterval.end) < 0 ? 
-            this.end : otherInterval.end;
-        if(intersectionEnd.compareTo(intersectionStart) < 0)
+        var intersectionStart = this.start.compareTo(otherInterval.start) > 0
+        ? this.start : otherInterval.start;
+        var intersectionEnd = this.end.compareTo(otherInterval.end) < 0
+        ? this.end : otherInterval.end;
+        if (intersectionEnd.compareTo(intersectionStart) < 0){
             return null;
+        }
 
         return new Interval(intersectionStart, intersectionEnd);
     };
     this.union = function (otherInterval) {
-        var intersectionStart = this.start.compareTo(otherInterval.start) < 0 ? 
-            this.start : otherInterval.start;
-        var intersectionEnd = this.end.compareTo(otherInterval.end) > 0 ? 
-            this.end : otherInterval.end;
+        var intersectionStart = this.start.compareTo(otherInterval.start) < 0
+        ? this.start : otherInterval.start;
+        var intersectionEnd = this.end.compareTo(otherInterval.end) > 0
+        ? this.end : otherInterval.end;
 
         return new Interval(intersectionStart, intersectionEnd);
     };
 
     return this;
 }
-function NormalizeSchedule(memberSchedule, workingInterval) {
+function normalizeSchedule(memberSchedule, workingInterval) {
     var newSchedule = [];
     memberSchedule.forEach(function (busynessInfo) {
         var bankTimezone = workingInterval.start.timezone;
@@ -93,49 +94,56 @@ function NormalizeSchedule(memberSchedule, workingInterval) {
             workingInterval.start.day = new DayOfTheWeek(dayOfTheWeek);
             workingInterval.end.day = new DayOfTheWeek(dayOfTheWeek);
             var intersection = busynessInterval.intersect(workingInterval);
-            if(intersection != null)
+            if (intersection !== null){
                 newSchedule.push(intersection);
+            }
         });
     });
 
     return newSchedule;
 }
-function GetRobberyStart(schedule, workingInterval, duration, day) {
-    workingInterval.start.day = new DayOfTheWeek(day);
-    workingInterval.end.day = new DayOfTheWeek(day);
-    var allIntervals = schedule.Danny.concat(schedule.Rusty).concat(schedule.Linus);
-    allIntervals = allIntervals.filter(function (interval) {
-        return interval.start.day.text == day;
-    });
-    allIntervals = allIntervals.sort(function (a, b) {
-        return a.start.compareTo(b.start);
-    });
+function findCompatibleInterval(allIntervals, workingInterval) {
     var result = null;
     var lastIntervalEnd = workingInterval.start;
     var currentInterval = allIntervals[0];
-    while (allIntervals.length > 0 || result != null) {
+    while (allIntervals.length > 0 || result !== null) {
         currentInterval = allIntervals[0];
         allIntervals = allIntervals.splice(1);
-        if (currentInterval.start.compareTo(lastIntervalEnd) >= duration)
+        if (currentInterval.start.compareTo(lastIntervalEnd) >= duration){
             return currentInterval.start;
+        }
         var newAllIntervals = [];
-        for(var i = 0; i < allIntervals.length; i +=1 ) {
+        for (var i = 0;i < allIntervals.length;i += 1 ) {
             var interval = allIntervals[i];
-            if (currentInterval.intersect(interval) == null){
+            if (currentInterval.intersect(interval) === null){
                 newAllIntervals.push(interval);
-                lastIntervalEnd = currentInterval.end.compareTo(lastIntervalEnd) > 0 ? 
-                    currentInterval.end : lastIntervalEnd;
+                lastIntervalEnd = currentInterval.end.compareTo(lastIntervalEnd) > 0
+                ? currentInterval.end : lastIntervalEnd;
                 break;
             }
-            else
+            else{
                 currentInterval = currentInterval.union(interval);
-        };
+            }
+        }
         allIntervals = newAllIntervals.sort(function (a, b) {
             return a.start.compareTo(b.start);
         });
     }
 
-    return result;
+    return result
+}
+function getRobberyStart(schedule, workingInterval, duration, day) {
+    workingInterval.start.day = new DayOfTheWeek(day);
+    workingInterval.end.day = new DayOfTheWeek(day);
+    var allIntervals = schedule.Danny.concat(schedule.Rusty).concat(schedule.Linus);
+    allIntervals = allIntervals.filter(function (interval) {
+        return interval.start.day.text === day;
+    });
+    allIntervals = allIntervals.sort(function (a, b) {
+        return a.start.compareTo(b.start);
+    });
+
+    return findCompatibleInterval(allIntervals, workingInterval);
 }
 
 /**
@@ -151,12 +159,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var bankStart = new DateTime('ПН ' + workingHours.from);
     var bankEnd = new DateTime('ПН ' + workingHours.to);
     var workingInterval = new Interval(bankStart, bankEnd);
-    schedule.Danny = NormalizeSchedule(schedule.Danny, workingInterval);
-    schedule.Rusty = NormalizeSchedule(schedule.Rusty, workingInterval);
-    schedule.Linus = NormalizeSchedule(schedule.Linus, workingInterval);
+    schedule.Danny = normalizeSchedule(schedule.Danny, workingInterval);
+    schedule.Rusty = normalizeSchedule(schedule.Rusty, workingInterval);
+    schedule.Linus = normalizeSchedule(schedule.Linus, workingInterval);
     var robberyStart = null;
     DAYS_OF_THE_WEEK.forEach(function (day) {
-        robberyStart = GetRobberyStart(schedule, workingInterval, duration, day);
+        robberyStart = getRobberyStart(schedule, workingInterval, duration, day);
     });
 
     return {
@@ -166,7 +174,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return robberyStart != null;
+            return robberyStart !== null;
         },
 
         /**
@@ -177,8 +185,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (robberyStart == null)
+            if (robberyStart === null){
                 return '';
+            }
 
             return template
                 .replace('%DD', robberyStart.day.text)
