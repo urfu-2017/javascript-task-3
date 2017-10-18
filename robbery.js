@@ -27,7 +27,10 @@ const NAME_BUDDY = ['Danny', 'Rusty', 'Linus'];
 const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
 const MS_IN_MINUTE = 60000;
 
-function createDate([day, hour, minute], seconds = 0) {
+function createDate([day, hour, minute], seconds) {
+    if (!seconds) {
+        seconds = 0;
+    }
     if (hour > 23 || hour < 0) {
         let sign = hour > 23 ? 1 : -1;
         hour -= 24 * sign;
