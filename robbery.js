@@ -129,11 +129,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 convertToBankTimezone(schedule[robber][record].to);
             splitIntervalsOverDay(robber, record);
         }
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
+        for (var field in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(field)) {
                 continue;
             }
-            cutForBankHours(robber, record);
+            cutForBankHours(robber, field);
         }
     }
 
@@ -255,12 +255,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (result.length !== 0) {
             modifyResult(result);
         }
+
         return result;
     }
 
     return {
 
         daysForRobbery: getRobberySchedule(),
+
         /**
          * Найдено ли время
          * @returns {Boolean}
@@ -296,7 +298,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             var willRob = this.daysForRobbery.length > 1;
             if (this.daysForRobbery.length > 1) {
-                this.daysForRobbery.splice(0,1);
+                this.daysForRobbery.splice(0, 1);
             }
 
             return willRob;
