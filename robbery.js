@@ -90,8 +90,24 @@ function findRobberyStartSlot(slots, duration) {
     slots = slots.join('');
     var size = Math.ceil(duration / 30);
     var needle = '1'.repeat(size);
+    var offset = 0;
 
-    return slots.indexOf(needle);
+    while (true) { // eslint-disable-line no-constant-condition
+        let slot = slots.indexOf(needle, offset);
+
+        if (slot === -1 || !containsMidnight(slot, duration)) {
+            return slot;
+        }
+
+        offset = slot + 1;
+    }
+}
+
+function containsMidnight(slot, duration) {
+    var fromIndex = indexToTime(slot);
+    var toIndex = indexToTime(slot + Math.ceil(duration / 30));
+
+    return fromIndex.day !== toIndex.day;
 }
 
 function indexToTime(index) {
