@@ -72,19 +72,18 @@ function getCorrectFormat(string, day, hours, minutes) {
  */
 function crossElements(schedule) {
     let connectedSchedule = [];
-    let start = 0;
-    let finish = 0;
+    let from = 0;
+    let to = 0;
     schedule.forEach((time, i) => {
-        start = time.from;
-        finish = time.to;
+        from = time.from;
+        to = time.to;
         schedule.forEach((time2, j) => {
-            if (i !== j &&
-                start <= time2.to && finish >= time2.from) {
-                start = Math.max(start, time2.from);
-                finish = Math.min(finish, time2.to);
+            if (i !== j && from <= time2.to && to >= time2.from) {
+                from = Math.max(from, time2.from);
+                to = Math.min(to, time2.to);
             }
         });
-        connectedSchedule.push({ from: start, to: finish });
+        connectedSchedule.push({ from, to });
     });
 
     return connectedSchedule;
@@ -168,19 +167,19 @@ function mergeTime(schedule) {
  */
 function mixSchedule(schedule) {
     let connectedSchedule = [];
-    let start = 0;
-    let finish = 0;
+    let from = 0;
+    let to = 0;
     schedule.forEach((time, i) => {
-        start = time.from;
-        finish = time.to;
+        from = time.from;
+        to = time.to;
         schedule.forEach((time2, j) => {
             if (i !== j &&
-                start <= time2.to && finish >= time2.from) {
-                start = Math.min(start, time2.from);
-                finish = Math.max(finish, time2.to);
+                from <= time2.to && to >= time2.from) {
+                from = Math.min(from, time2.from);
+                to = Math.max(to, time2.to);
             }
         });
-        connectedSchedule.push({ from: start, to: finish });
+        connectedSchedule.push({ from, to });
     });
 
     return connectedSchedule;
