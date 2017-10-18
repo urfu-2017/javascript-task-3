@@ -15,6 +15,8 @@ exports.isStar = true;
  * @returns {Object}
  */
 
+var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+
 function convertToHours(mins) {
     var hours = parseInt(mins / 60);
     var minutes = mins % 60;
@@ -35,26 +37,24 @@ function convertToMinutes(time) {
     return hours * 60 + mins;
 }
 
-var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+function customSort(x, y) {
+    var dayFromX = x.day;
+    var dayFromY = y.day;
+    var timeFromX = x.from.match(/\d{1,2}/g).join('');
+    var timeFromY = y.from.match(/\d{1,2}/g).join('');
+    var timeToX = x.to.match(/\d{1,2}/g).join('');
+    var timeToY = y.to.match(/\d{1,2}/g).join('');
+    if (dayFromX !== dayFromY) {
+        return DAYS_OF_WEEK.indexOf(dayFromX) - DAYS_OF_WEEK.indexOf(dayFromY);
+    }
+    if (timeFromX !== timeFromY) {
+        return timeFromX - timeFromY;
+    }
+
+    return timeToX - timeToY;
+}
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-
-    function customSort(x, y) {
-        var dayFromX = x.day;
-        var dayFromY = y.day;
-        var timeFromX = x.from.match(/\d{1,2}/g).join('');
-        var timeFromY = y.from.match(/\d{1,2}/g).join('');
-        var timeToX = x.to.match(/\d{1,2}/g).join('');
-        var timeToY = y.to.match(/\d{1,2}/g).join('');
-        if (dayFromX !== dayFromY) {
-            return DAYS_OF_WEEK.indexOf(dayFromX) - DAYS_OF_WEEK.indexOf(dayFromY);
-        }
-        if (timeFromX !== timeFromY) {
-            return timeFromX - timeFromY;
-        }
-
-        return timeToX - timeToY;
-    }
 
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
@@ -164,11 +164,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 var to = convertToMinutes(rec.to.slice(3, 8));
                 var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
                 var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-                if (!(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo)) {
-                    return true;
-                }
 
-                return false;
+                return !(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo)
             });
         }
         convertByBankRange();
@@ -307,11 +304,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return ('');
             }
-            var res = template.replace('%HH', this.daysForRobbery[0].from.split(':')[0])
-                .replace('%MM', this.daysForRobbery[0].from.split(':')[1])
-                .replace('%DD', this.daysForRobbery[0].day);
 
-            return res;
+            return template.replace('%HH', this.daysForRobbery[0].from.split(':')[0])
+                .replace('%MM', this.daysForRobbery[0].from.split(':')[1])
+                .replace('%DD', this.daysForRobbery[0].day);;
         },
 
         /**
