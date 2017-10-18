@@ -18,7 +18,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var daysOfWeek = ['ПН', 'ВТ', 'СР'];
     var freeByDays = {};
     var commonSchedule = formatingSchedule(schedule, workingHours);
-    //console.error(commonSchedule);
     for (var i = 0; i < daysOfWeek.length; i++) {
         freeByDays[daysOfWeek[i]] =
             commonScheduleByDays(commonSchedule, daysOfWeek[i], workingHours);
@@ -162,37 +161,41 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
     var localDayOfWeek = dayOfWeek;
     var bankFrom = workingHours.from.replace(/:|(\+\d)/g, '');
     var bankTo = workingHours.to.replace(/:|(\+\d)/g, '');
-    var result = commonSchedule.filter(function (day) {
-
-            return day.day === dayOfWeek;
+    var sortedDay = commonSchedule.filter(function (day) {
+    
+        return day.day === dayOfWeek;
     })
         .sort(function (a, b) {
-            return Number(a.from) - Number(b.from);
-        })
-        .reduceRight(function (acc, item, index) {
-            if (acc.from >= item.from) {
-                if (acc.from > item.to) {
-                    acc.from = item.from;
-                }
+            return Number(a.to) - Number(b.to);
+        });
+    sortedDay.reduceRight(function (acc, item, index) {
+        if (acc.from >= item.to) {
+            if (acc.from < item.to) {
+                acc.from = item.from;
             }
-            if (acc.from > item.to) {
-                robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
-            }
-            if (acc.from === bankTo) {
-                robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: acc.to });
-            }
-            if (index === 0 && item.from === bankFrom) {
-                robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: acc.to });
-            }
+        }
+        if (acc.from === item.from && acc.to === item.to) {
+            return item;
+        }
+        if (acc.from > item.to) {
+            robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
+            //return item;
+        }
+        if (index === 0 && item.from > bankFrom) {
+            robbersFree.push({day: localDayOfWeek, from: bankFrom, to: item.from});
+            return item;
+        }
 
-            return acc;
+        return item;
         }, { from: bankTo, to: bankTo});
-
-    if (result.from === bankTo) {
-        robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: result.to });
+    
+    if (sortedDay.length === 0) {
+        robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: bankTo });
     }
 
-    return robbersFree;
+    return robbersFree.sort(function (a, b) {
+        return Number(a.from) - Number(b.from);
+    });
 }
 
 function toBankOffset(bankHours, hours) {
@@ -224,8 +227,8 @@ function chushToTwoDays(timeFrom, timeTo) {
     timeToCopy[1] = '23';
     timeToCopy[2] = '59';
 
-    return [{ dayFrom: timeFrom[0], from: timeFrom[1] + timeFrom[2],
-        dayTo: timeFrom[0], to: timeToCopy[1] + timeToCopy[2] },
-    { dayFrom: timeTo[0], from: timeFromCopy[1] + timeFromCopy[2],
-        dayTo: timeTo[0], to: timeTo[1] + timeTo[2] }];
+    return [{ day: timeFrom[0], from: timeFrom[1] + timeFrom[2],
+        to: timeToCopy[1] + timeToCopy[2] },
+    { day: timeTo[0], from: timeFromCopy[1] + timeFromCopy[2],
+        to: timeTo[1] + timeTo[2] }];
 }
