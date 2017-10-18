@@ -53,7 +53,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return this.template;
             }
 
-            return '';
+            return '1';
         },
 
         /**
@@ -87,8 +87,8 @@ function canRobbing(robbersFree, duration, lastFrom) {
                     curDate.setMinutes(curDate.getMinutes() + 30);
                     var hours = curDate.getHours();
                     var minutes = curDate.getMinutes();
-                    var hour = hours > 9 ? hours.toString() : '0' + hours;
-                    var min = minutes > 9 ? minutes.toString() : '0' + minutes;
+                    var hour = hours > 9 ? hours.toString() : '0' + hours.toString();
+                    var min = minutes > 9 ? minutes.toString() : '0' + minutes.toString();
                     time.from = hour + min;
                 }
             }
