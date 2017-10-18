@@ -25,7 +25,6 @@ describe('robbery.getAppropriateMoment()', function () {
             },
             time,
             { from: '10:00+5', to: '18:00+5' }
-            // 5 to 13
         );
     }
 

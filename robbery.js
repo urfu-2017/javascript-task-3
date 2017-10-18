@@ -32,11 +32,14 @@ function getMinutesFromWeekStart(timeString) {
         (parseInt(parsed[2]) - parseInt(parsed[4])) * minutesInHour + parseInt(parsed[3]));
 }
 
-function populateEvents(events, schedule) {
+function getEvents(schedule) {
+    let events = [];
     for (let timePeriod of schedule) {
         events.push({ time: getMinutesFromWeekStart(timePeriod.from), type: open });
         events.push({ time: getMinutesFromWeekStart(timePeriod.to), type: close });
     }
+
+    return events;
 }
 
 function getEventsFromRobberSchedule(robberSchedule) {
@@ -52,16 +55,14 @@ function getEventsFromRobberSchedule(robberSchedule) {
 }
 
 function getEventsFromBankWorkingHours(bankWorkingHours) {
-    let bankWorkingHoursByDays = Object.keys(dayNumberByName).map(function (day) {
+    let bankWorkingHoursByDays = Object.keys(dayNumberByName).slice(0, 3).map(function (day) {
         return {
             from: day + ' ' + bankWorkingHours.from,
             to: day + ' ' + bankWorkingHours.to
         };
     });
-    let events = [];
-    populateEvents(events, bankWorkingHoursByDays);
 
-    return events;
+    return getEvents(bankWorkingHoursByDays);
 }
 
 // Use ScanLine algorithm
@@ -118,9 +119,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     for (let key of Object.keys(schedule)) {
         bankEvents = bankEvents.concat(getEventsFromRobberSchedule(schedule[key]));
     }
-    populateEvents(bankEvents, [{ from: 'ПН 00:00+' + bankTimeZone,
-        to: 'СР 23:59+' + bankTimeZone }]);
-    let commonMomentRanges = getCommonMomentRanges(bankEvents, Object.keys(schedule).length + 2);
+    let commonMomentRanges = getCommonMomentRanges(bankEvents, Object.keys(schedule).length + 1);
     let robberyRanges = [];
     for (let range of commonMomentRanges) {
         if (range.to - range.from >= duration) {
@@ -147,6 +146,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template;
         },
         tryLater: function () {
+            if (robberyRanges.length === 0) {
+                return false;
+            }
             let minimalTime = robberyRanges[0].from + 30;
             for (let i = 0; i < robberyRanges.length; ++i) {
                 if (robberyRanges[i].to >= minimalTime) {
