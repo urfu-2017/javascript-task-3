@@ -115,7 +115,6 @@ function dateIntoMinutes(timeData, deltaOfTime, day) {
     if (day === 'СР') {
         time += 2 * MINUTES_PER_DAY;
     }
-    
     if (time > 3 * MINUTES_PER_DAY) {
         time = 3 * MINUTES_PER_DAY;
     }
