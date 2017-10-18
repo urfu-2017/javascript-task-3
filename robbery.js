@@ -215,12 +215,6 @@ function shiftLater(event, hours, minutes) {
     return event;
 }
 
-// function scheduleToString(schedule) {
-//     return (schedule.map(day => day.map(
-//         activity => `${activity.from.hours}:${activity.from.minutes}-
-// ${activity.to.hours}:${activity.to.minutes}`)));
-// }
-
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -236,7 +230,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let freeTime = GANG_SCHEDULE.slice(1, 4).map(day => day.sort(sortEventsByEnd))
         .map(uniteActivities)
         .map(negateActivities);
-    // console.info(scheduleToString(freeTime));
     let transformedWorkingHours = transformBankTime(workingHours, bankTimePattern);
     let robberyTimesByDays = freeTime
         .map(day => intersectTimes(day, transformedWorkingHours)

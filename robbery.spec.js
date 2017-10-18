@@ -70,39 +70,5 @@ describe('robbery.getAppropriateMoment()', function () {
             assert.ok(!moment.tryLater());
             assert.strictEqual(moment.format('%DD %HH:%MM'), '');
         });
-
-        it('не должен сдвигать момент, если более позднего нет [*]', function () {
-            var moment = getMomentFor(90);
-
-            assert.ok(moment.tryLater());
-            assert.ok(moment.tryLater());
-            assert.ok(moment.tryLater());
-
-            assert.ok(!moment.tryLater());
-            assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 10:00');
-        });
-
-        it('sdsd', function () {
-            const schedule = {
-                Danny: [
-                    { from: 'ПН 11:00+5', to: 'ПН 13:00+5' },
-                    { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' },
-                    { from: 'СР 17:00+5', to: 'ЧТ 9:00+5' }
-                ],
-                Rusty: [
-                    { from: 'ПН 13:00+5', to: 'ПН 18:30+5' },
-                    { from: 'ВТ 11:00+5', to: 'ВТ 16:00+5' }
-                ],
-                Linus: [
-                    { from: 'ПН 19:30+3', to: 'ПН 21:00+3' },
-                    { from: 'ВТ 14:00+3', to: 'ВТ 19:30+3' },
-                    { from: 'СР 09:29+3', to: 'СР 15:00+3' }
-                ]
-            };
-            let moment = robbery.getAppropriateMoment(schedule, 90,
-                { from: '10:00+5', to: '18:00+5' });
-            console.info(moment.exists());
-            console.info(moment.format('%DD %HH:%MM'));
-        });
     }
 });
