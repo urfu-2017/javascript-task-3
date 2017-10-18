@@ -93,6 +93,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             let exist = false;
             if (this.currentRobStart !== undefined &&
+                    timesForRob[this.currentRobStart.robDay].length !== 0 &&
                     timesForRob[this.currentRobStart.robDay][0].freeTime >= duration + 30) {
                 this.currentRobStart.time = sumTime(this.currentRobStart.time, '00:30');
                 timesForRob[this.currentRobStart.robDay][0].freeTime -= 30;
