@@ -251,7 +251,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             intervals = [];
         }
-        console.error(result);
         if (result.length !== 0) {
             modifyResult(result);
         }
