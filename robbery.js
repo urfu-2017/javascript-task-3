@@ -1,4 +1,5 @@
 'use strict';
+const DAYS = ['ПН', 'ВТ', 'СР'];
 
 /**
  * Сделано задание на звездочку
@@ -17,16 +18,17 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
 
-    let bankTimezone = getTimezone(workingHours);
-    let notWorkingHours = getNotWorkingHours(workingHours, bankTimezone);
-    schedule.bank = notWorkingHours;
-    let parsedSchedule = getParsedSchedule(schedule, bankTimezone);
-    let freeTime = findFreeTime(parsedSchedule, bankTimezone)[0];
-    let delta = findFreeTime(parsedSchedule)[1];
+    let bankTimezone = parseDate(workingHours.from).timezone;
+    let notWorkingHoursOfBank = getNotWorkingHours(workingHours, bankTimezone);
+    let sheduleWithBank = Object.assign({}, schedule);
+    sheduleWithBank.bank = notWorkingHoursOfBank;
+    let parsedSchedule = getParsedSchedule(sheduleWithBank, bankTimezone);
+    let interval = getIntervalOfFreeTime(parsedSchedule);
     let timeForRobbery;
-    for (let i = 0; i < delta.length; i += 1) {
-        if (delta[i] >= duration) {
-            timeForRobbery = freeTime[i];
+
+    for (let i = 0; i < interval.size.length; i += 1) {
+        if (interval.size[i] >= duration) {
+            timeForRobbery = interval.leftBorder[i];
             break;
         }
     }
@@ -49,16 +51,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (timeForRobbery === undefined) {
+            if (!this.exists()) {
                 return '';
             }
             let date = translateFromMinutes(timeForRobbery);
-            let day = date.day;
-            let hours = date.hours;
-            let minutes = date.residueMinutes;
 
-            return template.replace('%HH', modify(hours)).replace('%MM', modify(minutes))
-                .replace('%DD', day);
+            return template.replace('%HH', addLeadingZero(date.hours))
+                .replace('%MM', addLeadingZero(date.remainingMinutes))
+                .replace('%DD', date.day);
         },
 
         /**
@@ -67,12 +67,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            for (let i = 0; i < freeTime.length; i += 1) {
-                if (freeTime[i] + delta[i] < timeForRobbery + 30) {
+            for (let i = 0; i < interval.leftBorder.length; i += 1) {
+                if (interval.leftBorder[i] + interval.size[i] < timeForRobbery + 30) {
                     continue;
                 }
-                let possibleRobberyTime = Math.max(timeForRobbery + 30, freeTime[i]);
-                if (possibleRobberyTime + duration <= freeTime[i] + delta[i]) {
+                let possibleRobberyTime = Math.max(timeForRobbery + 30, interval.leftBorder[i]);
+                if (possibleRobberyTime + duration <= interval.leftBorder[i] + interval.size[i]) {
                     timeForRobbery = possibleRobberyTime;
 
                     return true;
@@ -86,116 +86,101 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
 function getParsedSchedule(schedule, bankTimezone) {
     let parsedSchedule = [];
-    Object.values(schedule).forEach(function (item) {
-        item.forEach(function (elem) {
-            let timeFromInMinutes = getMinutes(elem.from);
-            let timeToInMinutes = getMinutes(elem.to);
-            let timeFromInBankTimezone = translateTimezone(timeFromInMinutes, bankTimezone);
-            let timeToInBankTimezone = translateTimezone(timeToInMinutes, bankTimezone);
-            parsedSchedule.push({ minutes: timeFromInBankTimezone, step: 'from' });
-            parsedSchedule.push({ minutes: timeToInBankTimezone, step: 'to' });
+    Object.values(schedule).forEach(item => {
+        item.forEach(elem => {
+            let parsedFromDate = parseDate(elem.from);
+            let parsedToDate = parseDate(elem.to);
+            let timeFromInMinutes = timeToMinutes(parsedFromDate, bankTimezone);
+            let timeToInMinutes = timeToMinutes(parsedToDate, bankTimezone);
+            parsedSchedule.push({ minutes: timeFromInMinutes, step: 'from' });
+            parsedSchedule.push({ minutes: timeToInMinutes, step: 'to' });
         });
     });
 
     return parsedSchedule;
 }
 
-function modify(number) {
+function addLeadingZero(number) {
     if (number < 10) {
         number = '0' + number;
     }
 
-    return number;
-}
-
-function getTimezone(hours) {
-    return Object.values(hours)[0].match(/\+[0-9]+/g)[0].substring(1);
+    return String(number);
 }
 
 function translateFromMinutes(minutes) {
-    let days = ['ПН', 'ВТ', 'СР'];
     let hours = Math.floor(minutes / 60) % 24;
-    let day = days[Math.floor(Math.floor(minutes / 60) / 24)];
-    let residueMinutes = minutes % 60;
+    let day = DAYS[Math.floor(Math.floor(minutes / 60) / 24)];
+    let remainingMinutes = minutes % 60;
     if (day === undefined) {
-        return '';
+        return null;
     }
 
-    return { day, hours, residueMinutes };
+    return { day, hours, remainingMinutes };
 }
 
-function translateTimezone(time, bankTimezone) {
-    let translatedTime = [];
-    let robberTimezone = time.match(/\+[0-9]+/g)[0];
-    if (robberTimezone !== bankTimezone) {
-        let delta = bankTimezone - robberTimezone;
-        translatedTime = Number(time.match(/^[0-9]+/g)[0]) + 60 * delta;
+function getNotWorkingHours(workingHours, bankTimezone) {
+    let workingHoursFrom = workingHours.from;
+    let workingHoursTo = workingHours.to;
+    let notWorkingHours = [];
+    DAYS.forEach(day => {
+        notWorkingHours.push({ from: day + ' 00:00+' + bankTimezone,
+            to: day + ' ' + workingHoursFrom });
+        notWorkingHours.push({ from: day + ' ' + workingHoursTo,
+            to: day + ' 23:59+' + bankTimezone });
+    });
+
+    return notWorkingHours;
+}
+
+function parseDate(date) {
+    let [time, day] = date.split(' ').reverse();
+    let [hoursAndMinutes, timezone] = time.split('+');
+    let [hours, minutes] = hoursAndMinutes.split(':');
+
+    return { day, hours, minutes, timezone };
+}
+
+function timeToMinutes(time, bankTimezone) {
+    let day = time.day;
+    let hours = Number(time.hours);
+    let minutes = Number(time.minutes);
+    let robberTimezone = Number(time.timezone);
+    let translatedTime;
+    translatedTime = hours * 60 + minutes + DAYS.indexOf(day) * 24 * 60;
+    if (bankTimezone !== robberTimezone) {
+        let deltaTimezone = bankTimezone - robberTimezone;
+        translatedTime += deltaTimezone * 60;
     }
 
     return translatedTime;
 }
 
-function getNotWorkingHours(workingHours, bankTimezone) {
-    let whFrom = workingHours.from;
-    let whTo = workingHours.to;
-    let notWH = [];
-    notWH.push({ from: 'ПН 00:00+' + bankTimezone, to: 'ПН ' + whFrom });
-    notWH.push({ from: 'ПН ' + whTo, to: 'ПН 23:59+' + bankTimezone });
-    notWH.push({ from: 'ВТ 00:00+' + bankTimezone, to: 'ВТ ' + whFrom });
-    notWH.push({ from: 'ВТ ' + whTo, to: 'ВТ 23:59+' + bankTimezone });
-    notWH.push({ from: 'СР 00:00+' + bankTimezone, to: 'СР ' + whFrom });
-    notWH.push({ from: 'СР ' + whTo, to: 'СР 23:59+' + bankTimezone });
-
-    return notWH;
-}
-
-function getMinutes(time) {
-    let timezone = time.match(/\+[0-9]+/g)[0];
-    let hoursInMinutes = Number(time.substring(3, 5) * 60);
-    let minutes = Number(time.substring(6, 8));
-    switch (time.substring(0, 2)) {
-        case ('ПН'):
-            minutes = hoursInMinutes + minutes + timezone;
-            break;
-        case ('ВТ'):
-            minutes = hoursInMinutes + 24 * 60 + minutes + timezone;
-            break;
-        case ('СР'):
-            minutes = hoursInMinutes + 48 * 60 + minutes + timezone;
-            break;
-        default:
-            console.info('банк не работает');
-    }
-
-    return minutes;
-}
-
-function findFreeTime(parsedSchedule) {
-    let freeTime = [];
-    let delta = [];
+function getIntervalOfFreeTime(parsedSchedule) {
+    let LeftBorderOfInterval = [];
+    let lengthOfInterval = [];
     let sortedSchedule = parsedSchedule.sort((a, b) => Number(a.minutes) - Number(b.minutes));
-    // delta.push(sortedSchedule[0].minutes);
-    let currentFrom = 0;
-    let currentTo = 0;
-    let startMinutes = 0;
-    let oldEnd = 0;
-    sortedSchedule.forEach(function (item) {
-        if (currentFrom === 0) {
-            startMinutes = item.minutes;
+    let countFrom = 0;
+    let countTo = 0;
+    let currentStartMinutes;
+    let previousEndMinutes;
+    sortedSchedule.forEach(item => {
+        if (countFrom === 0) {
+            currentStartMinutes = item.minutes;
         }
         if (item.step === 'from') {
-            currentFrom += 1;
+            countFrom += 1;
         } else {
-            currentTo += 1;
+            countTo += 1;
         }
-        if (currentFrom === currentTo) {
-            currentFrom = 0;
-            currentTo = 0;
-            freeTime.push(oldEnd);
-            delta.push(startMinutes - oldEnd);
-            oldEnd = item.minutes;
+        if (countFrom === countTo) {
+            countFrom = 0;
+            countTo = 0;
+            LeftBorderOfInterval.push(previousEndMinutes);
+            lengthOfInterval.push(currentStartMinutes - previousEndMinutes);
+            previousEndMinutes = item.minutes;
         }
     });
 
-    return [freeTime, delta];
+    return { leftBorder: LeftBorderOfInterval, size: lengthOfInterval };
 }

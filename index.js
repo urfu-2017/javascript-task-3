@@ -34,27 +34,27 @@ var bankWorkingHours = {
 var moment = robbery.getAppropriateMoment(gangSchedule, 90, bankWorkingHours);
 
 // // Выведется true и "Метим на ВТ, старт в 11:30!"
-// console.info(moment.exists());
-// console.info(moment.format('Метим на %DD, старт в %HH:%MM!'));
+console.info(moment.exists());
+console.info(moment.format('Метим на %DD, старт в %HH:%MM!'));
 
-if (robbery.isStar) {
-    // Вернет true
-    moment.tryLater();
-    // "ВТ 16:00"
-    console.info(moment.format('%DD %HH:%MM'));
+// if (robbery.isStar) {
+//     // Вернет true
+//     moment.tryLater();
+//     // "ВТ 16:00"
+//     console.info(moment.format('%DD %HH:%MM'));
 
-    // Вернет true
-    moment.tryLater();
-    // "ВТ 16:30"
-    console.info(moment.format('%DD %HH:%MM'));
+//     // Вернет true
+//     moment.tryLater();
+//     // "ВТ 16:30"
+//     console.info(moment.format('%DD %HH:%MM'));
 
-    // Вернет true
-    // console.info(moment.tryLater());
-    // // "СР 10:00"
-    // console.info(moment.format('%DD %HH:%MM'));
+// Вернет true
+// console.info(moment.tryLater());
+// // "СР 10:00"
+// console.info(moment.format('%DD %HH:%MM'));
 
-    // // Вернет false
-    // console.info(moment.tryLater());
-    // // "СР 10:00"
-    // console.info(moment.format('%DD %HH:%MM'));
-}
+// // Вернет false
+// console.info(moment.tryLater());
+// // "СР 10:00"
+// console.info(moment.format('%DD %HH:%MM'));
+// }
