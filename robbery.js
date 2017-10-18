@@ -9,7 +9,11 @@ exports.isStar = true;
 var daysOfWeeksToHours = {
     'ПН': 0,
     'ВТ': 24,
-    'СР': 24 * 2
+    'СР': 24 * 2,
+    'ЧТ': 24 * 3,
+    'ПТ': 24 * 4,
+    'СБ': 24 * 5,
+    'ВС': 24 * 6
 };
 
 var numberDayToDayWeek = {
@@ -94,18 +98,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (answer.length === 0 || answer.length === 1) {
                 return false;
             }
-            let nextAnswer = answer[currentAnswer.next];
+            let nextAnswer = getNextAnswer(currentAnswer, answer, duration);
             if (typeof nextAnswer === 'undefined') {
                 return false;
             }
 
-            if ((currentAnswer.endMoment - nextAnswer.startMoment) <= 30) {
-                currentAnswer = nextAnswer;
+            currentAnswer = nextAnswer;
 
-                return true;
-            }
-
-            return false;
+            return true;
         }
     };
 };
@@ -260,11 +260,34 @@ function getAppropriateMoments(mergedIntervals, bankWorkIntervals) {
 }
 
 function getStartMoment(currentInterval, bankWorkInterval) {
+    if (typeof currentInterval === 'undefined') {
+        return bankWorkInterval.start;
+    }
+
     return currentInterval.start < bankWorkInterval.start ? currentInterval.end
         : bankWorkInterval.start;
 }
 
 function getEndMoment(currentInterval, bankWorkInterval) {
+    if (typeof currentInterval === 'undefined') {
+        return bankWorkInterval.end;
+    }
+
     return currentInterval.start < bankWorkInterval.end ? currentInterval.start
         : bankWorkInterval.end;
+}
+
+function getNextAnswer(currentAnswer, answer, duration) {
+    let newStartMoment = currentAnswer.startMoment + 30;
+    let newDuration = currentAnswer.endMoment - newStartMoment;
+    if (newDuration >= duration) {
+        return {
+            startMoment: newStartMoment,
+            endMoment: currentAnswer.endMoment,
+            duration: newDuration,
+            next: currentAnswer.next
+        };
+    }
+
+    return answer[currentAnswer.next];
 }
