@@ -160,8 +160,8 @@ function bankTimeInterval(workingHours) {
     let bankTime = bankTimeToUtc(workingHours);
     let timeIntervals = [];
     for (let day = 0; day < 3; day++) {
-        let timeFrom = (bankTime[0].from + 24 * day) * 60;
-        let timeTo = (bankTime[0].to + 24 * day) * 60;
+        let timeFrom = (bankTime[0].from + 1440 * day);
+        let timeTo = (bankTime[0].to + 1440 * day);
         timeIntervals.push({ from: timeFrom, to: timeTo });
     }
 
@@ -198,8 +198,8 @@ function bankTimeToUtc(workingHours) {
     //     bankTo = 4320;
     // }
     bankTime.push({
-        from: (bankFrom / 60 / 60 / 1000),
-        to: (bankTo / 60 / 60 / 1000)
+        from: (bankFrom / 60 / 1000),
+        to: (bankTo / 60 / 1000)
     });
 
     return bankTime;
