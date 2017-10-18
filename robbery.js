@@ -27,14 +27,14 @@ const NAME_BUDDY = ['Danny', 'Rusty', 'Linus'];
 const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
 const MS_IN_MINUTE = 60000;
 
-function createDate([day, hour, minute]) {
+function createDate([day, hour, minute], seconds = 0) {
     if (hour > 23 || hour < 0) {
         let sign = hour > 23 ? 1 : -1;
         hour -= 24 * sign;
         day += sign;
     }
 
-    return Date.parse(new Date(1970, 5, day, hour, minute, 0));
+    return Date.parse(new Date(1970, 5, day, hour, minute, seconds));
 }
 
 function parseInterval(time) {
@@ -81,7 +81,6 @@ function getClosedBank(workingHours) {
     let intervals = [];
     let startBankInterval = parseBankInterval(workingHours.from);
     let endBankInterval = parseBankInterval(workingHours.to);
-
     Object.keys(DAYS).forEach(function (day) {
         day = DAYS[day];
         intervals.push (
@@ -91,7 +90,7 @@ function getClosedBank(workingHours) {
             },
             {
                 from: createDate([day, endBankInterval.hour, endBankInterval.minute]),
-                to: createDate([day, 23, 59])
+                to: createDate([day, 23, 59, 59])
             });
     });
 
