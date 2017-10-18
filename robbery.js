@@ -153,7 +153,13 @@ function getlRobberTimeInterval(x, bankTimezone) {
 }
 
 function getAllScheduleEntries(schedule) {
-    return [].concat(schedule.Danny, schedule.Rusty, schedule.Linus);
+    let allEntries = [];
+    let keys = Object.keys(schedule);
+    for (let key of keys) {
+        allEntries = allEntries.concat(schedule[key]);
+    }
+
+    return allEntries;
 }
 
 function getTotalMinutesFromStartWeek(hours, minutes, dayWeek) {
