@@ -6,9 +6,13 @@
  */
 exports.isStar = true;
 
+const TIME_REGEX = /^(\d{2}):(\d{2})\+(\d+)$/;
+const BANK_ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
+const DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+
 /**
  * @param {Object} schedule – Расписание Банды
- * @param {Number} duration - Время на ограбление в минутах
+ * @param {Number} duration – Время на ограбление в минутах
  * @param {Object} workingHours – Время работы банка
  * @param {String} workingHours.from – Время открытия, например, "10:00+5"
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
@@ -17,6 +21,29 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
 
+    let robbersSchedule = Object.values(schedule)
+        .reduce((summarySchedules, rubberSchedule) => summarySchedules.concat(rubberSchedule), [])
+        .map((scheduleInterval) => {
+            return {
+                'from': extractDayTime(scheduleInterval.from).daytime,
+                'to': extractDayTime(scheduleInterval.to).daytime
+            };
+        });
+
+    let bankTimezone;
+    let bankSchedule = BANK_ROBBERY_DAYS.map((day) => {
+        let fromExtractedTime = extractDayTime(`${day} ${workingHours.from}`);
+        let toExtractedTime = extractDayTime(`${day} ${workingHours.to}`);
+        bankTimezone = fromExtractedTime.timezone;
+
+        return {
+            'from': fromExtractedTime.daytime,
+            'to': toExtractedTime.daytime
+        };
+    });
+
+    let robberyMoment = findRobberyMoment(0, duration, robbersSchedule, bankSchedule);
+
     return {
 
         /**
@@ -24,7 +51,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return robberyMoment.found;
         },
 
         /**
@@ -48,3 +75,91 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
+
+/**
+ * Получение количества минут от начала недели без учёта часового пояса и временной зоны.
+ * @param {String} strDayTime
+ * @returns {{daytime: Number, timezone: Number}}
+ */
+function extractDayTime(strDayTime) {
+    let [day, time] = strDayTime.split(' ');
+    let dayMinutes = DAYS_OF_WEEK.indexOf(day) * 1440;
+    let extractedTime = extractTime(time);
+
+    return { 'daytime': dayMinutes + extractedTime.time, 'timezone': extractedTime.timezone };
+}
+
+/**
+ * Извлечение количества минут прошедших от начала дня и временной зоны.
+ * @param {String} strTime
+ * @returns {{time: Number, timezone: Number}}
+ */
+function extractTime(strTime) {
+    let parsedTime = TIME_REGEX.exec(strTime);
+    let timezone = Number(parsedTime[3]);
+
+    let hoursMinutes = (Number(parsedTime[1]) - timezone) * 60;
+    let minutes = Number(parsedTime[2]);
+
+    return { 'time': hoursMinutes + minutes, 'timezone': timezone };
+}
+
+/**
+ * Получение компонентов времени по количеству минут и временной зоне.
+ * @param {Number} totalMinutes
+ * @param {Number} timezone
+ * @returns {Object}
+ */
+function extractTimeComponents(totalMinutes, timezone) {
+    let timezoneAwareTime = totalMinutes + timezone * 60;
+    let days = Math.floor(timezoneAwareTime / 1440);
+    let hours = Math.floor((timezoneAwareTime - days * 1440) / 60);
+    let minutes = timezoneAwareTime - days * 1440 - hours * 60;
+
+    return {
+        'DD': DAYS_OF_WEEK[days],
+        'HH': hours.toString().padStart(2, '0'),
+        'MM': minutes.toString().padStart(2, '0'),
+        'ZZ': timezone
+    };
+}
+
+
+/**
+ * Поиск подходящего для ограбления промежутка времени начиная с указанной стартовой точки.
+ * @param {Number} startTime – Время в минутах с начала промежутка в котором производится поиск.
+ * @param {Number} duration – Время необходимое для ограбления
+ * @param {Object[]} robbersSchedule – Расписание Банды
+ * @param {Number} robbersSchedule.from – Время в которое член команды может начать ограбление.
+ * @param {Number} robbersSchedule.to – Время в которое член команды может закончить ограбление.
+ * @param {Object[]} bankSchedule – Время работы банка
+ * @param {Number} bankSchedule.from – Время в которое банк начинает работу в очередной день.
+ * @param {Number} bankSchedule.to – Время в которое банк заканчивает работу в очередной день.
+ * @returns {Object}
+ */
+function findRobberyMoment(startTime, duration, robbersSchedule, bankSchedule) {
+    const maxTime = 24 * 60 * BANK_ROBBERY_DAYS.length;
+
+    for (; startTime < maxTime; startTime++) {
+        const isFreeTime = robbersSchedule.filter(({ from, to }) =>
+            (startTime < from.robberyMoment && startTime + duration <= from.robberyMoment) ||
+            (startTime >= to.robberyMoment && startTime + duration >= to.robberyMoment)
+        ).length === robbersSchedule.length;
+
+        const isWorkTime = bankSchedule.filter(
+            ({ from, to }) => startTime >= from.robberyMoment && startTime + duration <= to.robberyMoment
+        ).length >= 1;
+
+        if (isFreeTime && isWorkTime) {
+            return {
+                found: false,
+                robberyMoment: startTime
+            };
+        }
+    }
+
+    return {
+        found: false,
+        robberyMoment: 0
+    };
+}
