@@ -65,17 +65,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-// function checkTime(firstTime) {
-//     if (firstTime < 0) {
-//         firstTime = 0;
-//     }
-//     if (firstTime > 4320) {
-//         firstTime = 4320;
-//     }
-
-//     return firstTime;
-// }
-
 function timeFormat(firstTime) {
     let goodTime = new Date(firstTime * 60 * 1000).getTime() / 1000 / 60;
     let day = '';
@@ -105,6 +94,7 @@ function compareDurations(duration, freeDurations) {
 }
 
 function checkDuration(readyTime) {
+    readyTime.push(null);
     let freeDurations = [];
     let from = readyTime[0];
     let counter = 0;
@@ -181,12 +171,6 @@ function bankTimeToUtc(workingHours) {
         (checkDeltaTimeZone(timeFrom[3], workingHours) * 1000 * 60 * 60);
     let bankTo = Date.UTC(1970, 0, 1, timeTo[1], timeTo[2]) +
         (checkDeltaTimeZone(timeFrom[3], workingHours) * 1000 * 60 * 60);
-    // if (bankFrom < 0) {
-    //     bankFrom = 0;
-    // }
-    // if (bankTo > 4320) {
-    //     bankTo = 4320;
-    // }
     bankTime.push({
         from: (bankFrom / 60 / 1000),
         to: (bankTo / 60 / 1000)
