@@ -74,11 +74,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return false;
             }
             if (timeToRob[0].to - timeToRob[0].from >= (duration + 30) * 60 * 1000) {
-                timeToRob[0].from = timeToRob[0].from + 30 * 60 * 1000;
+                timeToRob[0].from =
+                new Date (timeToRob[0].from.setMinutes(timeToRob[0].from.getMinutes() + 30));
+
+                return true;
+            } else if (timeToRob.length !== 1) {
+                timeToRob.shift();
 
                 return true;
             }
-
 
             return false;
         }
