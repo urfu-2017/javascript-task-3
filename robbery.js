@@ -15,8 +15,6 @@ exports.isStar = true;
  * @returns {Object}
  */
 
-var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
-
 function convertToHours(mins) {
     var hours = parseInt(mins / 60);
     var minutes = mins % 60;
@@ -36,6 +34,8 @@ function convertToMinutes(time) {
 
     return hours * 60 + mins;
 }
+
+var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
@@ -201,8 +201,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     function checkRangeLimits(day, result, intervals) {
         intervals.sort(customSort);
         var minFrom = intervals[0].from;
-        intervals.sort(function (a, b) {
-            return a.to - b.to;
+        intervals.sort(function (x, y) {
+
+            return x.to.match(/\d{1,2}/g).join('') -
+                y.to.match(/\d{1,2}/g).join('');
         });
         var maxTo = intervals[intervals.length - 1].to;
         var bankFrom = workingHours.from.split('+')[0];
