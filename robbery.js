@@ -227,17 +227,13 @@ function robbersTimeToUtc(robberTime, name) {
             let utcTimeTo = Date.UTC(1970, 0, 1, Number(timeTo[2]), Number(timeTo[3]));
             let robberFrom = utcTimeFrom + (checkDeltaTimeZone(timeFrom[4]) * 1000 * 60 * 60);
             let robberTo = utcTimeTo + (checkDeltaTimeZone(timeFrom[4]) * 1000 * 60 * 60);
-            // if (robberFrom < 0) {
-            //     robberFrom = 0;
-            // }
-            // if (robberTo > 4320) {
-            //     robberTo = 4320;
-            // } 
+            robberFrom = checkRobberFrom(robberFrom);
+            robberTo = checkRobberTo(robberTo);
             robber.push({
                 dayFrom: timeFrom[1],
-                from: (robberFrom / 60 / 1000),
+                from: (robberFrom),
                 dayTo: timeTo[1],
-                to: (robberTo / 60 / 1000),
+                to: (robberTo),
                 name: name
             });
         }
@@ -258,4 +254,22 @@ function toPrettyTime(time) {
     }
 
     return time;
+}
+
+function checkRobberFrom(robberFrom) {
+    robberFrom = robberFrom / 1000 / 60;
+    if (robberFrom < 0) {
+        robberFrom = 0;
+    }
+
+    return robberFrom;
+}
+
+function checkRobberTo(robberTo) {
+    robberTo = robberTo / 1000 / 60;
+    if (robberTo > 4320) {
+        robberTo = 4320;
+    }
+
+    return robberTo;
 }
