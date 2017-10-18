@@ -248,10 +248,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         result.sort(customSort);
     }
 
-    function getRobberySchedule() {
-        setScheduleCorrectForm();
-        var intervals = [];
-        var result = [];
+    function formResult(intervals, result) {
         for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
             createScheduleWhenBusy(i, intervals);
             intervals.sort(customSort);
@@ -269,6 +266,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             intervals = [];
         }
+    }
+
+    function getRobberySchedule() {
+        if (duration <= 0) {
+            return [];
+        }
+        setScheduleCorrectForm();
+        var intervals = [];
+        var result = [];
+        formResult(intervals, result);
         if (result.length !== 0) {
             modifyResult(result);
         }
