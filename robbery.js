@@ -49,9 +49,11 @@ function changeInterval(banksInterval, robbersInterval) {
     if (include(banksInterval, robbersInterval)) {
         return [{ start: banksInterval.start, end: robbersInterval.start },
             { start: robbersInterval.end, end: banksInterval.end }];
-    } else if (banksInterval.start < robbersInterval.end) {
+    }
+    if (banksInterval.start < robbersInterval.end && banksInterval.start > robbersInterval.start) {
         return [{ start: robbersInterval.end, end: banksInterval.end }];
-    } else if (banksInterval.end > robbersInterval.start) {
+    }
+    if (banksInterval.end > robbersInterval.start && banksInterval.end < robbersInterval.end) {
         return [{ start: banksInterval.start, end: robbersInterval.start }];
     }
 }
@@ -122,7 +124,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     intervalsRobbers.forEach(robbersInterval => {
         intervalsForRobbery = intersect(intervalsForRobbery, robbersInterval);
     });
-
     intervalsForRobbery = intervalsForRobbery
         .filter(interval => interval.end - interval.start >= duration)
         .sort(compareIntervals);
@@ -158,7 +159,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-
+            // console.info(intervalsForRobbery);
             if (intervalsForRobbery.length === 0) {
                 return false;
             }
@@ -168,7 +169,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             });
             if (postponedMoments.length !== 0) {
                 intervalsForRobbery = postponedMoments;
-                console.info(intervalsForRobbery[0].start, nextMomentStart);
                 intervalsForRobbery[0].start = Math.max(
                     intervalsForRobbery[0].start, nextMomentStart);
             }
