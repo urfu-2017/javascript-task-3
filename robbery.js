@@ -226,7 +226,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function getResultsForTryLater(cur, record, result) {
-        while (cur + 30 < (convertToMinutes(record.to) - duration)) {
+        while (cur + 30 <= (convertToMinutes(record.to) - duration)) {
             cur += 30;
             result.push({
                 day: record.day,
