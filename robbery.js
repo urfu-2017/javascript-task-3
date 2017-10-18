@@ -4,6 +4,18 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
+
+function getTimeZone(time) {
+    return String(time).substr(6);
+}
+
+function timeToMintutesFromDayStart(time) {
+    var h = String(time).substr(0, 2);
+    var m = String(time).substr(3, 2);
+
+    return h * 60 + m;
+}
+
 exports.isStar = true;
 
 /**
@@ -16,6 +28,8 @@ exports.isStar = true;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
+    var minutesFromDayStartToBankOpen = timeToMintutesFromDayStart(workingHours.from);
+    var minutesFromDayStartToBankClose = timeToMintutesFromDayStart(workingHours.to);
 
     return {
 
