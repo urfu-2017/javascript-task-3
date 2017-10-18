@@ -257,7 +257,14 @@ function getAppropriateMoments(mergedIntervals, bankWorkIntervals) {
                 (x.end > start && x.end < end);
         });
 
-        let res = getResult(bankWorkInterval, intervals);
+        let res = getResult(bankWorkInterval, intervals)
+            .map(x => {
+                if (x.endMoment > end) {
+                    x.endMoment = end;
+                }
+
+                return x;
+            });
 
         results = results.concat(res);
     }
