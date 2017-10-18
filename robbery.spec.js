@@ -74,3 +74,37 @@ describe('robbery.getAppropriateMoment()', function () {
         });
     }
 });
+
+describe('robbery.getAppropriateMoment()', function () {
+    function getMomentFor(time) {
+        return robbery.getAppropriateMoment(
+            {
+                Danny: [],
+                Rusty: [],
+                Linus: []
+            },
+            time,
+            { from: '10:00+5', to: '18:00+5' }
+        );
+    }
+
+    it('должен форматировать существующий момент', function () {
+        var moment = getMomentFor(90);
+
+        assert.ok(moment.exists());
+        assert.strictEqual(
+            moment.format('Метим на %DD, старт в %HH:%MM!'),
+            'Метим на ПН, старт в 10:00!'
+        );
+    });
+
+    it('должен вернуть пустую строку при форматировании несуществующего момента', function () {
+        var moment = getMomentFor(481);
+
+        assert.ok(!moment.exists());
+        assert.strictEqual(
+            moment.format('Метим на %DD, старт в %HH:%MM!'),
+            ''
+        );
+    });
+});

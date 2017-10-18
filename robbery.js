@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 var daysOfWeeksToHours = {
     'ПН': 0,
@@ -38,22 +38,23 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [, , bankTimezone] = workingHours.from.split(/:|\+/)
         .map(x => Number(x));
 
-    let sortedTimeIntervals = getAllScheduleEntries(schedule)
+    let robberInterval = getAllScheduleEntries(schedule)
         .map(parseScheduleEntry)
-        .map(x => getTimeInBankTimezone(x, bankTimezone))
+        .map(x => getlRobberTimeInterval(x, bankTimezone))
         .sort((a, b) => a.totalMinutesFrom > b.totalMinutesFrom);
 
-    let mergedIntervals = getMergeTimeIntervals(sortedTimeIntervals);
+    let mergedRobberIntervals = robberInterval.length !== 0 ? getMergeTimeIntervals(robberInterval)
+        : [];
     let bankWorkIntervals = getbankWorkIntervals(workingHours);
 
-    let results = getAppropriateMoments(mergedIntervals, bankWorkIntervals);
-    let answer = results.filter(x => x.different >= duration)
+    let appropriateMoments = getAppropriateMoments(mergedRobberIntervals, bankWorkIntervals)
+        .filter(x => x.different >= duration)
         .map((x, i) => {
             x.next = i + 1;
 
             return x;
         });
-    let currentAnswer = answer[0];
+    let currentAnswer = appropriateMoments[0];
 
     return {
 
@@ -62,7 +63,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return answer.length !== 0;
+            return appropriateMoments.length !== 0;
         },
 
         /**
@@ -73,7 +74,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (answer.length === 0) {
+            if (appropriateMoments.length === 0) {
                 return '';
             }
 
@@ -95,10 +96,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (answer.length === 0 || answer.length === 1) {
+            if (appropriateMoments.length === 0 || appropriateMoments.length === 1) {
                 return false;
             }
-            let nextAnswer = getNextAnswer(currentAnswer, answer, duration);
+            let nextAnswer = getNextAnswer(currentAnswer, appropriateMoments, duration);
             if (typeof nextAnswer === 'undefined') {
                 return false;
             }
@@ -131,7 +132,7 @@ function parseScheduleEntry(x) {
     };
 }
 
-function getTimeInBankTimezone(x, bankTimezone) {
+function getlRobberTimeInterval(x, bankTimezone) {
     let timezoneDiff = bankTimezone - x.robberTimezone;
 
     let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay];
