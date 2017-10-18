@@ -7,19 +7,20 @@
 exports.isStar = true;
 
 
-let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-
+const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const millisecondsInSecond = 1000;
+const secondsInMinute = 60;
 
 /**
- * @param {String} str - В формате 'ПН 11:30+5'
+ * @param {String} rawDate - В формате 'ПН 11:30+5'
  * @returns {Date}
  */
-function parseDate(str) {
-    let [day, hours, minutes, timeZone] = str.split(/[\s:+]/);
+function parseDate(rawDate) {
+    let [day, hours, minutes, timeZone] = rawDate.split(/[\s:+]/);
     // 2017-10-09 - понедельник
     let dateMonday = `2017-10-${9 + days.indexOf(day)}`;
 
-    return new Date(`${dateMonday}  ${hours}:${minutes} GMT+${timeZone}00`);
+    return new Date(`${dateMonday} ${hours}:${minutes} GMT+${timeZone}00`);
 }
 
 
@@ -27,39 +28,51 @@ function parseDate(str) {
  * @param {Date} date 
  * @param {String} stage - 'from' or 'to
  * @param {Boolean} isFreeTime 
+ * @returns {Object}
  */
-function Event(date, stage, isFreeTime) {
-    this.date = date;
-    this.stage = stage;
-    this.isFreeTime = isFreeTime;
+function createEvent(date, stage, isFreeTime) {
+    return {
+        date, stage, isFreeTime
+    };
 }
 
 
 /**
  * @param {Date} from 
  * @param {Date} to 
+ * @returns {Object}
  */
-function Interval(from, to) {
-    this.from = from;
-    this.to = to;
+function createInterval(from, to) {
+    return {
+        from, to
+    };
 }
 
 
 /**
- * @param {Array.<Event>} events 
- * @param {Number} robbersCount 
- * @returns {Array.<Interval>}
+ * @param {{date, stage, isFreeTime}} a 
+ * @param {{date, stage, isFreeTime}} b 
+ * @returns {{from, to}}
  */
-function crossEvents(events, robbersCount) {
-    events.sort(function (a, b) {
-        return a.date - b.date;
-    });
+function eventsToInterval(a, b) {
+    return createInterval(a.date, b.date);
+}
+
+
+/**
+ * @param {Array.<{date, stage, isFreeTime}>} events 
+ * @param {Number} freeSchedulesCount - Кол-во расписаний дел (банк)
+ * @param {Number} busySchedulesCount - Кол-во расписаний свободного времени (бандиты)
+ * @returns {Array.<{from, to}>}
+ */
+function crossEvents(events, freeSchedulesCount, busySchedulesCount) {
+    events.sort((a, b) => a.date - b.date);
     let crossedEvents = [];
-    let freeCount = robbersCount;
-    let freeCountNeed = robbersCount + 1;
+    let freeCount = busySchedulesCount;
+    let freeCountNeed = busySchedulesCount + freeSchedulesCount;
     events.forEach(function (event, index, array) {
         if (freeCount === freeCountNeed) {
-            crossedEvents.push(new Interval(array[index - 1].date, event.date));
+            crossedEvents.push(eventsToInterval(array[index - 1], event));
         }
         if (event.stage === 'from' && event.isFreeTime ||
             event.stage === 'to' && !event.isFreeTime) {
@@ -77,16 +90,40 @@ function crossEvents(events, robbersCount) {
  * @param {Object} workingHours – Время работы банка
  * @param {String} workingHours.from – Время открытия, например, "10:00+5"
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
- * @returns {Array.<Event>}
+ * @param {String} day 
+ * @returns {{from, to}}
+ */
+function addDayToWorkingHours(workingHours, day) {
+    return createInterval(
+        parseDate(`${day} ${workingHours.from}`),
+        parseDate(`${day} ${workingHours.to}`));
+}
+
+
+/**
+ * @param {{from, to}} interval
+ * @param {Boolean} isFreeSchedule
+ * @returns {Array.<{from, to}>}
+ */
+function intervalToEvents(interval, isFreeSchedule) {
+    return [
+        createEvent(interval.from, 'from', isFreeSchedule),
+        createEvent(interval.to, 'to', isFreeSchedule)];
+}
+
+
+/**
+ * @param {Object} workingHours – Время работы банка
+ * @param {String} workingHours.from – Время открытия, например, "10:00+5"
+ * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @returns {Array.<{date, stage, isFreeTime}>}
  */
 function getBankEvents(workingHours) {
     let workingDays = ['ПН', 'ВТ', 'СР'];
     let events = [];
     workingDays.forEach(day => {
-        let date = parseDate(`${day} ${workingHours.from}`);
-        events.push(new Event(date, 'from', true));
-        date = parseDate(`${day} ${workingHours.to}`);
-        events.push(new Event(date, 'to', true));
+        let interval = addDayToWorkingHours(workingHours, day);
+        events = events.concat(intervalToEvents(interval, true));
     });
 
     return events;
@@ -95,16 +132,14 @@ function getBankEvents(workingHours) {
 
 /**
  * @param {Object} schedule – Расписание Банды
- * @returns {Array.<Event>}
+ * @returns {Array.<{date, stage, isFreeTime}>}
  */
 function getRobbersEvents(schedule) {
     let events = [];
-    Object.keys(schedule).forEach(robber => {
-        schedule[robber].forEach(interval => {
-            let date = parseDate(interval.from);
-            events.push(new Event(date, 'from', false));
-            date = parseDate(interval.to);
-            events.push(new Event(date, 'to', false));
+    Object.values(schedule).forEach(arrayOfEvents => {
+        arrayOfEvents.forEach(rawInterval => {
+            let interval = createInterval(parseDate(rawInterval.from), parseDate(rawInterval.to));
+            events = events.concat(intervalToEvents(interval, false));
         });
     });
 
@@ -116,7 +151,7 @@ function getRobbersEvents(schedule) {
  * @param {Object} schedule – Расписание Банды
  * @param {Object} workingHours – Время работы банка
  * @param {String} workingHours.from – Время открытия, например, "10:00+5"
- * @returns {Array.<Event>}
+ * @returns {Array.<{date, stage, isFreeTime}>}
  */
 function getAllEvents(schedule, workingHours) {
     let robbersEvents = getRobbersEvents(schedule);
@@ -131,25 +166,24 @@ function getAllEvents(schedule, workingHours) {
  * @returns {Number}
  */
 function millisecondsToMinutes(milliseconds) {
-    return milliseconds / 1000 / 60;
+    return milliseconds / millisecondsInSecond / secondsInMinute;
 }
 
 
 /**
- * @param {Array.<Interval>} intervals 
+ * @param {Array.<{from, to}>} intervals 
  * @param {Number} duration - Время на ограбление в минутах
  * @param {Date} possibleStart 
  * @returns {Date}
  */
-function findRobberyTime(intervals, duration, possibleStart = Number.NEGATIVE_INFINITY) {
+function findRobberyTime(intervals, duration, possibleStart = -Infinity) {
     for (let interval of intervals) {
         if (possibleStart >= interval.to) {
             continue;
-        } else if (possibleStart > interval.from) {
-            interval.from = possibleStart;
         }
-        if (millisecondsToMinutes(interval.to - interval.from) >= duration) {
-            return interval.from;
+        let startOfFreeInterval = Math.max(possibleStart, interval.from);
+        if (millisecondsToMinutes(interval.to - startOfFreeInterval) >= duration) {
+            return startOfFreeInterval;
         }
     }
 }
@@ -160,7 +194,7 @@ function findRobberyTime(intervals, duration, possibleStart = Number.NEGATIVE_IN
  * @param {Number} needLength 
  * @returns {String}
  */
-function addZerosToLength(number, needLength) {
+function addZerosToLeft(number, needLength) {
     number = number.toString();
     if (number.length >= needLength) {
         return number;
@@ -180,9 +214,9 @@ function addZerosToLength(number, needLength) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let bankTimezone = Number(workingHours.from.slice(workingHours.from.indexOf('+') + 1));
+    let bankTimezone = Number(workingHours.from.split('+')[1]);
     let events = getAllEvents(schedule, workingHours);
-    let crossedEvents = crossEvents(events, Object.keys(schedule).length);
+    let crossedEvents = crossEvents(events, 1, Object.keys(schedule).length);
     let robberyTime = findRobberyTime(crossedEvents, duration);
 
 
@@ -212,8 +246,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             // getDay() - возвращает индекс дня с воскресенья, а days[0] === 'ПН'
             let day = days[(date.getDay() + 6) % 7];
 
-            return template.replace('%HH', addZerosToLength(date.getHours(), 2))
-                .replace('%MM', addZerosToLength(date.getMinutes(), 2))
+            return template.replace('%HH', addZerosToLeft(date.getHours(), 2))
+                .replace('%MM', addZerosToLeft(date.getMinutes(), 2))
                 .replace('%DD', day);
         },
 
