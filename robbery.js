@@ -15,6 +15,8 @@ exports.isStar = true;
  * @returns {Object}
  */
 
+var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+
 function convertToHours(mins) {
     var hours = parseInt(mins / 60);
     var minutes = mins % 60;
@@ -34,8 +36,6 @@ function convertToMinutes(time) {
 
     return hours * 60 + mins;
 }
-
-var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
