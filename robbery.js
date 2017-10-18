@@ -55,12 +55,13 @@ function getEventsFromRobberSchedule(robberSchedule) {
 }
 
 function getEventsFromBankWorkingHours(bankWorkingHours) {
-    let bankWorkingHoursByDays = Object.keys(dayNumberByName).slice(0, 3).map(function (day) {
-        return {
-            from: day + ' ' + bankWorkingHours.from,
-            to: day + ' ' + bankWorkingHours.to
-        };
-    });
+    let bankWorkingHoursByDays = Object.keys(dayNumberByName).slice(0, 3)
+        .map(function (day) {
+            return {
+                from: day + ' ' + bankWorkingHours.from,
+                to: day + ' ' + bankWorkingHours.to
+            };
+        });
 
     return getEvents(bankWorkingHoursByDays);
 }
