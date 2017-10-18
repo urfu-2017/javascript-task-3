@@ -20,7 +20,7 @@ var gangSchedule = {
 
 var bankWorkingHours = {
     from: '00:00+5',
-    to: '23:00+5'
+    to: '18:00+5'
 };
 
 // Время не существует

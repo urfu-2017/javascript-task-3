@@ -148,22 +148,29 @@ function findSuitableTime(schedule, duration, workingHours) {
     let robTime = [];
     let startHour = workingHours.from.split('+')[0];
     let endHour = workingHours.to.split('+')[0];
+    if (schedule.length === 0) {
+        return [{ start: startHour, freeTime: diffTime(startHour, endHour) }];
+    }
     let diffWithStart = diffTime(startHour, schedule[0].from);
     if (diffWithStart >= duration) {
         robTime.push({ start: startHour, freeTime: diffWithStart });
     }
-    for (let i = 0; i < schedule.length - 1; i++) {
-        let diff = diffTime(schedule[i].to, schedule[i + 1].from);
-        if (diff >= duration) {
-            robTime.push({ start: schedule[i].to, freeTime: diff });
-        }
-    }
+    addFreeSegments(schedule, robTime, duration);
     let diffWithEnd = diffTime(schedule[schedule.length - 1].to, endHour);
     if (diffWithEnd >= duration) {
         robTime.push({ start: schedule[schedule.length - 1].to, freeTime: diffWithEnd });
     }
 
     return robTime;
+}
+
+function addFreeSegments(schedule, robTime, duration) {
+    for (let i = 0; i < schedule.length - 1; i++) {
+        let diff = diffTime(schedule[i].to, schedule[i + 1].from);
+        if (diff >= duration) {
+            robTime.push({ start: schedule[i].to, freeTime: diff });
+        }
+    }
 }
 
 function diffTime(first, second) {
