@@ -79,9 +79,19 @@ describe('robbery.getAppropriateMoment()', function () {
     function getMomentFor(time) {
         return robbery.getAppropriateMoment(
             {
-                Danny: [],
-                Rusty: [],
-                Linus: []
+                Danny: [
+                    { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
+                    { from: 'ВТ 10:00+5', to: 'ВТ 11:00+5' }
+                ],
+                Rusty: [
+                    { from: 'ПН 11:30+5', to: 'ПН 16:30+5' },
+                    { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
+                ],
+                Linus: [
+                    { from: 'ПН 09:00+3', to: 'ПН 14:00+3' },
+                    { from: 'ПН 21:00+3', to: 'ВТ 09:30+3' },
+                    { from: 'СР 09:30+3', to: 'СР 15:00+3' }
+                ]
             },
             time,
             { from: '10:00+5', to: '18:00+5' }
@@ -89,12 +99,14 @@ describe('robbery.getAppropriateMoment()', function () {
     }
 
     it('должен форматировать существующий момент', function () {
-        var moment = getMomentFor(90);
+        var moment = getMomentFor(60);
 
         assert.ok(moment.exists());
+        moment.tryLater();
+        moment.tryLater();
         assert.strictEqual(
             moment.format('Метим на %DD, старт в %HH:%MM!'),
-            'Метим на ПН, старт в 10:00!'
+            'Метим на ВТ, старт в 11:30!'
         );
     });
 
