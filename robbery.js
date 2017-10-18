@@ -119,6 +119,19 @@ function getMomentForPair(goodTime, badTime) {
     return goodTime;
 }
 
+function addHalfHour(time) {
+    let minutes = Number(time.slice(6, 8)) + 30;
+    let hours = Number(time.slice(3, 5)) + 1;
+    if (minutes < 60) {
+        return time.slice(0, 6) + minutes;
+    }
+    if (hours < 23) {
+        return time.slice(0, 3) + (hours + 1) + (minutes % 60);
+    }
+
+    return days[days.indexOf(time.slice(0, 2)) + 1] + '00:' + (minutes % 60);
+}
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -141,19 +154,30 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         { from: 'СР ' + workingHours.from, to: 'СР ' + workingHours.to }
     ]);
 
-    let appropriateTime = goodTime.find(time => {
+    let appropriateTime = goodTime.filter(time => {
         return toMinutes(time.to) - toMinutes(time.from) >= duration;
+    }).sort((obj1, obj2) => {
+        if (toMinutes(obj1.from) < toMinutes(obj2.from)) {
+            return -1;
+        }
+        if (toMinutes(obj1.from) > toMinutes(obj2.from)) {
+            return 1;
+        }
+
+        return 0;
     });
 
     return {
-        time: appropriateTime,
+        allMoments: appropriateTime,
+        momentNumber: 0,
+        duration: duration,
 
         /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
-            return Boolean(this.time);
+            return Boolean(this.allMoments[this.momentNumber]);
         },
 
         /**
@@ -164,13 +188,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (!this.time) {
+            let time = this.allMoments[this.momentNumber];
+            if (!time) {
                 return '';
             }
 
-            return template.replace('%HH', this.time.from.slice(3, 5))
-                .replace('%MM', this.time.from.slice(6, 8))
-                .replace('%DD', this.time.from.slice(0, 2));
+            return template.replace('%HH', time.from.slice(3, 5))
+                .replace('%MM', time.from.slice(6, 8))
+                .replace('%DD', time.from.slice(0, 2));
         },
 
         /**
@@ -179,6 +204,23 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            let time = this.allMoments[this.momentNumber];
+            if (toMinutes(time.to) - toMinutes(time.from) >= this.duration + 30) {
+                this.allMoments[this.momentNumber] = {
+                    from: addHalfHour(time.from),
+                    to: time.to
+                };
+
+                return true;
+            }
+            let possibleNext = this.allMoments[this.momentNumber + 1];
+            if (possibleNext && toMinutes(possibleNext.from) -
+                toMinutes(this.allMoments[this.momentNumber].to) >= 30) {
+                this.momentNumber++;
+
+                return true;
+            }
+
             return false;
         }
     };
