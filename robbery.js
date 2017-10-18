@@ -7,7 +7,7 @@
 exports.isStar = true;
 
 const GANG_TIME_PATTERN = /([А-Я]{2}) (\d\d?):(\d\d?)\+(\d+)/;
-const DAYS_INDICES = { 'ВС': 0, 'ПН': 1, 'ВТ': 2, 'СР': 3, 'ЧТ': 4 };
+const DAYS_INDICES = { 'ВС': 0, 'ПН': 1, 'ВТ': 2, 'СР': 3, 'ЧТ': 4, 'ПТ': 5, 'СБ': 6 };
 let GANG_SCHEDULE = [[], [], [], [], []];
 
 
@@ -15,7 +15,7 @@ function transformBankTime(bankTime, pattern) {
     let [fromMatch, hoursFrom, minutesFrom] = pattern.exec(bankTime.from);
     let [toMatch, hoursTo, minutesTo] = pattern.exec(bankTime.to);
     if (!fromMatch || !toMatch) {
-        throw new TypeError('Working hours in wrong format');
+        throw new TypeError('Working 5hours in wrong format');
     }
 
     return {
@@ -203,6 +203,7 @@ function getEventLength(event) {
 
     return (event.to.hours - event.from.hours) * 60 + (event.to.minutes - event.from.minutes);
 }
+
 function shiftLater(event, hours, minutes) {
     event.from.hours += hours;
     event.from.minutes += minutes;
@@ -286,19 +287,28 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return true;
             }
-            let nextTime = this._currentTime;
-            while (robberyTimes.length !== 0 &&
-            getEventLength(nextTime) < duration + 30) {
-                robberyTimes.splice(0, 1);
-                nextTime = this.getFirstTime();
-                if (getEventLength(nextTime) >= duration) {
-                    this._currentTime = nextTime;
-
-                    return true;
-                }
+            robberyTimes.splice(0, 1);
+            let nextTime = this.getFirstTime();
+            if (nextTime === undefined) {
+                return false;
             }
+            this._currentTime = nextTime;
 
-            return false;
+            return true;
+            // let nextTime = this._currentTime;
+            //
+            // while (robberyTimes.length !== 0 &&
+            // getEventLength(nextTime) < duration + 30) {
+            //     robberyTimes.splice(0, 1);
+            //     nextTime = this.getFirstTime();
+            //     if (getEventLength(nextTime) >= duration) {
+            //         this._currentTime = nextTime;
+            //
+            //         return true;
+            //     }
+            // }
+
+            // return false;
         }
     };
 };
