@@ -105,7 +105,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
         var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
         var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-        if (from < bankFrom && to < bankFrom || from > bankTo && to > bankTo) {
+        if (from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo) {
             schedule[robber].splice(record, 1);
         } else if (from < bankFrom) {
             schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
@@ -251,6 +251,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             intervals = [];
         }
+        console.error(result);
         if (result.length !== 0) {
             modifyResult(result);
         }
