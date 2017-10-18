@@ -115,19 +115,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function addRecordInCorrectForm(robber) {
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
-                continue;
-            }
-            schedule[robber][record].from =
-                convertToBankTimezone(schedule[robber][record].from);
-            schedule[robber][record].to =
-                convertToBankTimezone(schedule[robber][record].to);
-            splitIntervalsOverDay(robber, record);
-        }
-    }
-
     function convertByBankRange() {
         for (var robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
@@ -139,6 +126,19 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 }
                 cutForBankHours(robber, field);
             }
+        }
+    }
+
+    function addRecordInCorrectForm(robber) {
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
+                continue;
+            }
+            schedule[robber][record].from =
+                convertToBankTimezone(schedule[robber][record].from);
+            schedule[robber][record].to =
+                convertToBankTimezone(schedule[robber][record].to);
+            splitIntervalsOverDay(robber, record);
         }
     }
 
