@@ -109,12 +109,6 @@ function getMomentsForAttack(busy, duration) {
     return tempSchedule;
 }
 
-function mergeSchedule(schedule) {
-    for (var i = 0; i < 3; i++) {
-        schedule.splice(0, 2, mergePersons(schedule[0], schedule[1]));
-    }
-}
-
 function mergePersons(prev, cur) {
     let tempSchedule = prev;
     for (var i = 0; i < cur.length; i++) {
@@ -169,10 +163,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return firstInterval.from - secondInterval.from;
         });
     });
-    mergeSchedule(busy);
-    console.info(busy[0]);
+    busy.reduce((prev, cur) => {
+        return mergePersons(prev, cur);
+    });
     let robberyMoments = getMomentsForAttack(busy[0], duration);
-    console.info(robberyMoments);
 
     return {
 
@@ -181,7 +175,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return Boolean(robberyMoments[0]);
+            return Boolean(robberyMoments[0]) && duration > 0;
         },
 
         /**
