@@ -123,10 +123,8 @@ function formatingSchedule(schedule, workingHours) {
                 if (toBankTimeRange(workingHours, date[1])) {
                     commonSchedule.push(date[1]);
                 }
-            } else {
-                if (toBankTimeRange(workingHours, date)) {
-                    commonSchedule.push(date);
-                }
+            } else if (toBankTimeRange(workingHours, date)) {
+                commonSchedule.push(date);
             }
         });
     }
@@ -139,7 +137,7 @@ function toBankTimeRange(workingHours, hours) {
     var bankTo = parseInt(workingHours.to.replace(/:|(\+\d)/g, ''));
     var hoursFrom = parseInt(hours.from);
     var hoursTo = parseInt(hours.to);
-    
+
     if (hoursFrom <= bankFrom) {
         if (hoursTo <= bankFrom) {
             return false;
@@ -162,7 +160,7 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
     var bankFrom = workingHours.from.replace(/:|(\+\d)/g, '');
     var bankTo = workingHours.to.replace(/:|(\+\d)/g, '');
     var sortedDay = commonSchedule.filter(function (day) {
-    
+
         return day.day === dayOfWeek;
     })
         .sort(function (a, b) {
@@ -179,16 +177,16 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
         }
         if (acc.from > item.to) {
             robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
-            //return item;
         }
         if (index === 0 && item.from > bankFrom) {
-            robbersFree.push({day: localDayOfWeek, from: bankFrom, to: item.from});
+            robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: item.from });
+
             return item;
         }
 
         return item;
-        }, { from: bankTo, to: bankTo});
-    
+    }, { from: bankTo, to: bankTo });
+
     if (sortedDay.length === 0) {
         robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: bankTo });
     }
