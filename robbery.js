@@ -49,7 +49,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            let goodTime = timeFormat(goal, timeZone);
+            let goodTime = timeFormat(goal);
 
             return template.replace('%DD', goodTime.day)
                 .replace('%HH', toPrettyTime(goodTime.hours))
@@ -99,7 +99,7 @@ function timeFormat(firstTime) {
 }
 
 function getTimeZone(workingHours) {
-    const regExp = /[+-](\d{1})$/;
+    const regExp = /[+-](\d+)$/;
     let timeZone = workingHours.from.match(regExp);
 
     return Number(timeZone[1]);
@@ -182,7 +182,7 @@ function robbersTimeInterval(schedule) {
 }
 
 function bankTimeToUtc(workingHours) {
-    const regExp = /(\d{2}):(\d{2})[+-](\d+)/;
+    const regExp = /(\d+):(\d+)[+-](\d+)/;
     const bankTime = [];
     let timeFrom = workingHours.from.match(regExp).map(Number);
     let timeTo = workingHours.to.match(regExp).map(Number);
@@ -217,7 +217,7 @@ function robbersTime(schedule) {
 
 function robbersTimeToUtc(robberTime, name) {
     let robber = [];
-    const regExp = /([А-Яа-я]{2})\s(\d{2}):(\d{2})[+-](\d+)/;
+    const regExp = /([А-Яа-я]+)\s(\d+):(\d+)[+-](\d+)/;
     for (const key in robberTime) {
         if (key) {
             let timeFrom = robberTime[key].from.match(regExp);
