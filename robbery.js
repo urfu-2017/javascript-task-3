@@ -33,6 +33,18 @@ function product4(values) {
 }
 
 
+function getIntervals(tds) {
+    var result = [];
+    var lower = Timestamp.min();
+    for (var td of tds) {
+        result.push(new Timedelta(lower, td.fromTs));
+        lower = td.toTs;
+    }
+    result.push(new Timedelta(lower, Timestamp.max()));
+    return result;
+}
+
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -44,37 +56,25 @@ function product4(values) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var bankTimetable = getBankTimetable(workingHours);
     var bankOffset = bankTimetable[0].fromTs.offset;
-    var tables = Object.keys(schedule).map(x => schedule[x].map(Timedelta.fromObj));
+    var tables = Object.keys(schedule).map(x => getIntervals(schedule[x].map(Timedelta.fromObj)));
     tables.push(bankTimetable);
-    //console.log(JSON.stringify(tables, null, 2));
     var available = [];
     for (var tds of product4(tables)) {
         var intersection = tds.reduce((acc, x) => x.intersect(acc), Timedelta.max());
-        console.log(tds);
-        return;
-        if (intersection.totalMinutes() > duration)
-            available.push(intersection);
+        var length = intersection.totalMinutes();
+        if (length >= duration) {
+            available.push([intersection, (length - duration) / 30]);
+        }
     }
-    console.log(available);
     var i = 0;
-    var j = 1;
-    
-    var result = {
+    var j = 0;
+    return {
         /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
-            //console.log(available);
-            //console.log([i, j]);
-            if (i >= available.length)
-                return false;
-            var intersection = available[i];
-            var c = intersection.totalMinutes() / duration;
-            if (j > c)
-                return false;
-            
-            return true;
+            return i < available.length;
         },
 
         /**
@@ -85,10 +85,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (!result.exists())
+            if (i >= available.length)
                 return '';
-            var intersection = available[i];
-            return intersection.addMinutes(duration * j).format(template);
+            var [intersection, ] = available[i];
+            var offset = bankOffset - intersection.fromTs.offset;
+            return intersection.fromTs
+                .addMinutes(offset * 60)
+                .addMinutes(j * 30)
+                .format(template);
         },
 
         /**
@@ -97,14 +101,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var intersection = available[i];
-            var c = intersection.totalMinutes() / duration;
-            if (j++ > c) {
-                j = 1;
+            var [intersection, repeat] = available[i];
+            if (++j > repeat) {
+                j = 0;
                 i++;
             }
-            return i >= available.length;
+            if (i >= available.length) {
+                i--;
+                return false;
+            }
+            return true;
         }
     };
-    return result;
 };
