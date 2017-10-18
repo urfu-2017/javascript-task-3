@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 /**
  * Сделано задание на звездочку
@@ -173,7 +173,7 @@ function getMergeTimeIntervals(sortedTimeIntervals) {
     let end = currentTimeInterval.totalMinutesTo;
     for (var i = 1; i < sortedTimeIntervals.length; i++) {
         currentTimeInterval = sortedTimeIntervals[i];
-        if (end > currentTimeInterval.totalMinutesTo) {
+        if (end >= currentTimeInterval.totalMinutesTo) {
             continue;
         }
         if (end >= currentTimeInterval.totalMinutesFrom) {
