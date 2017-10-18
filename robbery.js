@@ -91,7 +91,7 @@ function getClosedBank(workingHours) {
             },
             {
                 from: createDate([day, endBankInterval.hour, endBankInterval.minute]),
-                to: createDate([day, 24, 0])
+                to: createDate([day, 23, 59])
             });
     });
 
