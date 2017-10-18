@@ -28,11 +28,11 @@ class AppropriateMoment {
         const gangSchedule = this._mergeTimelines(Object.values(schedule).reduce((result, robber) =>
             result.concat(robber.map(this._parseTimeline)), []));
 
-        this._moments = bankSchedule.reduce((result, day) => {
+        this._moments = bankSchedule.reduce((result, day, index) => {
             for (let time = day.from; time <= day.to - duration; time += MINUTE_AS_MILLISECONDS) {
                 const candidate = { from: time, to: time + duration };
                 if (gangSchedule.every((timeline) => !this._areIntersected(timeline, candidate))) {
-                    result.push(time);
+                    result.push({ time, day: Object.keys(DAYS)[index] });
                 }
             }
 
@@ -63,12 +63,13 @@ class AppropriateMoment {
             return '';
         }
 
-        const date = new Date(this._moment);
+        const date = new Date(this._moment.time);
         const timezone = this._bankTimezone + date.getTimezoneOffset() / 60;
-        date.setTime(this._moment + timezone * HOUR_AS_MILLISECONDS);
+        date.setTime(this._moment.time + timezone * HOUR_AS_MILLISECONDS);
+        console.info(this._moment);
 
         return template
-            .replace('%DD', Object.keys(DAYS)[date.getDate() - 1])
+            .replace('%DD', this._moment.day)
             .replace('%HH', date.getHours())
             .replace('%MM', String(date.getMinutes()).padStart(2, '0'));
     }
