@@ -126,7 +126,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 continue;
             }
             cutForBankHours(robber);
-            }
+        }
     }
 
     function addRecordWhenBusy(day, robber, intervals) {
