@@ -126,7 +126,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var record in schedule[robber]) {
             if (!schedule[robber].hasOwnProperty(record)) {
                 continue;
-        }
+            }
             if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
                 intervals.push({
                     day: DAYS_OF_WEEK[day],
@@ -201,7 +201,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     function checkRangeLimits(day, result, intervals) {
         intervals.sort(customSort);
         var minFrom = intervals[0].from;
-        intervals.sort.to;
+        intervals.sort(function (a, b) {
+            return a.to - b.to;
+        });
         var maxTo = intervals[intervals.length - 1].to;
         var bankFrom = workingHours.from.split('+')[0];
         var bankTo = workingHours.to.split('+')[0];
