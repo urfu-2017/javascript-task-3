@@ -110,13 +110,12 @@ function getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval) {
             newAllIntervals.push(interval);
             lastIntervalEnd = currentInterval.end.compareTo(lastIntervalEnd) > 0
                 ? currentInterval.end : lastIntervalEnd;
-            break;
         } else {
             currentInterval = currentInterval.union(interval);
         }
     }
 
-    return newAllIntervals;
+    return { intervals: newAllIntervals, lastIntervalEnd: lastIntervalEnd };
 }
 function findCompatibleInterval(allIntervals, workingInterval, duration) {
     var result = null;
@@ -126,9 +125,11 @@ function findCompatibleInterval(allIntervals, workingInterval, duration) {
         currentInterval = allIntervals[0];
         allIntervals = allIntervals.splice(1);
         if (currentInterval.start.compareTo(lastIntervalEnd) >= duration) {
-            return currentInterval.start;
+            return lastIntervalEnd;
         }
-        var newAllIntervals = getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval);
+        var newAllIntervalsResult = getNewAllIntervals(allIntervals, lastIntervalEnd, currentInterval);
+        var newAllIntervals = newAllIntervalsResult.intervals;
+        lastIntervalEnd = newAllIntervalsResult.lastIntervalEnd;
         allIntervals = newAllIntervals.sort(function (a, b) {
             return a.start.compareTo(b.start);
         });
@@ -167,9 +168,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     schedule.Rusty = normalizeSchedule(schedule.Rusty, workingInterval);
     schedule.Linus = normalizeSchedule(schedule.Linus, workingInterval);
     var robberyStart = null;
-    DAYS_OF_THE_WEEK.forEach(function (day) {
+    for (var i = 0; i < DAYS_OF_THE_WEEK.length; i += 1) {
+        var day = DAYS_OF_THE_WEEK[i];
         robberyStart = getRobberyStart(schedule, workingInterval, duration, day);
-    });
+        if (robberyStart !== null) {
+            break;
+        }
+    }
 
     return {
 
