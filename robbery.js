@@ -25,7 +25,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var bankNotWorkingHours = getBusyBankTime(bankWorkingHours);
     var gangShe = getGangShedule(schedule, timeZone);
     var timeNotToRob = getBusyTime(gangShe);
-    var noRob = noRobbery(timeNotToRob, bankNotWorkingHours);
+    var noRob = getBusyTime(noRobbery(timeNotToRob, bankNotWorkingHours));
     var timeToRob = itsTime(noRob, duration);
 
     return {
