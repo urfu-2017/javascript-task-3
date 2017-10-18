@@ -1,12 +1,17 @@
 'use strict';
 
-const DATE_FORMAT = /(ПН|ВТ|СР)\s(\d\d):(\d\d)\+(\d)/;
-const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03' };
-const MILLIS_OF_MIN = 60000;
-const HOUR_AS_MILLIS = 60 * MILLIS_OF_MIN;
+const DATE_STRING_FORMAT = /(ПН|ВТ|СР)\s(\d\d):(\d\d)\+(\d+)/;
+const DAYS = { 'ПН': 1, 'ВТ': 2, 'СР': 3 };
+const MINUTE_AS_MILLISECONDS = 60 * 1000;
+const HOUR_AS_MILLISECONDS = 60 * MINUTE_AS_MILLISECONDS;
 
-function parseDate(date) {
-    const [, day, hours, minutes, timezone] = date.match(DATE_FORMAT);
+/**
+ * Конвертирует строковое представление времени в UNIX time
+ * @param {String} date
+ * @returns {Number}
+ */
+function parseDateString(date) {
+    const [, day, hours, minutes, timezone] = DATE_STRING_FORMAT.exec(date);
 
     return Date.parse(`${DAYS[day]} Jan 2017 ${hours}:${minutes}:00 GMT+${timezone}`);
 }
@@ -15,32 +20,19 @@ class AppropriateMoment {
 
     /**
      * @param {Object} schedule – Расписание Банды
-     * @param {Number} duration - Время на ограбление в минутах
-     * @param {Object} workingHours – Время работы банка
-     * @param {String} workingHours.from – Время открытия, например, "10:00+5"
-     * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+     * @param {Object[]} workingHours – Расписание работы банка
+     * @param {Number} duration - Время на ограбление в миллисекундах
      */
-    constructor(schedule, duration, workingHours) {
-        const bankSchedule = Object.keys(DAYS).map(day => ({
-            from: parseDate(`${day} ${workingHours.from}`),
-            to: parseDate(`${day} ${workingHours.to}`)
-        }));
+    constructor(schedule, workingHours, duration) {
+        const bankSchedule = workingHours.map(this._parseTimeline);
+        const gangSchedule = this._mergeTimelines(Object.values(schedule).reduce((result, robber) =>
+            result.concat(robber.map(this._parseTimeline)), []));
 
-        const gangSchedule = this._mergeTimelines(Object.values(schedule)
-            .map(robber => robber.map(t => ({
-                from: parseDate(t.from),
-                to: parseDate(t.to)
-            })))
-        );
-
-        duration = duration * MILLIS_OF_MIN;
-
-        this._moments = bankSchedule.reduce((result, workDay) => {
-            for (let from = workDay.from; from <= workDay.to - duration; from += MILLIS_OF_MIN) {
-                const candidate = { from, to: from + duration };
-
-                if (!gangSchedule.some((timeline) => this._areIntersected(timeline, candidate))) {
-                    result.push(candidate.from);
+        this._moments = bankSchedule.reduce((result, day) => {
+            for (let time = day.from; time <= day.to - duration; time += MINUTE_AS_MILLISECONDS) {
+                const candidate = { from: time, to: time + duration };
+                if (gangSchedule.every((timeline) => !this._areIntersected(timeline, candidate))) {
+                    result.push(time);
                 }
             }
 
@@ -48,7 +40,7 @@ class AppropriateMoment {
         }, []).reverse();
 
         this._moment = this._moments.pop();
-        this._bankTimezone = Number(workingHours.to.split('+')[1]);
+        this._bankTimezone = Number(workingHours[0].from.split('+')[1]);
     }
 
     /**
@@ -56,7 +48,7 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     exists() {
-        return Boolean(this._moment);
+        return this._moment !== undefined;
     }
 
     /**
@@ -73,11 +65,12 @@ class AppropriateMoment {
 
         const date = new Date(this._moment);
         const timezone = this._bankTimezone + date.getTimezoneOffset() / 60;
-        date.setTime(this._moment + timezone * HOUR_AS_MILLIS);
+        date.setTime(this._moment + timezone * HOUR_AS_MILLISECONDS);
 
-        return template.replace('%HH', ('0' + date.getHours()).slice(-2))
-            .replace('%MM', ('0' + date.getMinutes()).slice(-2))
-            .replace('%DD', Object.keys(DAYS)[date.getDay()]);
+        return template
+            .replace('%DD', Object.keys(DAYS)[date.getDate() - 1])
+            .replace('%HH', date.getHours())
+            .replace('%MM', String(date.getMinutes()).padStart(2, '0'));
     }
 
     /**
@@ -86,26 +79,49 @@ class AppropriateMoment {
      * @returns {Boolean}
      */
     tryLater() {
-        if (this.exists() && this._moments.length !== 0) {
-            this._moment = this._moments.pop();
-
-            return Boolean(this._moment);
-        }
-
         return false;
+    }
+
+    /**
+     * Конвертирует концы временного отрезка из строкового представления в UNIX time
+     * @param {Object} timeline
+     * @param {String} timeline.from
+     * @param {String} timeline.to
+     * @returns {Object}
+     */
+    _parseTimeline(timeline) {
+        return { from: parseDateString(timeline.from), to: parseDateString(timeline.to) };
+    }
+
+    /**
+     * Проверяет пересекаются ли временные отрезки
+     * @param {Object} timeline1 
+     * @param {Object} timeline2
+     * @returns {Boolean}
+     */
+    _areIntersected(timeline1, timeline2) {
+        return (
+            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
+            (timeline2.from <= timeline1.from && timeline2.to >= timeline1.to) ||
+            (timeline1.from < timeline2.from && timeline1.to > timeline2.from) ||
+            (timeline1.to > timeline2.to && timeline1.from < timeline2.to)
+        );
     }
 
     /**
      * Объединяет пересекающиеся временные отрезки
      * @param {Array} timelines
-     * @returns {Array} 
+     * @returns {Array}
      */
     _mergeTimelines(timelines) {
         const merged = timelines.reduce((result, timeline) => {
             for (const mergedTimeline of result) {
                 if (this._areIntersected(mergedTimeline, timeline)) {
-                    mergedTimeline.from = Math.min(mergedTimeline.from, timeline.from);
-                    mergedTimeline.to = Math.max(mergedTimeline.to, timeline.to);
+                    mergedTimeline.from = mergedTimeline.from <= timeline.from
+                        ? mergedTimeline.from : timeline.from;
+
+                    mergedTimeline.to = mergedTimeline.to >= timeline.to
+                        ? mergedTimeline.to : timeline.to;
 
                     return result;
                 }
@@ -116,23 +132,28 @@ class AppropriateMoment {
 
         return (merged.length === timelines.length) ? merged : this._mergeTimelines(merged);
     }
-
-    /**
-     * Пересекаются ли временные отрезки
-     * @param {Object} timeline1 
-     * @param {Object} timeline2
-     * @returns {Boolean}
-     */
-    _areIntersected(timeline1, timeline2) {
-        return (
-            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
-            (timeline1.from <= timeline2.from && timeline1.to >= timeline2.to) ||
-            (timeline1.from < timeline2.from && timeline1.to > timeline2.from) ||
-            (timeline1.to > timeline2.to && timeline1.from < timeline2.to)
-        );
-    }
 }
 
+/**
+ * Сделано задание на звездочку
+ * Реализовано оба метода и tryLater
+ */
 exports.isStar = false;
-exports.getAppropriateMoment = (schedule, duration, workingHours) =>
-    new AppropriateMoment(schedule, duration, workingHours);
+
+/**
+ * @param {Object} schedule – Расписание Банды
+ * @param {Number} duration - Время на ограбление в минутах
+ * @param {Object} workingHours – Время работы банка
+ * @param {String} workingHours.from – Время открытия, например, "10:00+5"
+ * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @returns {AppropriateMoment}
+ */
+exports.getAppropriateMoment = (schedule, duration, workingHours) => {
+    const bankSchedule = [
+        { from: `ПН ${workingHours.from}`, to: `ПН ${workingHours.to}` },
+        { from: `ВТ ${workingHours.from}`, to: `ВТ ${workingHours.to}` },
+        { from: `СР ${workingHours.from}`, to: `СР ${workingHours.to}` }
+    ];
+
+    return new AppropriateMoment(schedule, bankSchedule, duration * MINUTE_AS_MILLISECONDS);
+};
