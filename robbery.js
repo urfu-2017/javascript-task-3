@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 const YEAR = 2017;
 const MONTH = 9;
 const DAY = 2;
@@ -73,6 +73,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return false;
             }
+            if (timeToRob[0].to - timeToRob[0].from >= (duration + 30) * 60 * 1000) {
+                timeToRob[0].from = timeToRob[0].from + 30 * 60 * 1000;
+
+                return true;
+            }
+
 
             return false;
         }
