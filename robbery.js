@@ -11,24 +11,36 @@ var days = time.days;
  */
 exports.isStar = true;
 
-function getBankTimetable(workingHours){
+function getBankTimetable(workingHours) {
     var result = [];
     for (var day of days.slice(0, 3)) {
-        var fromTs = Timestamp.fromString(day + ' ' + workingHours['from']);
-        var toTs = Timestamp.fromString(day + ' ' + workingHours['to']);
+        var fromTs = Timestamp.fromString(day + ' ' + workingHours.from);
+        var toTs = Timestamp.fromString(day + ' ' + workingHours.to);
         result.push(new Timedelta(fromTs, toTs));
     }
+
     return result;
 }
 
+function product2(a, b) {
+    var result = [];
+    for (var i1 of a) {
+        for (var i2 of b) {
+            result.push([i1, i2]);
+        }
+    }
+
+    return result;
+}
 
 function product4(values) {
     var result = [];
-    for (var i1 of values[0])
-        for (var i2 of values[1])
-            for (var i3 of values[2])
-                for (var i4 of values[3])
-                    result.push([i1, i2, i3, i4]);
+    for (var [i1, i2] of product2(values[0], values[1])) {
+        for (var [i3, i4] of product2(values[2], values[3])) {
+            result.push([i1, i2, i3, i4]);
+        }
+    }
+
     return result;
 }
 
@@ -41,19 +53,12 @@ function getIntervals(tds) {
         lower = td.toTs;
     }
     result.push(new Timedelta(lower, Timestamp.max()));
+
     return result;
 }
 
 
-/**
- * @param {Object} schedule – Расписание Банды
- * @param {Number} duration - Время на ограбление в минутах
- * @param {Object} workingHours – Время работы банка
- * @param {String} workingHours.from – Время открытия, например, "10:00+5"
- * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
- * @returns {Object}
- */
-exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+function getMomentInfo(schedule, duration, workingHours) {
     var bankTimetable = getBankTimetable(workingHours);
     var bankOffset = bankTimetable[0].fromTs.offset;
     var tables = Object.keys(schedule).map(x => getIntervals(schedule[x].map(Timedelta.fromObj)));
@@ -66,9 +71,26 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             available.push([intersection, (length - duration) / 30]);
         }
     }
+
+    return [bankOffset, available];
+}
+
+
+/**
+ * @param {Object} schedule – Расписание Банды
+ * @param {Number} duration - Время на ограбление в минутах
+ * @param {Object} workingHours – Время работы банка
+ * @param {String} workingHours.from – Время открытия, например, "10:00+5"
+ * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @returns {Object}
+ */
+exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+    var [bankOffset, available] = getMomentInfo(schedule, duration, workingHours);
     var i = 0;
     var j = 0;
+
     return {
+
         /**
          * Найдено ли время
          * @returns {Boolean}
@@ -85,10 +107,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (i >= available.length)
+            if (i >= available.length) {
                 return '';
-            var [intersection, ] = available[i];
+            }
+            var intersection = available[i][0];
             var offset = bankOffset - intersection.fromTs.offset;
+
             return intersection.fromTs
                 .addMinutes(offset * 60)
                 .addMinutes(j * 30)
@@ -101,15 +125,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var [intersection, repeat] = available[i];
+            var [, repeat] = available[i];
             if (++j > repeat) {
                 j = 0;
                 i++;
             }
             if (i >= available.length) {
                 i--;
+
                 return false;
             }
+
             return true;
         }
     };
