@@ -25,11 +25,11 @@ var bankWorkingHours = {
 
 
 // Время не существует
-//var longMoment = robbery.getAppropriateMoment(gangSchedule, 1, bankWorkingHours);
+var longMoment = robbery.getAppropriateMoment(gangSchedule, 1, bankWorkingHours);
 
 // Выведется false и ""
-//console.info(longMoment.exists());
-//console.info(longMoment.format('Метим на %DD, старт в %HH:%MM!'));
+console.info(longMoment.exists());
+console.info(longMoment.format('Метим на %DD, старт в %HH:%MM!'));
 
 // Время существует
 var moment = robbery.getAppropriateMoment(gangSchedule, 50, bankWorkingHours);
