@@ -147,6 +147,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 if (!(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo)) {
                     return true;
                 }
+
+                return false;
             });
 
             addRecordInCorrectForm(robber);
