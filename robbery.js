@@ -12,11 +12,13 @@ const MINUTES_IN_HOUR = 60;
 const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 const HALF_AN_HOUR = 30;
 const DAYS_FOR_ROBBERY = 3;
+const FIRST_MINUTE = 0;
+const LAST_MINUTE = MINUTES_IN_DAY * DAYS_FOR_ROBBERY;
 
 let isIntersected = (first, second) => first.to >= second.from && second.to >= first.from;
 
 function parseTime(stringTime) {
-    let [, hoursFrom, minutesFrom, timeZone] = stringTime.match(TIME_FORMAT);
+    const [, hoursFrom, minutesFrom, timeZone] = stringTime.match(TIME_FORMAT);
 
     return [parseInt(hoursFrom), parseInt(minutesFrom), parseInt(timeZone)];
 }
@@ -24,24 +26,24 @@ function parseTime(stringTime) {
 let timeToMinutes = (dayNumber, hh, mm, diff) =>
     ((dayNumber * HOURS_IN_DAY + hh + diff) * MINUTES_IN_HOUR) + mm;
 
+let padZero = str => ('0' + str).slice(-2);
+
 function minutesToTime(startMinute) {
-    let mm = startMinute % MINUTES_IN_HOUR;
-    let hh = ((startMinute - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY;
-    let dayNumber = Math.floor(((startMinute - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
-    let dd = Object.keys(DAYS_OF_THE_WEEK)[dayNumber];
-    hh = ('0' + hh).slice(-2);
-    mm = ('0' + mm).slice(-2);
+    const mm = padZero(startMinute % MINUTES_IN_HOUR);
+    const hh = padZero(((startMinute - mm) / MINUTES_IN_HOUR) % HOURS_IN_DAY);
+    const dayNumber = Math.floor(((startMinute - mm) / MINUTES_IN_HOUR) / HOURS_IN_DAY);
+    const dd = Object.keys(DAYS_OF_THE_WEEK)[dayNumber];
 
     return [dd, hh, mm];
 }
 
 function getBankScheduleAndTimeZone(workingHours) {
-    let [hoursFrom, minutesFrom, timeZone] = parseTime(workingHours.from);
-    let [hoursTo, minutesTo] = parseTime(workingHours.to);
+    const [hoursFrom, minutesFrom, timeZone] = parseTime(workingHours.from);
+    const [hoursTo, minutesTo] = parseTime(workingHours.to);
     let bankSchedule = [];
     for (let i = 0; i < DAYS_FOR_ROBBERY; i++) {
-        let fromInMinutes = timeToMinutes(i, hoursFrom, minutesFrom, 0);
-        let toInMinutes = timeToMinutes(i, hoursTo, minutesTo, 0);
+        const fromInMinutes = timeToMinutes(i, hoursFrom, minutesFrom, 0);
+        const toInMinutes = timeToMinutes(i, hoursTo, minutesTo, 0);
         bankSchedule.push({ from: fromInMinutes, to: toInMinutes });
     }
 
@@ -49,70 +51,60 @@ function getBankScheduleAndTimeZone(workingHours) {
 }
 
 function robberTimeInMinutes(time, bankTimeZone) {
-    let dayNumber = DAYS_OF_THE_WEEK[time.substring(0, 2)];
-    let [hh, mm, timeZone] = parseTime(time.substring(3));
-    let diff = bankTimeZone - timeZone;
-    let result = timeToMinutes(dayNumber, hh, mm, diff);
+    const dayNumber = DAYS_OF_THE_WEEK[time.substring(0, 2)];
+    const [hh, mm, timeZone] = parseTime(time.substring(3));
+    const diff = bankTimeZone - timeZone;
 
-    return result;
+    return timeToMinutes(dayNumber, hh, mm, diff);
 }
 
 function getGeneralSchedule(schedule, bankTimeZone) {
-    let result = [];
-    Object.keys(schedule).forEach(function (robber) {
-        schedule[robber].forEach(function (time) {
-            let from = robberTimeInMinutes(time.from, bankTimeZone);
-            let to = robberTimeInMinutes(time.to, bankTimeZone);
-            result.push({ from, to });
-        });
-    });
-    result = result.sort((a, b) => a.from - b.from);
-
-    return result;
+    return Object.keys(schedule).reduce((acc, curr) => [...acc, ...schedule[curr]], [])
+        .map(current => {
+            return {
+                from: robberTimeInMinutes(current.from, bankTimeZone),
+                to: robberTimeInMinutes(current.to, bankTimeZone)
+            };
+        })
+        .sort((a, b) => a.from - b.from);
 }
 
 function getJoinedSchedule(generalSchedule) {
-    let stack = [];
-    stack.push(generalSchedule[0]);
-    generalSchedule.forEach(function (current) {
+    return generalSchedule.reduce((stack, current) => {
         let stackTop = stack[stack.length - 1];
         if (isIntersected(stackTop, current)) {
             stackTop.to = Math.max(current.to, stackTop.to);
         } else {
             stack.push(current);
         }
-    });
 
-    return stack;
+        return stack;
+    }, [generalSchedule[0]]);
 }
 
 function getFreeTimes(joinedSchedule) {
-    let result = [];
-    let globalStart = 0;
-    let globalEnd = MINUTES_IN_DAY * DAYS_FOR_ROBBERY;
-    result.push({ from: globalStart, to: joinedSchedule[0].from });
-    for (let i = 0; i < joinedSchedule.length - 1; i++) {
-        result.push({ from: joinedSchedule[i].to, to: joinedSchedule[i + 1].from });
-    }
-    result.push({ from: joinedSchedule[joinedSchedule.length - 1].to, to: globalEnd });
-
-    return result;
+    return [{ from: FIRST_MINUTE, to: joinedSchedule[0].from }]
+        .concat(joinedSchedule.map((current, i) => {
+            return {
+                from: current.to,
+                to: (joinedSchedule[i + 1]) ? joinedSchedule[i + 1].from : LAST_MINUTE
+            };
+        }));
 }
 
 function getRobberyIntervals(bankSchedule, freeTimes, duration) {
-    let result = [];
-    bankSchedule.forEach(function (workingHours) {
-        freeTimes.forEach(function (freeTime) {
+    return bankSchedule.reduce((accBank, workingHours) => {
+        return accBank.concat(freeTimes.reduce((accFree, freeTime) => {
             if (isIntersected(workingHours, freeTime)) {
-                let from = Math.max(workingHours.from, freeTime.from);
-                let to = Math.min(workingHours.to, freeTime.to);
-                result.push({ from, to });
+                accFree.push({
+                    from: Math.max(workingHours.from, freeTime.from),
+                    to: Math.min(workingHours.to, freeTime.to)
+                });
             }
-        });
-    });
-    result = result.filter(interval => interval.to - interval.from >= duration);
 
-    return result;
+            return accFree;
+        }, []));
+    }, []).filter(interval => interval.to - interval.from >= duration);
 }
 
 /**
@@ -125,15 +117,10 @@ function getRobberyIntervals(bankSchedule, freeTimes, duration) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [bankSchedule, timeZone] = getBankScheduleAndTimeZone(workingHours);
-    console.info('bankSchedule ' + JSON.stringify(bankSchedule));
     let generalSchedule = getGeneralSchedule(schedule, timeZone);
-    console.info('generalSchedule ' + JSON.stringify(generalSchedule));
     let joinedSchedule = getJoinedSchedule(generalSchedule);
-    console.info('joinedSchedule ' + JSON.stringify(joinedSchedule));
     let freeTimes = getFreeTimes(joinedSchedule);
-    console.info('freeTimes ' + JSON.stringify(freeTimes));
     let intervals = getRobberyIntervals(bankSchedule, freeTimes, duration);
-    console.info('intervals ' + JSON.stringify(intervals));
     let robberyTime = intervals[0];
 
     return {
@@ -157,8 +144,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            let robberyTimeStart = robberyTime.from;
-            let [dd, hh, mm] = minutesToTime(robberyTimeStart);
+            const robberyTimeStart = robberyTime.from;
+            const [dd, hh, mm] = minutesToTime(robberyTimeStart);
 
             return template
                 .replace('%DD', dd)
