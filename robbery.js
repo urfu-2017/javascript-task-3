@@ -8,12 +8,12 @@ exports.isStar = true;
 
 var daysOfWeeksToHours = {
     'ПН': 0,
-    'ВТ': 24,
-    'СР': 24 * 2,
-    'ЧТ': 24 * 3,
-    'ПТ': 24 * 4,
-    'СБ': 24 * 5,
-    'ВС': 24 * 6
+    'ВТ': 1,
+    'СР': 2,
+    'ЧТ': 3,
+    'ПТ': 4,
+    'СБ': 5,
+    'ВС': 6
 };
 
 var numberDayToDayWeek = {
@@ -135,8 +135,8 @@ function parseScheduleEntry(x) {
 function getlRobberTimeInterval(x, bankTimezone) {
     let timezoneDiff = bankTimezone - x.robberTimezone;
 
-    let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay];
-    let totalHoursTo = x.hoursTo + timezoneDiff + daysOfWeeksToHours[x.endDay];
+    let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay] * 24;
+    let totalHoursTo = x.hoursTo + timezoneDiff + daysOfWeeksToHours[x.endDay] * 24;
     if (totalHoursFrom < 0) {
         totalHoursFrom = 0;
     }
@@ -157,7 +157,7 @@ function getAllScheduleEntries(schedule) {
 }
 
 function getTotalMinutesFromStartWeek(hours, minutes, dayWeek) {
-    return (hours + daysOfWeeksToHours[dayWeek]) * 60 + minutes;
+    return (hours + daysOfWeeksToHours[dayWeek] * 24) * 60 + minutes;
 }
 
 function getMergeTimeIntervals(sortedTimeIntervals) {
@@ -282,7 +282,7 @@ function getStartMoment(currentInterval, bankWorkInterval) {
         return bankWorkInterval.start;
     }
 
-    return currentInterval.start < bankWorkInterval.start ? currentInterval.end
+    return currentInterval.start <= bankWorkInterval.start ? currentInterval.end
         : bankWorkInterval.start;
 }
 
