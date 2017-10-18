@@ -16,6 +16,8 @@ exports.isStar = true;
  * @returns {Object}
  */
 
+const YEAR = 1970;
+const MONTH = 5;
 const DAYS = {
     ПН: 1,
     ВТ: 2,
@@ -34,7 +36,7 @@ function createDate([day, hour, minute]) {
         day += sign;
     }
 
-    return Date.parse(new Date(1970, 5, day, hour, minute, 0));
+    return Date.parse(new Date(YEAR, MONTH, day, hour, minute, 0));
 }
 
 function parseInterval(time) {
@@ -203,10 +205,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (robberyMoments.length === 0) {
-                return false;
-            }
-            if (this.exists) {
+            if (robberyMoments.length !== 0 && this.exists) {
                 if (robberyMoments[0].from + (duration + 30) * MS_IN_MINUTE <=
                 robberyMoments[0].to) {
                     robberyMoments[0].from += 30 * MS_IN_MINUTE;
