@@ -135,12 +135,13 @@ function sumTime(first, second) {
     let [hourSecond, minuteSecond] = second.split(':');
     let minuteSum = parseInt(minuteSecond) + parseInt(minuteFirst);
     let hourSum = parseInt(hourSecond) + parseInt(hourFirst);
-    if (minuteSum > 60) {
+    if (minuteSum >= 60) {
         hourSum += 1;
         minuteSum %= 60;
     }
 
-    return hourSum + ':' + minuteSum;
+    return hourSum.toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false }) +
+         ':' + minuteSum.toLocaleString('en-US', { minimumIntegerDigits: 2, useGrouping: false });
 }
 
 function findSuitableTime(schedule, duration, workingHours) {
