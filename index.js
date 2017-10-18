@@ -38,6 +38,7 @@ console.info(moment.exists());
 console.info(moment.format('Метим на %DD, старт в %HH:%MM!'));
 
 if (robbery.isStar) {
+    var i=89;
     // Вернет true
     moment.tryLater();
     // "ВТ 16:00"
