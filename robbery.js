@@ -105,9 +105,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
         var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
         var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-        if (from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo) {
-            schedule[robber].splice(record, 1);
-        } else if (from < bankFrom) {
+        if (from < bankFrom) {
             schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
                 workingHours.from;
         }
@@ -141,6 +139,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
+            schedule[robber] = schedule[robber].filter(function (rec) {
+                var from = convertToMinutes(rec.from.slice(3, 8));
+                var to = convertToMinutes(rec.to.slice(3, 8));
+                var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
+                var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+                if (!(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo)) {
+                    return true;
+                }
+            });
+
             addRecordInCorrectForm(robber);
         }
     }
@@ -251,6 +259,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             intervals = [];
         }
+
         if (result.length !== 0) {
             modifyResult(result);
         }
