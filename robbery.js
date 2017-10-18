@@ -201,10 +201,8 @@ function chushToTwoDays(timeFrom, timeTo) {
     timeToCopy[1] = '23';
     timeToCopy[2] = '59';
 
-    return [{
-        dayFrom: timeFrom[0], from: timeFrom[1] + timeFrom[2],
+    return [{dayFrom: timeFrom[0], from: timeFrom[1] + timeFrom[2],
         dayTo: timeFrom[0], to: timeToCopy[1] + timeToCopy[2] },
         { dayFrom: timeTo[0], from: timeFromCopy[1] + timeFromCopy[2],
-            dayTo: timeTo[0], to: timeTo[1] + timeTo[2]
-        }];
+        dayTo: timeTo[0], to: timeTo[1] + timeTo[2] }];
 }
