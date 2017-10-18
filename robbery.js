@@ -1,13 +1,13 @@
 'use strict';
 
-const { Timeline } = require('./timeline');
+const { Timeline, DAYS } = require('./timeline');
 
 const MIN_AS_MILLIS = 60 * 1000;
 const HOUR_AS_MILLIS = 60 * MIN_AS_MILLIS;
 const LATER_TIMEOUT = 30 * MIN_AS_MILLIS;
 
 /**
- * Рекурсивная апроксимация пересекающихся временных интервалов
+ * Объединяет пересекающееся временные интервалы
  * @param {Timeline[]} timelines
  * @returns {Timeline[]}
  */
@@ -48,27 +48,27 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
         new Timeline('СР ' + workingHours.from, 'СР ' + workingHours.to)
     ];
 
-    const array = mergeTimelines(Object.values(schedule)
+    const gangSchedule = mergeTimelines(Object.values(schedule)
         .reduce((result, robber) => result.concat(robber), [])
         .map(timeline => new Timeline(timeline.from, timeline.to)));
 
+    const days = Object.keys(DAYS);
+    const bankTimezone = Number(workingHours.to.split('+')[1]);
     const durationMillis = duration * MIN_AS_MILLIS;
 
-    const moments = worksIntervals.reduce((previous, day) => {
-        for (let time = day.from; time <= day.to - durationMillis; time += MIN_AS_MILLIS) {
+    const moments = worksIntervals.reduce((previous, day, index) => {
+        for (let time = day.from; time <= day.to - durationMillis; time += LATER_TIMEOUT) {
             const candidate = new Timeline(time, time + durationMillis);
-            candidate.timezone = day.timezone;
-            candidate.dayFrom = day.dayFrom;
 
-            if (!array.some((timeline) => timeline.isIntersected(candidate))) {
-                previous.push(candidate);
+            if (!gangSchedule.some((timeline) => timeline.isIntersected(candidate))) {
+                previous.push({ time: candidate.from, day: days[index] });
             }
         }
 
         return previous;
-    }, []);
+    }, []).reverse();
 
-    let moment = moments[0];
+    let moment = moments.pop();
 
     return {
 
@@ -87,17 +87,19 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
          * @returns {String}
          */
         format: function (template) {
-            if (this.exists()) {
-                const date = new Date(moment.from);
-                const timezone = moment.timezone + date.getTimezoneOffset() / 60;
-                date.setTime(moment.from + timezone * HOUR_AS_MILLIS);
-
-                return template.replace('%HH', String(date.getHours()).padStart(2, '0'))
-                    .replace('%MM', String(date.getMinutes()).padStart(2, '0'))
-                    .replace('%DD', moment.dayFrom);
+            if (!this.exists()) {
+                return '';
             }
 
-            return '';
+            const date = new Date(moment.time);
+            const timezone = (bankTimezone + date.getTimezoneOffset() / 60) * HOUR_AS_MILLIS;
+
+            date.setTime(moment.time + timezone);
+
+            return template.replace('%HH', String(date.getHours()).padStart(2, '0'))
+                .replace('%MM', String(date.getMinutes()).padStart(2, '0'))
+                .replace('%DD', moment.day);
+
         },
 
         /**
@@ -106,16 +108,10 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (!this.exists()) {
-                return false;
-            }
+            if (this.exists() && moments.length !== 0) {
+                moment = moments.pop();
 
-            for (const newMoment of moments) {
-                if (newMoment.from >= LATER_TIMEOUT + moment.from) {
-                    moment = newMoment;
-
-                    return true;
-                }
+                return true;
             }
 
             return false;

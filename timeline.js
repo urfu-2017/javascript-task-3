@@ -3,15 +3,22 @@
 const TIME_FORMAT = /^([А-Я]{2})\s([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])\+(\d+)$/;
 const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '05', 'СБ': '06', 'ВС': '07' };
 
+/**
+ * Преобразует строковое представление времени в unixtime
+ * @param {String} date
+ * @returns {Number}
+ */
+function parseDateString(date) {
+    const [, day, hours, minutes, timezone] = TIME_FORMAT.exec(date);
+
+    return Date.parse(`${DAYS[day]} Jan 2017 ${hours}:${minutes}:00 GMT+${timezone}`);
+}
+
 class Timeline {
 
     constructor(from, to) {
-        if (typeof from === 'string' && typeof to === 'string') {
-            this._parseDateString(from, to);
-        } else {
-            this.from = from;
-            this.to = to;
-        }
+        this.from = typeof from === 'string' ? parseDateString(from) : from;
+        this.to = typeof to === 'string' ? parseDateString(to) : to;
     }
 
     /**
@@ -45,23 +52,7 @@ class Timeline {
     _isInclude(timeline) {
         return this.from <= timeline.from && this.to >= timeline.to;
     }
-
-    /**
-     * Преобразует строковое представление времени в unixtime
-     * @param {Timeline} from
-     * @param {Timeline} to
-     */
-    _parseDateString(from, to) {
-        const [, df, hf, mf] = TIME_FORMAT.exec(from);
-        const [, dt, ht, mt, zone] = TIME_FORMAT.exec(to);
-
-        this.timezone = Number(zone);
-        this.dayFrom = df;
-        this.dayTo = dt;
-
-        this.from = Date.parse(`${DAYS[df]} Jan 2017 ${hf}:${mf}:00 GMT+${this.timezone}`);
-        this.to = Date.parse(`${DAYS[dt]} Jan 2017 ${ht}:${mt}:00 GMT+${this.timezone}`);
-    }
 }
 
 exports.Timeline = Timeline;
+exports.DAYS = DAYS;
