@@ -123,15 +123,15 @@ function addingHalfHour(time) {
 
 function workWithShedule(schedule, name, timeZone, invalideTime) {
     for (let times of schedule[name]) {
-        if (invalidDays.indexOf(times.from.split(' ')[0]) !== -1) {
-            times.from = 'ПН 00:00';
-        }
-        if (invalidDays.indexOf(times.to.split(' ')[0]) !== -1) {
-            times.to = 'СР 23:59';
-        }
         let begin = normalizeTime(times.from, timeZone);
+        if (invalidDays.indexOf(begin.split(' ')[0]) !== -1) {
+            begin = 'ПН 00:00';
+        }
         let beginDay = begin.split(' ')[0];
         let end = normalizeTime(times.to, timeZone);
+        if (invalidDays.indexOf(end.split(' ')[0]) !== -1) {
+            end = 'СР 23:59';
+        }
         let endDay = end.split(' ')[0];
         let intervals = [];
         if (beginDay !== endDay) {
