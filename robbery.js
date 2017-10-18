@@ -20,8 +20,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let freeTimeWithBank = findFreeTime(robbersBusy, bankOpen);
     let freeDurations = checkDuration(freeTimeWithBank);
     let goal = compareDurations(duration, freeDurations);
-    let timeZone = getTimeZone(workingHours);
-
 
     return {
 
@@ -96,13 +94,6 @@ function timeFormat(firstTime) {
     let minutes = Math.round(goodTime % 60);
 
     return { day: day, hours: hours, minutes: minutes };
-}
-
-function getTimeZone(workingHours) {
-    const regExp = /[+-](\d+)$/;
-    let timeZone = workingHours.from.match(regExp);
-
-    return Number(timeZone[1]);
 }
 
 function compareDurations(duration, freeDurations) {
