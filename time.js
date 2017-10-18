@@ -10,35 +10,33 @@ class Timestamp {
     }
     
     totalMinutes() {
-        var hour = this.hour - this.offset;
+        var hour = this.hour + 24 - this.offset;
         var day = this.day + this.week * 7;
         return day * 24 * 60 + hour * 60 + this.min;
     }
     
     addMinutes(mins) {
-        if (mins <= 0)
-            return this;
+        mins += this.min;
+        mins += this.hour * 60;
+        mins += (this.day + this.week * 7) * 24 * 60;
         var min = mins % 60;
         mins -= min;
         mins /= 60;
-        mins += this.hour;
         var hour = mins % 24;
         mins -= hour;
         mins /= 24;
-        mins += this.day;
         var day = mins % 7;
         mins -= day;
         mins /= 7;
-        mins += this.day;
         var result = new Timestamp(day, hour, min, this.offset);
-        result.week = this.week + mins;
+        result.week = mins;
         return result;
     }
     
     format(template) {
         return template
-            .replace('%HH', this.hour)
-            .replace('%MM', this.min)
+            .replace('%HH', (this.hour > 9 ? '' : '0') + this.hour)
+            .replace('%MM', (this.min > 9 ? '' : '0') + this.min)
             .replace('%DD', days[this.day]);
     }
     
@@ -54,7 +52,7 @@ class Timestamp {
     
     static max() {
         var ts = new Timestamp(6, 23, 59, 23);
-        ts.week = 3;
+        ts.week = 1;
         return ts;
     }
 }
