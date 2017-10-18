@@ -16,7 +16,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
 
     let bankOpen = bankTimeInterval(workingHours);
-    let robbersBusy = robbersTimeInterval(schedule);
+    let robbersBusy = robbersTimeInterval(schedule, workingHours);
     let freeTimeWithBank = findFreeTime(robbersBusy, bankOpen);
     let freeDurations = checkDuration(freeTimeWithBank);
     let goal = compareDurations(duration, freeDurations);
@@ -158,9 +158,9 @@ function bankTimeInterval(workingHours) {
     return timeIntervals;
 }
 
-function robbersTimeInterval(schedule) {
+function robbersTimeInterval(schedule, workingHours) {
     let robberInterval = [];
-    let robberTime = robbersTime(schedule);
+    let robberTime = robbersTime(schedule, workingHours);
     for (const el in robberTime) {
         if (el) {
             let timeFrom = (robberTime[el].from + 1440 * DAYS.indexOf(robberTime[el].dayFrom));
@@ -178,9 +178,9 @@ function bankTimeToUtc(workingHours) {
     let timeFrom = workingHours.from.match(regExp).map(Number);
     let timeTo = workingHours.to.match(regExp).map(Number);
     let bankFrom = Date.UTC(1970, 0, 1, timeFrom[1], timeFrom[2]) +
-        (checkDeltaTimeZone(timeFrom[3]) * 1000 * 60 * 60);
+        (checkDeltaTimeZone(timeFrom[3], workingHours) * 1000 * 60 * 60);
     let bankTo = Date.UTC(1970, 0, 1, timeTo[1], timeTo[2]) +
-        (checkDeltaTimeZone(timeFrom[3]) * 1000 * 60 * 60);
+        (checkDeltaTimeZone(timeFrom[3], workingHours) * 1000 * 60 * 60);
     // if (bankFrom < 0) {
     //     bankFrom = 0;
     // }
@@ -195,18 +195,18 @@ function bankTimeToUtc(workingHours) {
     return bankTime;
 }
 
-function robbersTime(schedule) {
+function robbersTime(schedule, workingHours) {
     let robberTime = [];
     for (const key in schedule) {
         if (key) {
-            robberTime = robberTime.concat(robbersTimeToUtc(schedule[key], key));
+            robberTime = robberTime.concat(robbersTimeToUtc(schedule[key], key, workingHours));
         }
     }
 
     return robberTime;
 }
 
-function robbersTimeToUtc(robberTime, name) {
+function robbersTimeToUtc(robberTime, name, workingHours) {
     let robber = [];
     const regExp = /([А-Яа-я]+)\s(\d+):(\d+)[+-](\d+)/;
     for (const key in robberTime) {
@@ -215,8 +215,10 @@ function robbersTimeToUtc(robberTime, name) {
             let timeTo = robberTime[key].to.match(regExp);
             let utcTimeFrom = Date.UTC(1970, 0, 1, Number(timeFrom[2]), Number(timeFrom[3]));
             let utcTimeTo = Date.UTC(1970, 0, 1, Number(timeTo[2]), Number(timeTo[3]));
-            let robberFrom = utcTimeFrom + (checkDeltaTimeZone(timeFrom[4]) * 1000 * 60 * 60);
-            let robberTo = utcTimeTo + (checkDeltaTimeZone(timeFrom[4]) * 1000 * 60 * 60);
+            let robberFrom = utcTimeFrom +
+                (checkDeltaTimeZone(timeFrom[4], workingHours) * 1000 * 60 * 60);
+            let robberTo = utcTimeTo +
+                (checkDeltaTimeZone(timeFrom[4], workingHours) * 1000 * 60 * 60);
             robberFrom = checkRobberFrom(robberFrom);
             robberTo = checkRobberTo(robberTo);
             robber.push({
@@ -232,8 +234,9 @@ function robbersTimeToUtc(robberTime, name) {
     return robber;
 }
 
-function checkDeltaTimeZone(timeZone) {
-    let delta = 5 - timeZone;
+function checkDeltaTimeZone(timeZone, workingHours) {
+    let gmt = workingHours.from.split('+')[1];
+    let delta = gmt - timeZone;
 
     return delta;
 }
