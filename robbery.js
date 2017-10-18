@@ -49,9 +49,9 @@ function changeInterval(banksInterval, robbersInterval) {
     if (include(banksInterval, robbersInterval)) {
         return [{ start: banksInterval.start, end: robbersInterval.start },
             { start: robbersInterval.end, end: banksInterval.end }];
-    } else if (banksInterval.start <= robbersInterval.end) {
+    } else if (banksInterval.start < robbersInterval.end) {
         return [{ start: robbersInterval.end, end: banksInterval.end }];
-    } else if (banksInterval.end >= robbersInterval.start) {
+    } else if (banksInterval.end > robbersInterval.start) {
         return [{ start: banksInterval.start, end: robbersInterval.start }];
     }
 }
@@ -126,8 +126,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     intervalsForRobbery = intervalsForRobbery
         .filter(interval => interval.end - interval.start >= duration)
         .sort(compareIntervals);
-
-    console.info(intervalsForRobbery);
 
     return {
 
