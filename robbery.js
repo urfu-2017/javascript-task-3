@@ -36,10 +36,32 @@ function convertToMinutes(time) {
 }
 
 var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
-var result = [];
-var intervals = [];
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+
+    function customSortByToField(x, y) {
+        var timeToX = x.to.match(/\d{1,2}/g).join('');
+        var timeToY = y.to.match(/\d{1,2}/g).join('');
+
+        return timeToX - timeToY;
+    }
+
+    function customSort(x, y) {
+        var dayFromX = x.day;
+        var dayFromY = y.day;
+        var timeFromX = x.from.match(/\d{1,2}/g).join('');
+        var timeFromY = y.from.match(/\d{1,2}/g).join('');
+        var timeToX = x.to.match(/\d{1,2}/g).join('');
+        var timeToY = y.to.match(/\d{1,2}/g).join('');
+        if (dayFromX !== dayFromY) {
+            return DAYS_OF_WEEK.indexOf(dayFromX) - DAYS_OF_WEEK.indexOf(dayFromY);
+        }
+        if (timeFromX !== timeFromY) {
+            return timeFromX - timeFromY;
+        }
+
+        return timeToX - timeToY;
+    }
 
     function convertToBankTimezone(str) {
         var bankTimezone = parseInt(workingHours.from.split('+')[1]);
@@ -106,6 +128,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             schedule[robber][record].to =
                 convertToBankTimezone(schedule[robber][record].to);
             splitIntervalsOverDay(robber, record);
+        }
+        for (var record in schedule[robber]) {
+            if (!schedule[robber].hasOwnProperty(record)) {
+                continue;
+            }
             cutForBankHours(robber, record);
         }
     }
@@ -119,7 +146,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function addRecordWhenBusy(day, robber) {
+    function addRecordWhenBusy(day, robber, intervals) {
         for (var record in schedule[robber]) {
             if (!schedule[robber].hasOwnProperty(record)) {
                 continue;
@@ -134,40 +161,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function createScheduleWhenBusy(day) {
+    function createScheduleWhenBusy(day, intervals) {
         for (var robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
-            addRecordWhenBusy(day, robber);
+            addRecordWhenBusy(day, robber, intervals);
         }
     }
 
-    function customSortByToField(x, y) {
-        var timeToX = x.to.match(/\d{1,2}/g).join('');
-        var timeToY = y.to.match(/\d{1,2}/g).join('');
-
-        return timeToX - timeToY;
-    }
-
-    function customSort(x, y) {
-        var dayFromX = x.day;
-        var dayFromY = y.day;
-        var timeFromX = x.from.match(/\d{1,2}/g).join('');
-        var timeFromY = y.from.match(/\d{1,2}/g).join('');
-        var timeToX = x.to.match(/\d{1,2}/g).join('');
-        var timeToY = y.to.match(/\d{1,2}/g).join('');
-        if (dayFromX !== dayFromY) {
-            return DAYS_OF_WEEK.indexOf(dayFromX) - DAYS_OF_WEEK.indexOf(dayFromY);
-        }
-        if (timeFromX !== timeFromY) {
-            return timeFromX - timeFromY;
-        }
-
-        return timeToX - timeToY;
-    }
-
-    function createScheduleWhenFree(day) {
+    function createScheduleWhenFree(day, result, intervals) {
         for (var i = 1; i < intervals.length; i++) {
             var intervalFrom = intervals[i - 1].to.match(/\d{1,2}/g).join('');
             var intervalTo = intervals[i].from.match(/\d{1,2}/g).join('');
@@ -182,7 +185,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function checkRangeLimits(day) {
+    function checkRangeLimits(day, result, intervals) {
+        intervals.sort(customSort);
         var minFrom = intervals[0].from;
         intervals.sort(customSortByToField);
         var maxTo = intervals[intervals.length - 1].to;
@@ -204,7 +208,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function getResultsForTryLater(cur, record) {
+    function getResultsForTryLater(cur, record, result) {
         while (cur < (convertToMinutes(record.to) - duration)) {
             cur += 30;
             result.push({
@@ -215,45 +219,55 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function modifyResult() {
+    function modifyResult(result) {
         for (var i = 0; i < result.length; i++) {
             if (convertToMinutes(result[i].to) - convertToMinutes(result[i].from) >=
                 duration + 30) {
                 var cur = convertToMinutes(result[i].from);
-                getResultsForTryLater(cur, result[i]);
+                getResultsForTryLater(cur, result[i], result);
+                result[i].to = convertToHours(convertToMinutes(result[i].from) + duration);
             }
         }
         result.sort(customSort);
     }
 
+    function getRobberySchedule() {
+        setScheduleCorrectForm();
+        var intervals = [];
+        var result = [];
+        for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
+            createScheduleWhenBusy(i, intervals);
+            intervals.sort(customSort);
+            if (intervals.length === 0) {
+                result.push({
+                    day: DAYS_OF_WEEK[i],
+                    from: workingHours.from.split('+')[0],
+                    to: workingHours.to.split('+')[0]
+                });
+            } else if (intervals.length === 1) {
+                checkRangeLimits(i, result, intervals);
+            } else if (intervals.length > 1) {
+                createScheduleWhenFree(i, result, intervals);
+                checkRangeLimits(i, result, intervals);
+            }
+            intervals = [];
+        }
+        if (result.length !== 0) {
+            modifyResult(result);
+        }
+        return result;
+    }
+
     return {
 
+        daysForRobbery: getRobberySchedule(),
         /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
-            setScheduleCorrectForm();
-            for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
-                createScheduleWhenBusy(i);
-                intervals.sort(customSort);
-                if (intervals.length === 0) {
-                    result.push({
-                        day: DAYS_OF_WEEK[i],
-                        from: workingHours.from.split('+')[0],
-                        to: workingHours.to.split('+')[0]
-                    });
-                } else if (intervals.length === 1) {
-                    checkRangeLimits(i);
-                } else if (intervals.length > 1) {
-                    createScheduleWhenFree(i);
-                    checkRangeLimits(i);
-                }
-                intervals = [];
-            }
-            modifyResult();
 
-            return result.length !== 0;
+            return this.daysForRobbery.length > 0;
         },
 
         /**
@@ -264,13 +278,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (result.length === 0) {
+            if (!this.exists()) {
                 return ('');
             }
-            var res = template.replace('%HH', result[0].from.split(':')[0])
-                .replace('%MM', result[0].from.split(':')[1])
-                .replace('%DD', result[0].day);
-
+            var res = template.replace('%HH', this.daysForRobbery[0].from.split(':')[0])
+                .replace('%MM', this.daysForRobbery[0].from.split(':')[1])
+                .replace('%DD', this.daysForRobbery[0].day);
 
             return res;
         },
@@ -281,12 +294,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var willLater = result.length > 1;
-            if (result.length > 1) {
-                result.shift();
+            var willRob = this.daysForRobbery.length > 1;
+            if (this.daysForRobbery.length > 1) {
+                this.daysForRobbery.splice(0,1);
             }
 
-            return willLater;
+            return willRob;
         }
     };
 };
