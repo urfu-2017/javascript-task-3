@@ -22,8 +22,8 @@ const minutesInDay = 1440;
 const minutesInHour = 60;
 const open = 0;
 const close = 1;
-const timeBeforeStart = -minutesInDay;
-const timeAfterEnd = minutesInDay * 8;
+let timeBeforeStart;
+let timeAfterEnd;
 
 function getMinutesFromWeekStart(timeString) {
     let parsed = timeRE.exec(timeString);
@@ -112,6 +112,8 @@ function formatNumber(number) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     let bankTimeZone = parseInt(workingHours.from[workingHours.from.length - 1]);
+    timeBeforeStart = getMinutesFromWeekStart('ПН 00:00+' + bankTimeZone);
+    timeAfterEnd = getMinutesFromWeekStart('ВС 23:59' + bankTimeZone);
     let bankEvents = getEventsFromBankWorkingHours(workingHours);
     for (let key of Object.keys(schedule)) {
         bankEvents = bankEvents.concat(getEventsFromRobberSchedule(schedule[key]));
