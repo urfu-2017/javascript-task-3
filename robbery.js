@@ -129,7 +129,8 @@ function checkDuration(readyTime) {
             from = minute;
         }
     }
-    console.log(freeDurations);
+    console.info(freeDurations);
+
     return freeDurations;
 }
 
