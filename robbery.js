@@ -144,7 +144,7 @@ function toHours(numb) {
 }
 
 function toMinuetsWhDay(day) {
-    var Ar = ['ПН', 'ВТ', 'СР'];
+    var Ar = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
     var i = Ar.indexOf(day.substring(0, 2));
     var timeM = 60 * Number(day.substring(3, 5)) + Number(day.substring(6, 8)) -
     60 * Number(day.substring(9, 10)) + 60 * 24 * i;
