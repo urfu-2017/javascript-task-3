@@ -339,6 +339,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (this.daysForRobbery.length === 0) {
+                return false;
+            }
             var willRob = this.daysForRobbery.length > 1;
             if (this.daysForRobbery.length > 1) {
                 this.daysForRobbery.splice(0, 1);
