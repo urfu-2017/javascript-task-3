@@ -90,15 +90,21 @@ function without(range1, range2) {
 }
 
 /**
- * Добавляет элемент в массив
+ * Добавляет элемент в массив и возвращает 1, если элемент добавлен и 0 в противном случае
  * @param {Object} element
  * @param {Object[]} array
  * @param {Number} position
+ * @returns {Number}
  */
 function add(element, array, position) {
     if (element) {
         array[position] = element;
+
+        return 1;
     }
+    array.splice(position, 1);
+
+    return 0;
 }
 
 /**
@@ -111,7 +117,8 @@ function getMomentForPair(goodTime, badTime) {
     for (let bad of badTime) {
         for (let i = 0; i < goodTime.length; i++) {
             let listOfGood = without(goodTime[i], bad);
-            add(listOfGood[0], goodTime, i);
+            let j = add(listOfGood[0], goodTime, i);
+            i = i + j - 1;
             add(listOfGood[1], goodTime, goodTime.length);
         }
     }
@@ -214,8 +221,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return true;
             }
             let possibleNext = this.allMoments[this.momentNumber + 1];
-            if (possibleNext && toMinutes(possibleNext.from) -
-                toMinutes(this.allMoments[this.momentNumber].to) >= 30) {
+            if (possibleNext && toMinutes(possibleNext.from) - toMinutes(time.to) >= 30) {
                 this.momentNumber++;
 
                 return true;

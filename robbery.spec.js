@@ -8,7 +8,7 @@ let robbery = require('./robbery');
 describe('robbery.convertTime()', function () {
     it('should give the correct time', function () {
         assert.strictEqual(robbery.convertTime('ПН 23:59+5', 6), 'ВТ 00:59+6');
-        assert.strictEqual(robbery.convertTime('ЧТ 05:59+24', 1), 'СР 06:59+1');
+        assert.strictEqual(robbery.convertTime('ЧТ 05:59+24', 2), 'СР 07:59+2');
         assert.strictEqual(robbery.convertTime('ВС 22:59+1', 2), 'ВС 23:59+2');
         assert.strictEqual(robbery.convertTime('ПН 23:59+5', 3), 'ПН 21:59+3');
         assert.strictEqual(robbery.convertTime('ПН 23:59+5', 5), 'ПН 23:59+5');
