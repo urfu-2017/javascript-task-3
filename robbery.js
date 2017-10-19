@@ -174,9 +174,7 @@ function toOneFreeTime(P1, P2) {
 }
 
 function result(raspisan, timeToLo, workTime) {
-    if (raspisan === null) {
-        return '';
-    }
+    checkRaspisan(raspisan);
     var answer = [];
     var oneAr = toOneArray(raspisan);
     var timeBank = timeToArray(workTime);
@@ -258,4 +256,21 @@ function testToFreeDays(rasp) {
     newRasp.Denny = test(rasp.Danny);
 
     return newRasp;
+}
+
+function checkRaspisan(rasp) {
+    if (rasp === null) {
+        return '';
+    }
+    if (rasp.Danny === undefined && rasp !== null) {
+        rasp.Danny = [];
+    }
+    if (rasp.Rusty === undefined && rasp !== null) {
+        rasp.Rusty = [];
+    }
+    if (rasp.Linus === undefined && rasp !== null) {
+        rasp.Linus = [];
+    }
+
+    return rasp;
 }
