@@ -4,7 +4,7 @@
  * неСделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = fulse;
+exports.isStar = false;
 
 let DAYS_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 let START_DAYS = [0, 24, 48, 72, 96, 120, 144];
