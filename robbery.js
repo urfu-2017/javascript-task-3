@@ -237,15 +237,17 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     let gmt = Number(workingHours.from.split('+')[1]);
-
-    let dannyBadTime = parsString(schedule.Danny, gmt);
+    let badTime = parsString(schedule.Danny, gmt);
 
     let rustyBadTime = parsString(schedule.Rusty, gmt);
+    badTime.to = badTime.to.concat(rustyBadTime.to);
+    badTime.from = badTime.from.concat(rustyBadTime.from);
     let linusBadTime = parsString(schedule.Linus, gmt);
+    badTime.from = badTime.from.concat(linusBadTime.from);
+    badTime.to = badTime.to.concat(linusBadTime.to);
+
     let timeline = timelineBank(workingHours);
-    timeline = calculating(timeline, dannyBadTime);
-    timeline = calculating(timeline, rustyBadTime);
-    timeline = calculating(timeline, linusBadTime);
+    timeline = calculating(timeline, badTime);
     let moment = { time: [] };
     moment = createMoment(timeline, duration, moment.time);
 
