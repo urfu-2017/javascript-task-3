@@ -206,8 +206,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
             const day = DAYS[Math.floor(minutes / MINUTES_IN_DAY)];
             minutes = minutes % MINUTES_IN_DAY;
-            const hours = Math.floor(minutes / MINUTES_IN_HOUR);
+            let hours = Math.floor(minutes / MINUTES_IN_HOUR);
+            hours = hours < 10 ? '0' + hours : hours;
             minutes = minutes % MINUTES_IN_HOUR;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
 
             return template
                 .replace('%HH', hours)
