@@ -5,6 +5,7 @@ module.exports = {
     getMintutesFromWeekStart: getMintutesFromWeekStart,
     getDay: getDay,
     leadMinutesToCertainTimeZone: leadMinutesToCertainTimeZone,
+    getAppropriateMoment: getAppropriateMoment
 
 };
 
@@ -30,6 +31,10 @@ function getTime(fullTime) {
     return String(fullTime).substr(3);
 }
 
+function getTimeWithoutZone(timeWithZone) {
+    return String(timeWithZone).substr(0, 5);
+}
+
 function getDay(fullTime) {
     return String(fullTime).substr(0, 2);
 }
@@ -51,6 +56,13 @@ function getMintutesFromWeekStart(fullTime) {
     return Number(dayNumber) * 1440 + Number(h) * 60 + Number(m);
 }
 
+function getMinutesFromDayStart(time) {
+    var h = String(time).substr(0, 2);
+    var m = String(time).substr(3, 2);
+
+    return Number(h) * 60 + Number(m);
+}
+
 function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
     var dayNumber = getDayNumber(getDay(date));
     var time = getTime(date);
@@ -67,7 +79,7 @@ function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone)
 function generateBankTimes(startTime, endTime) {
     var res = [];
     for (var i = 0; i < 3; i++) {
-        res.push({ from: 1440 * i + startTime, end: 1440 * i + endTime });
+        res.push({ from: 1440 * i + startTime, to: 1440 * i + endTime });
     }
 
     return res;
@@ -134,15 +146,20 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
-exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+function getAppropriateMoment(schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var bankTimeZone = getTimeZone(workingHours.from);
     var dannyTimes = formatTimeToMinutes(schedule.Danny, bankTimeZone);
     var rustyTimes = formatTimeToMinutes(schedule.Rusty, bankTimeZone);
     var linusTimes = formatTimeToMinutes(schedule.Linus, bankTimeZone);
+    var bankStartMinutes = getMinutesFromDayStart(getTimeWithoutZone(workingHours.from));
+    var bankEndMinutes = getMinutesFromDayStart(getTimeWithoutZone(workingHours.to));
     var answer =
         findInterSections(dannyTimes, rustyTimes, linusTimes,
-            generateBankTimes(workingHours.from, workingHours.to));
+            generateBankTimes(bankStartMinutes, bankEndMinutes))
+            .filter((x) => {
+                return x.to - x.from >= duration;
+            });
 
     return {
 
@@ -166,7 +183,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-
+            return template;
         },
 
         /**
@@ -176,6 +193,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             return false;
+        },
+
+        answer: function () {
+            return answer;
         }
     };
-};
+}
