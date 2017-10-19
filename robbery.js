@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 var wh1;
 var wh2;
@@ -87,6 +87,9 @@ function typeOfConfluence(k, busy1, busy2) {
         typeConf = 2;
     } else if (busy2 <= t2[k]) {
         typeConf = 1;
+    } else {
+        t1.splice(k, 1);
+        t2.splice(k, 1);
     }
     cutout(typeConf, k, busy1, busy2);
 }
@@ -150,7 +153,6 @@ function whCoercion(workingHours) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-
     whCoercion(workingHours);
     firstExpulsion(wh1, wh2);
     let value = Object.values(schedule);
