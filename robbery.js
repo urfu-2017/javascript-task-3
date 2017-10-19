@@ -54,6 +54,14 @@ function customSort(x, y) {
     return timeToX - timeToY;
 }
 
+function getMax(maxFrom, current) {
+
+    return maxFrom > current ? convertToHours(maxFrom).match(/\d{1,2}/g)
+        .join('')
+        : convertToHours(current).match(/\d{1,2}/g)
+        .join('');
+}
+
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function convertToBankTimezone(str) {
@@ -181,12 +189,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function getMax(maxFrom, current) {
-
-        return maxFrom > current ? convertToHours(maxFrom).match(/\d{1,2}/g).join('') :
-            convertToHours(current).match(/\d{1,2}/g).join('');
-    }
-
     function createScheduleWhenFree(day, result, intervals) {
         var maxFrom = 0;
         for (var i = 1; i < intervals.length; i++) {
@@ -293,7 +295,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (result.length !== 0) {
             modifyResult(result);
         }
-console.error(result);
+
         return result;
     }
 
