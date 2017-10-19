@@ -73,7 +73,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             newHours -= 24;
         } else if (newHours < 0) {
             newHours += 24;
-        } else if (newHours < 10) {
+        }
+        if (newHours < 10) {
             newHours = '0' + newHours;
         }
 
@@ -219,8 +220,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var minFrom = intervals[0].from;
         intervals.sort(function (x, y) {
 
-            return x.to.match(/\d{1,2}/g).join('') -
-                y.to.match(/\d{1,2}/g).join('');
+            return x.to.match(/\d{2}/g).join('') -
+                y.to.match(/\d{2}/g).join('');
         });
         var maxTo = intervals[intervals.length - 1].to;
         var bankFrom = workingHours.from.split('+')[0];
@@ -292,6 +293,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var intervals = [];
         var result = [];
         formResult(intervals, result);
+        console.error(result);
         if (result.length !== 0) {
             modifyResult(result);
         }
