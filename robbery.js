@@ -24,7 +24,7 @@ const DAYS = {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    //console.info(schedule, duration, workingHours);
+    //  console.info(schedule, duration, workingHours);
     var TIME_ZONE = getTimeZone(workingHours.from);
     var bankWorkingHours = getTimeInterval(workingHours);
     var gangSchedule = getWorkingSchedule(schedule, TIME_ZONE);
@@ -217,7 +217,7 @@ function checkLeft(a, b, duration) {
 function checkRight(a, b, duration) {
     let result = [];
     if ((b[0] <= a[0]) && (b[1] > a[0])) {
-        if (((a[1] < d) && (a[1] - a[0] >= duration)) ||
+        if (((a[1] < b[1]) && (a[1] - a[0] >= duration)) ||
         ((a[1] >= b[1]) && (b[1] - a[0] >= duration))) {
 
             result.push(a[0]);
