@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
@@ -21,13 +21,12 @@ function convertTime(time, newZone) {
     if (currentHours >= 24) {
         currentDay = days[days.indexOf(currentDay) + 1];
         currentHours %= 24;
-        currentHours = currentHours < 10 ? '0' + currentHours : String(currentHours);
     }
     if (currentHours < 0) {
         currentDay = days[days.indexOf(currentDay) - 1];
         currentHours += 24;
-        currentHours = currentHours < 10 ? '0' + currentHours : String(currentHours);
     }
+    currentHours = currentHours < 10 ? '0' + currentHours : String(currentHours);
 
     return `${currentDay} ${currentHours + time.slice(5, 8)}+${newZone}`;
 }
