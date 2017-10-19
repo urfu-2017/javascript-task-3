@@ -6,21 +6,21 @@
  */
 exports.isStar = true;
 
-const TIME_FORMAT = /^([А-Я][А-Я])[\s]([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])[+]([0-9]?[0-9])$/;
+const TIME_FORMAT = /^([А-Я]{2})\s([01]?\d|2[0-3]):([0-5]\d|\d)\+(\d{1,2})$/;
 const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '05', 'СБ': '06', 'ВС': '07' };
-const MIN_IN_MILLIS = 60 * 1000;
-const HOUR_IN_MILLIS = 60 * MIN_IN_MILLIS;
-const LATER_IN_MILLIS = 30 * MIN_IN_MILLIS;
+const MILLIS_IN_MIN = 60 * 1000;
+const MILLIS_IN_HOUR = 60 * MILLIS_IN_MIN;
+const LATER_OFFSET = 30 * MILLIS_IN_MIN;
 
 /**
  * Модель для представления временного интервала
  */
 class TimeInterval {
     constructor(start, end) {
-        if (typeof start === 'string' && typeof end === 'string') {
-            this.parse(start, end);
+        if (typeof start === 'string') {
+            this._parse(start, end);
         } else {
-            this.init(start, end);
+            this._init(start, end);
         }
     }
 
@@ -29,28 +29,40 @@ class TimeInterval {
      * @param {Date} start - начало
      * @param {Date} end - конец
      */
-    init(start, end) {
+    _init(start, end) {
         this.start = start;
         this.end = end;
     }
 
+    _convertToDate(dayStart, hours, minutes, timezone) {
+        return Date.parse(`${DAYS[dayStart]} Jan 2017 ${hours}:${minutes}:00 GMT+${timezone}`);
+    }
+
     /**
      * Преобразует в Date строковое представление времени
-     * @param {TimeInterval} start - переданный интервал
-     * @param {TimeInterval} end - переданный интервал
+     * @param {String} start
+     * @param {String} end
      */
-    parse(start, end) {
-        const [, df, hf, mf] = TIME_FORMAT.exec(start);
-        const [, dt, ht, mt, zone] = TIME_FORMAT.exec(end);
+    _parse(start, end) {
+        const [, dayStart, hoursStart, minutesStart] = TIME_FORMAT.exec(start);
+        const [, dayEnd, hoursEnd, minutesEnd, timezone] = TIME_FORMAT.exec(end);
 
-        this.timezone = parseInt(zone);
-        this.dayStart = df;
-        this.dayEnd = dt;
+        this.unparsedStart = start;
+        this.unparsedEnd = end;
 
-        this.init(
-            Date.parse(`${DAYS[this.dayStart]} Jan 2017 ${hf}:${mf}:00 GMT+${this.timezone}`),
-            Date.parse(`${DAYS[this.dayEnd]} Jan 2017 ${ht}:${mt}:00 GMT+${this.timezone}`)
+        this.timezone = parseInt(timezone, 10);
+        this.dayStart = dayStart;
+        this.dayEnd = dayEnd;
+
+        this.setRange(
+            this._convertToDate(this.dayStart, hoursStart, minutesStart, this.timezone),
+            this._convertToDate(this.dayEnd, hoursEnd, minutesEnd, this.timezone)
         );
+    }
+
+    setRange(start, end) {
+        this.start = start;
+        this.end = end;
     }
 
     /**
@@ -58,7 +70,7 @@ class TimeInterval {
      * @param {TimeInterval} interval - переданный интервал
      * @returns {Boolean}
      */
-    include(interval) {
+    includes(interval) {
         return this.start <= interval.start && this.end >= interval.end;
     }
 
@@ -69,8 +81,7 @@ class TimeInterval {
      */
     combine(interval) {
         return new TimeInterval(
-            (this.start <= interval.start) ? this.start : interval.start,
-            (this.end >= interval.end) ? this.end : interval.end
+            Math.min(this.start, interval.start), Math.max(this.end, interval.end)
         );
     }
 
@@ -79,10 +90,13 @@ class TimeInterval {
      * @param {TimeInterval} interval – проверяемый интервал
      * @returns {Boolean}
      */
-    intersect(interval) {
-        return this.include(interval) || interval.include(this) ||
-            (this.start < interval.start && this.end > interval.start) ||
-            (this.end > interval.end && this.start < interval.end);
+    intersects(interval) {
+        return this.includes(interval) || interval.includes(this) ||
+            this.before(interval) || interval.before(this);
+    }
+
+    before(interval) {
+        return (this.start < interval.start && this.end > interval.start);
     }
 }
 
@@ -110,17 +124,21 @@ class Response {
      * @returns {String}
      */
     format(template) {
-        if (this.exists()) {
-            let date = new Date(this.currentInterval.start);
-            let timezone = this.currentInterval.timezone + date.getTimezoneOffset() / 60;
-            date.setTime(this.currentInterval.start + timezone * HOUR_IN_MILLIS);
-
-            return template.replace('%HH', ('0' + date.getHours()).slice(-2))
-                .replace('%MM', ('0' + date.getMinutes()).slice(-2))
-                .replace('%DD', this.currentInterval.dayStart);
+        if (!this.exists()) {
+            return '';
         }
 
-        return '';
+        let date = new Date(this.currentInterval.start);
+        let timezone = this.currentInterval.timezone + date.getTimezoneOffset() / 60;
+        date.setTime(this.currentInterval.start + timezone * MILLIS_IN_HOUR);
+
+        return template.replace('%HH', this.toTimePattern(date.getHours()))
+            .replace('%MM', this.toTimePattern(date.getMinutes()))
+            .replace('%DD', this.currentInterval.dayStart);
+    }
+
+    toTimePattern(value) {
+        return ('0' + value).slice(-2);
     }
 
     /**
@@ -129,10 +147,14 @@ class Response {
      * @returns {Boolean}
      */
     tryLater() {
-        return this.intervals.some((interval) => {
-            return (interval.start >= LATER_IN_MILLIS + this.currentInterval.start)
-                ? (this.currentInterval = interval) === interval : false;
-        });
+        let result = this.intervals.find(interval =>
+            interval.start >= LATER_OFFSET + this.currentInterval.start);
+
+        if (result !== undefined) {
+            this.currentInterval = result;
+        }
+
+        return result !== undefined;
     }
 }
 
@@ -141,21 +163,40 @@ class Response {
  * @param {Array} array – массив временных интервалов
  * @returns {Array}
  */
-const approximate = (array) => {
-    let result = array.reduce((previous, current) => {
-        for (let i = 0; i < previous.length; i++) {
-            if (previous[i].intersect(current)) {
-                previous[i] = previous[i].combine(current);
+const approximate = array => {
+    let data = array.reduce((result, current) => {
+        let index = result.findIndex(interval => interval.intersects(current));
+        if (index !== -1) {
+            result[index] = result[index].combine(current);
 
-                return previous;
-            }
+            return result;
         }
 
-        return previous.concat(current);
+        return result.concat(current);
     }, []);
 
-    return (result.length === array.length) ? result : approximate(result);
+    let processIsComlete = data.length === array.length;
+    if (processIsComlete) {
+        return data;
+    }
+
+    return approximate(data);
 };
+
+const getRobberyIntervals = (employment, works, duration) => works.reduce((result, interval) => {
+    const durationOffset = (duration * MILLIS_IN_MIN);
+    for (let i = interval.start; i <= interval.end - durationOffset; i += MILLIS_IN_MIN) {
+        let robberyInterval = new TimeInterval(interval.unparsedStart, interval.unparsedEnd);
+
+        robberyInterval.setRange(i, i + durationOffset);
+
+        if (employment.every((segment) => !segment.intersects(robberyInterval))) {
+            result.push(robberyInterval);
+        }
+    }
+
+    return result;
+}, []);
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -166,26 +207,14 @@ const approximate = (array) => {
  * @returns {Object}
  */
 exports.getAppropriateMoment = (schedule, duration, workingHours) => {
-    const worksIntervals = [
-        new TimeInterval('ПН ' + workingHours.from, 'ПН ' + workingHours.to),
-        new TimeInterval('ВТ ' + workingHours.from, 'ВТ ' + workingHours.to),
-        new TimeInterval('СР ' + workingHours.from, 'СР ' + workingHours.to)
-    ];
+    const worksIntervals = ['ПН ', 'ВТ ', 'СР ']
+        .map(value => new TimeInterval(value + workingHours.from, value + workingHours.to));
 
-    const array = approximate(Object.values(schedule)
+    let employmentIntervals = Object.values(schedule)
         .reduce((result, current) => result.concat(current), [])
-        .map(interval => new TimeInterval(interval.from, interval.to)));
+        .map(interval => new TimeInterval(interval.from, interval.to));
 
-    return new Response(worksIntervals.reduce((previous, time) => {
-        for (let i = time.start; i <= time.end - (duration * MIN_IN_MILLIS); i += MIN_IN_MILLIS) {
-            let interval = new TimeInterval(i, i + (duration * MIN_IN_MILLIS));
-            interval.timezone = time.timezone;
-            interval.dayStart = time.dayStart;
-            if (array.every((value) => !value.intersect(interval))) {
-                previous.push(interval);
-            }
-        }
+    let optimizedIntervals = approximate(employmentIntervals);
 
-        return previous;
-    }, []));
+    return new Response(getRobberyIntervals(optimizedIntervals, worksIntervals, duration));
 };
