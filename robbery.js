@@ -198,7 +198,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             intervals.sort(customSort);
             var intervalFrom = intervals[i - 1].to;
             var intervalTo = intervals[i].from;
-            if (maxFrom < convertToMinutes(intervals[i - 1].to)) {
+            if (maxFrom <= convertToMinutes(intervals[i - 1].to)) {
                 maxFrom = convertToMinutes(intervals[i - 1].to);
             }
             if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) <
