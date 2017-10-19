@@ -204,6 +204,10 @@ function toBankOffset(bankHours, hours) {
     var offset = Number(timeFrom[3]);
     var rightFrom = Number(timeFrom[1]) + (bankOffset - offset);
     var rightTo = Number(timeTo[1]) + (bankOffset - offset);
+    rightFrom = rightFrom > 24 ? rightFrom - 24 : rightFrom;
+    rightFrom = rightFrom < 0 ? rightFrom + 24 : rightFrom;
+    rightTo = rightTo < 0 ? rightTo + 24 : rightTo;
+    rightTo = rightTo < 0 ? rightTo + 24 : rightTo;
 
     timeFrom[1] = rightFrom < 10 ? '0' + rightFrom : rightFrom.toString();
     timeTo[1] = rightTo < 10 ? '0' + rightTo : rightTo.toString();
