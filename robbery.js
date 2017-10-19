@@ -56,6 +56,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (day === 'СР') {
             return (DAYS.ВТ);
         }
+        
+        return 0;
     }
     
     function getTimeInterval(record) {
@@ -135,11 +137,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return b;
     }
 
-    function checkLeft(a, b, c, d, min) {
+    function checkLeft(a, b, c, d) {
         let result = [];
         if ((a <= c) && (b > c)) {
-            if(((b < d) && (b - c >= min)) ||
-            ((b >= d) && (d - c >= min))) {
+            if (((b < d) && (b - c >= duration)) ||
+            ((b >= d) && (d - c >= duration))) {
 
                 result.push(c);
                 result.push(getMin(d, b));
@@ -149,11 +151,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return result;
     }
 
-    function checkRight(a, b, c, d, min) {
+    function checkRight(a, b, c, d) {
         let result = [];
         if ((c <= a) && (d > a)) {
-            if(((b < d) && (b - a >= min)) ||
-            ((b >= d) && (d - a >= min))) {
+            if(((b < d) && (b - a >= duration)) ||
+            ((b >= d) && (d - a >= duration))) {
 
                 result.push(a);
                 result.push(getMin(d, b));
@@ -173,7 +175,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (right.length !== 0) {
             result = right;
         }
-        
+
         return result;
     }
 
@@ -186,7 +188,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                     gangSchedule[i], bankSchedule[j], duration));
             }
         }
-        
+
         return startCrime;
     }
 
@@ -197,6 +199,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         } else {
             result = number;
         }
+
         return result;
     }
     function changeFormate(number) {
@@ -224,7 +227,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (tryToGetTime().length !== 0) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -241,7 +244,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 n += duration;
             }
         }
-        
+
         return timelist;
     }
     
@@ -250,7 +253,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (check()) {
             timelist = showList();
         }
-        
+
         return timelist;
     }
 
@@ -271,7 +274,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             .replace('%MM', time[2])
             .replace('%DD', time[0]);
     }
-    
+
     return {
 
         /**
