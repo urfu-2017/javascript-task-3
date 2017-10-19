@@ -5,7 +5,8 @@ module.exports = {
     getMintutesFromWeekStart: getMintutesFromWeekStart,
     getDay: getDay,
     leadMinutesToCertainTimeZone: leadMinutesToCertainTimeZone,
-    getAppropriateMoment: getAppropriateMoment
+    getAppropriateMoment: getAppropriateMoment,
+    generateFreeTimes: generateFreeTimes
 
 };
 
@@ -39,8 +40,24 @@ function getDay(fullTime) {
     return String(fullTime).substr(0, 2);
 }
 
-function createFullTime(day, minutesFromDayStart, timeZone) {
+function generateFreeTimes(busyTimes) {
+    var res = [];
+    if (busyTimes.length === 0) {
+        res.push({ from: 0, to: 4319 });
 
+        return res;
+    }
+    if (busyTimes[0].from !== 0) {
+        res.push({ from: 0, to: busyTimes[0].from });
+    }
+    for (var i = 0; i < busyTimes.length - 1; i++) {
+        res.push({ from: busyTimes[i].to, to: busyTimes[i + 1].from });
+    }
+    if (busyTimes[busyTimes.length - 1].to < 4319) {
+        res.push({ from: busyTimes[busyTimes.length - 1].to, to: 4319 });
+    }
+
+    return res;
 }
 
 function getTimeZone(time) {
@@ -107,9 +124,9 @@ function findInterSection(firstIntervals, secondIntervals) {
 }
 
 function findInterSections(dannyTimes, rustyTimes, linusTimes, bankTimes) {
-    var appropriateDannyTime = findInterSection(dannyTimes, bankTimes);
-    var appropriateRustyTime = findInterSection(rustyTimes, bankTimes);
-    var appropriateLinusTime = findInterSection(linusTimes, bankTimes);
+    var appropriateDannyTime = findInterSection(generateFreeTimes(dannyTimes), bankTimes);
+    var appropriateRustyTime = findInterSection(generateFreeTimes(rustyTimes), bankTimes);
+    var appropriateLinusTime = findInterSection(generateFreeTimes(linusTimes), bankTimes);
     var appropriateDannyAndRustyTime = findInterSection(appropriateDannyTime, appropriateRustyTime);
 
     return findInterSection(appropriateDannyAndRustyTime, appropriateLinusTime);
