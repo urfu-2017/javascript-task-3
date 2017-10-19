@@ -105,15 +105,6 @@ function getMinutesFromDayStart(time) {
     return Number(h) * 60 + Number(m);
 }
 
-/* function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
-    var dayNumber = getDayNumber(getDay(date));
-    var time = getTime(date);
-    var originalTimeZone = getTimeZone(time);
-    var mintutesFromWeekStart = getMintutesFromWeekStart(time);
-
-    return mintutesFromWeekStart + (timeZone - originalTimeZone) * 60;
-}*/
-
 function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone) {
     return minutes + (targetTimeZone - originalTimeZone) * 60;
 }
