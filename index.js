@@ -19,20 +19,19 @@ var gangSchedule = {
 };
 
 var bankWorkingHours = {
-    from: '00:00+5',
-    to: '23:59+5'
+    from: '10:00+5',
+    to: '18:00+5'
 };
 
-
 // Время не существует
-var longMoment = robbery.getAppropriateMoment(gangSchedule, 1, bankWorkingHours);
+var longMoment = robbery.getAppropriateMoment(gangSchedule, 121, bankWorkingHours);
 
 // Выведется false и ""
 console.info(longMoment.exists());
 console.info(longMoment.format('Метим на %DD, старт в %HH:%MM!'));
 
 // Время существует
-var moment = robbery.getAppropriateMoment(gangSchedule, 50, bankWorkingHours);
+var moment = robbery.getAppropriateMoment(gangSchedule, 90, bankWorkingHours);
 
 // Выведется true и "Метим на ВТ, старт в 11:30!"
 console.info(moment.exists());
@@ -40,23 +39,22 @@ console.info(moment.format('Метим на %DD, старт в %HH:%MM!'));
 
 if (robbery.isStar) {
     // Вернет true
-    console.info(moment.tryLater());
+    moment.tryLater();
     // "ВТ 16:00"
     console.info(moment.format('%DD %HH:%MM'));
-
+    
     // Вернет true
-    console.info(moment.tryLater());
+    moment.tryLater();
     // "ВТ 16:30"
     console.info(moment.format('%DD %HH:%MM'));
-
+    
     // Вернет true
-    console.info(moment.tryLater());
+    moment.tryLater();
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
-
+    
     // Вернет false
-    console.info(moment.tryLater());
+    moment.tryLater();
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
 }
-
