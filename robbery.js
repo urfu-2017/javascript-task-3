@@ -190,16 +190,16 @@ function findRobberyIntervals(schedule, bankSchedule) {
 
 function findStartTimes(robberyIntervals, duration) {
     let startTimes = [];
-    // let lastRobberyTime = 0;
-    // if (robberyIntervals.length > 0) {
-    //     lastRobberyTime = robberyIntervals[0].from - 30;
-    // }
+    let lastRobberyTime = 0;
+    if (robberyIntervals.length > 0) {
+        lastRobberyTime = robberyIntervals[0].from - 30;
+    }
     robberyIntervals.forEach(interval => {
-        // for (let time = Math.max(interval.from, lastRobberyTime + 30);
-        for (let time = interval.from;
+        for (let time = Math.max(interval.from, lastRobberyTime + 30);
+        // for (let time = interval.from;
             time + duration <= interval.to;
             time += 30) {
-            // lastRobberyTime = time;
+            lastRobberyTime = time;
             startTimes.push(time);
         }
     });
