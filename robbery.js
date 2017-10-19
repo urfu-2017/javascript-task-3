@@ -16,7 +16,7 @@ exports.isStar = false;
  */
 
 function formDict(name) {
-    var day = []
+    var day = [];
     for (var i = 0; i < name.length; i++) {
         var t1 = toMinsFromMonday(name[i].from);
         var t2 = toMinsFromMonday(name[i].to);
@@ -26,6 +26,16 @@ function formDict(name) {
     return day;
 
 }
+function helper1(t1, t2, t3, t4) {
+    if (t2 >= t4 && t1 <= t4 && t1 >= t3) {
+        return [t1, t4];
+    }
+    if (t1 <= t3 && t2 <= t4 && t2 >= t3) {
+        return [t3, t2];
+    }
+
+    return [];
+}
 function findIntersection(inter1, inter2) {
     if (inter1 === [] || inter2 === []) {
         return [];
@@ -34,25 +44,17 @@ function findIntersection(inter1, inter2) {
     var t2 = inter1[1];
     var t3 = inter2[0];
     var t4 = inter2[1];
-    if (t1 >= t3 && t2 <= t4) { //внутри
+    if (t1 >= t3 && t2 <= t4) {
         return [t1, t2];
     }
-    if (t2 <= t3) { //ниже
+    if ((t2 <= t3) || (t1 >= t4)) {
         return [];
     }
-    if (t1 >= t4) { //выше
-        return [];
-    }
-    if (t1 <= t3 && t2 >= t4) { //снаружи
+    if (t1 <= t3 && t2 >= t4) {
         return [t3, t4];
     }
-    if (t2 >= t4 && t1 <= t4 && t1 >= t3) {
-        return [t1,t4];
-    }
-    if (t1 <= t3 && t2 <= t4 && t2 >= t3) {
-        return [t3, t2];
-    }
-    return [];
+
+    return helper1(t1, t2, t3, t4);
 }
 function trickSystem(period, arr) {
     if (period === []) {
@@ -62,6 +64,7 @@ function trickSystem(period, arr) {
     for (var i = 0; i < arr.length; i++) {
         out.push(findIntersection(arr[i], period));
     }
+
     return out;
 }
 function toMinsFromMonday(date) {
@@ -71,7 +74,7 @@ function toMinsFromMonday(date) {
     var zone = date.split(' ')[1].substring(6);
     var hours = time.split(':')[0];
     var mins = time.split(':')[1];
-    switch(day) {
+    switch (day) {
         case 'ПН':
             res += 0;
             break;
@@ -90,8 +93,8 @@ function toMinsFromMonday(date) {
 }
 function minsFromMonToDay(mins, bankZone) {
     mins += bankZone * 60;
-    var d = ~~(mins / 1440);
-    var h = ~~((mins - (d * 1440)) / 60);
+    var d = (mins / 1440 | 0);
+    var h = ((mins - (d * 1440)) / 60 | 0);
     var m = mins - (d * 1440) - (h * 60);
     h = h.toString();
     m = m.toString();
@@ -149,7 +152,7 @@ function cleanUp(match) {
             temp.push(match[i][j]);
         }
     }
-    for ( i = 0; i < temp.length; i++) {
+    for (var i = 0; i < temp.length; i++) {
         if (temp[i].length > 0) {
             out.push(temp[i]);
         }
@@ -197,14 +200,14 @@ function getRightTime(schedule, duration, workingHours) {
     out = cleanUp(out);
     var result = bankMatches(out, bank);
     var cleanRes = [];
-    for (i = 0; i < result.length; i++) {
+    for (var i = 0; i < result.length; i++) {
         if (result[i].length > 0) {
             cleanRes.push(result[i]);
         }
     }
     var times = timesForRobbery(cleanRes);
     var time = -1;
-    for (i = 0; i < times.length; i++) {
+    for (var i = 0; i < times.length; i++) {
         if (times[i] >= duration) {
             time = cleanRes[i];
             return time;
@@ -213,7 +216,7 @@ function getRightTime(schedule, duration, workingHours) {
     return time;
 }
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-   // console.info(schedule, duration, workingHours);
+    // console.info(schedule, duration, workingHours);
 
     return {
 
@@ -243,20 +246,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             out = cleanUp(out);
             var result = bankMatches(out, bank);
             var cleanRes = [];
-            for (i = 0; i < result.length; i++) {
+            for (var i = 0; i < result.length; i++) {
                 if (result[i].length > 0) {
                     cleanRes.push(result[i]);
                 }
             }
             var times = timesForRobbery(cleanRes);
-           // console.log(times);
+            // console.log(times);
             var exists = false;
-            for (i = 0; i < times.length; i++) {
+            for (var i = 0; i < times.length; i++) {
                 if (times[i] >= duration) {
                     exists = true;
                 }
             }
-            
+
             return exists;
         },
 
@@ -273,7 +276,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             var time = getRightTime(schedule, duration, workingHours);
             var zone = parseInt(workingHours.from.substring(6));
-            var parsedStart = minsFromMonToDay(time[0],zone);
+            var parsedStart = minsFromMonToDay(time[0], zone);
             var d = parsedStart[0];
             var h = parsedStart[1].split(':')[0];
             var m = parsedStart[1].split(':')[1];
