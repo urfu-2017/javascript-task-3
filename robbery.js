@@ -299,7 +299,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (result.length !== 0) {
             modifyResult(result);
         }
-        console.error(result);
+
         return result;
     }
 
