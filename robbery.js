@@ -68,7 +68,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
-function toOneArray(schedule) {
+function toOneArray(schedule, time) {
     var newSchedule = testToFreeDays(schedule);
     var res = [];
     var keys = Object.keys(newSchedule);
@@ -76,27 +76,27 @@ function toOneArray(schedule) {
         var key = keys[i];
         var value = newSchedule[key];
         if (i === 0) {
-            res.Denny = toEachDay(value);
+            res.Denny = toEachDay(value, time);
         }
         if (i === 1) {
-            res.Rusty = toEachDay(value);
+            res.Rusty = toEachDay(value, time);
         }
         if (i === 2) {
-            res.Linus = toEachDay(value);
+            res.Linus = toEachDay(value, time);
         }
     }
 
     return res;
 }
-function toEachDay(oneArray) {
+function toEachDay(oneArray, time) {
     var weekFree = [];
     var openTime = [0];
     for (var i = 0; i < oneArray.length; i++) {
-        var oT = openTime.concat(toMinuetsWhDay(oneArray[i].from));
+        var oT = openTime.concat(toMinuetsWhDay(oneArray[i].from, time));
         weekFree.push(oT);
-        openTime = [toMinuetsWhDay(oneArray[i].to)];
+        openTime = [toMinuetsWhDay(oneArray[i].to, time)];
         if (i === oneArray.length - 1) {
-            var cT = [toMinuetsWhDay(oneArray[i].to)].concat(4319);
+            var cT = [toMinuetsWhDay(oneArray[i].to, time)].concat(4319);
             weekFree.push(cT);
         }
     }
@@ -143,11 +143,11 @@ function toHours(numb) {
     return str;
 }
 
-function toMinuetsWhDay(day) {
+function toMinuetsWhDay(day, time) {
     var Ar = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
     var i = Ar.indexOf(day.substring(0, 2));
     var timeM = 60 * Number(day.substring(3, 5)) + Number(day.substring(6, 8)) -
-    60 * Number(day.substring(9, 10)) + 60 * 24 * i;
+    60 * Number(day.substring(9, 10)) + 60 * 24 * i + 60 * Number(time.from.substring(6));
 
     return timeM;
 }
@@ -174,36 +174,45 @@ function toOneFreeTime(P1, P2) {
 }
 
 function result(raspisan, timeToLo, workTime) {
-    checkRaspisan(raspisan);
+    var rasp = checkRaspisan(raspisan);
     var answer = [];
-    var oneAr = toOneArray(raspisan);
-    var timeBank = timeToArray(workTime);
-    var freeTimePeople = toOneFreeTime((toOneFreeTime(oneAr.Denny, oneAr.Linus)), oneAr.Rusty);
-    var freeTimeWithBank = toOneFreeTime(freeTimePeople, timeBank);
+    var oneAr = toOneArray(rasp, workTime);
+    var timeDenny = oneAr.Denny;
+    var timeRus = oneAr.Rusty;
+    var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDenny, oneAr.Linus),
+        timeRus);
+    var freeTimeWithBank = toOneFreeTime(freeTimePeople, mapp(timeToArray(workTime), workTime));
     var lootTimeInOneLine = findTime(timeToLo, freeTimeWithBank);
     if (lootTimeInOneLine.length === 0) {
 
         return '';
     }
-    var answerInNumbers = lootTimeInOneLine.map(function (num) {
-        return num + Number((workTime.from).substring(6)) * 60;
 
-    });
-
-    for (var i = 0; i < answerInNumbers.length; i++) {
-        var date = toHours(answerInNumbers[i]);
+    for (var i = 0; i < lootTimeInOneLine.length; i++) {
+        var date = toHours(lootTimeInOneLine[i]);
         answer.push(date);
     }
 
     return answer;
+
 }
 
 function peresech(a, b, c, d) {
+    var a1 = a;
+    var b1 = b;
+    var c1 = c;
+    var d1 = d;
+    var abcd = [a, b, c, d];
     var peresec = [];
+    for (var i = 0; i < abcd.length; i++) {
+        if (abcd[i] < 0) {
+            abcd[i] = 0;
+        }
+    }
     if (c > b || d < a) {
         return peresec;
     }
-    peresec = [Math.max(a, c), Math.min(b, d)];
+    peresec = [Math.max(a1, c1), Math.min(b1, d1)];
 
     return peresec;
 
@@ -273,4 +282,16 @@ function checkRaspisan(rasp) {
     }
 
     return rasp;
+}
+
+
+function mapp(ar, wt) {
+    var res = [];
+    for (var i = 0; i < ar.length; i++) {
+        var p = [ar[i][0] + Number((wt.from).substring(6)) * 60,
+            ar[i][1] + Number((wt.to).substring(6)) * 60];
+        res.push(p);
+    }
+
+    return res;
 }
