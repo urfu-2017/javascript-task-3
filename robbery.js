@@ -26,21 +26,21 @@ const DAYS = {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
 
-    function getTimeZone (time) {
+    function getTimeZone(time) {
         return parseInt((time.slice(6)));
     }
 
-    function getMinutes (time) {
-        return parseInt(time.slice(3,5));
+    function getMinutes(time) {
+        return parseInt(time.slice(3, 5));
     }
 
-    function getHours (time) {
-        return parseInt(time.slice(0,2));
+    function getHours(time) {
+        return parseInt(time.slice(0, 2));
     }
 
     var workingZone = getTimeZone(workingHours.from);
 
-    function convertToMinutes (time) {
+    function convertToMinutes(time) {
         let minutes = 0;
         minutes += getHours(time) * MIN_IN_HOUR;
         minutes += getMinutes(time);
@@ -49,24 +49,23 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return minutes;
     }
 
-    function getTimeInterval (record) {
+    function getDay(day) {
+        if (day === 'ВТ') {
+            return (DAYS.ПН);
+        }
+        if (day === 'СР') {
+            return (DAYS.ВТ);
+        }
+    }
+    
+    function getTimeInterval(record) {
         let interval = [];
         let startTime = (record.from).split(' ');
         let endTime = (record.to).split(' ');
         let start = convertToMinutes(startTime[1]);
         let end = convertToMinutes(endTime[1]);
-        if (startTime[0] === 'ВТ') {
-            start += DAYS.ПН;
-        }
-        if (endTime[0] === 'ВТ') {
-            end += DAYS.ПН;
-        }
-        if (startTime[0] === 'СР') {
-            start += DAYS.ВТ;
-        }
-        if (endTime[0] === 'СР') {
-            end += DAYS.ВТ;
-        }
+        start += getDay(startTime[0]);
+        end += getDay(endTime[0]);
         interval.push(start);
         interval.push(end);
 
@@ -77,10 +76,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return a[0] - b[0];
     }
 
-    function getSchedule () {
+    function getSchedule() {
         let reversedSchedule = [];
         for (let man of Object.keys(schedule)) {
-            for (let record of schedule[man] ) {
+            for (let record of schedule[man]) {
                 reversedSchedule.push(getTimeInterval(record));
             }
         }
@@ -89,30 +88,29 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function getMax(a, b) {
-        if (a > b){
+        if (a > b) {
             return a;
         }
 
         return b;
     }
 
-    function getWorkingSchedule () {
+    function getWorkingSchedule() {
         let oldSchedule = getSchedule();
         let resultSchedule = [];
         if (oldSchedule[0][0] >= 0) {
             resultSchedule.push([0, oldSchedule[0][0]]);
         }
         let currentMax = oldSchedule[0][1];
-        for (let i=1; i<oldSchedule.length; i++) {
-            if (oldSchedule[i][0] + 1 <= currentMax){
+        for (let i = 1; i < oldSchedule.length; i++) {
+            if (oldSchedule[i][0] + 1 <= currentMax) {
                 currentMax = getMax(currentMax, oldSchedule[i][1]);
-            }
-            else {
-                resultSchedule.push([currentMax, oldSchedule[i][0]])
+            } else {
+                resultSchedule.push([currentMax, oldSchedule[i][0]]);
                 currentMax = oldSchedule[i][1];
             }
         }
-        if (currentMax < DAYS.СР){
+        if (currentMax < DAYS.СР) {
             resultSchedule.push([currentMax, DAYS.СР]);
         }
 
@@ -129,7 +127,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         [startBank + DAYS.ВТ, endBank + DAYS.ВТ]
     ];
 
-    function getMin (a, b){
+    function getMin(a, b) {
         if (a < b) {
             return a;
         }
@@ -137,10 +135,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return b;
     }
 
-    function checkInterval (gang, bank, min) {
-        let result = []
+    function checkInterval(gang, bank, min) {
+        let result = [];
         if ((gang[0] <= bank[0]) && (gang[1] > bank[0])) {
-            if(((gang[1] < bank[1]) && (gang[1] - bank[0] >= min)) ||
+            if (((gang[1] < bank[1]) && (gang[1] - bank[0] >= min)) ||
             ((gang[1] >= bank[1]) && (bank[1] - bank[0] >= min))) {
 
                 result.push(bank[0]);
@@ -148,61 +146,54 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
         }
         if ((bank[0] <= gang[0]) && (bank[1] > gang[0])) {
-            if(((gang[1] < bank[1]) && (gang[1] - gang[0] >= min)) ||
+            if (((gang[1] < bank[1]) && (gang[1] - gang[0] >= min)) ||
             ((gang[1] >= bank[1]) && (bank[1] - gang[0] >= min))) {
 
                 result.push(gang[0]);
                 result.push(getMin(bank[1], gang[1]));
             }
         }
-       
         return result;
     }
 
-    function tryToGetTime () {
-        gangSchedule = getWorkingSchedule();
-        var startCrime =[];
+    function tryToGetTime() {
+        let gangSchedule = getWorkingSchedule();
+        var startCrime = [];
         for (let i = 0; i < gangSchedule.length; i++) {
-            for(let j = 0; j < bankSchedule.length; j++) {
-                if (checkInterval(gangSchedule[i], bankSchedule[j], duration).length !== 0) {
+            for (let j = 0; j < bankSchedule.length; j++) {
                     startCrime.push(checkInterval(
                         gangSchedule[i], bankSchedule[j], duration));
-                }
             }
         }
- 
         return startCrime;
     }
 
-    function changeFormate (number){
+    function transform (number) {
+        result = '';
+        if (number < 10) {
+            result = ('0'+ number);
+        } else {
+            result = number;
+        }
+        return result;
+    }
+    function changeFormate(number) {
         let time = [];
         let oldTime = number;
-        if (oldTime > DAYS.ВТ && oldTime <= DAYS.СР){
+        if (oldTime > DAYS.ВТ && oldTime <= DAYS.СР) {
             time.push('СР');
-            oldTime-= DAYS.ВТ;
+            oldTime -= DAYS.ВТ;
         }
-        if (oldTime > DAYS.ПН && oldTime <= DAYS.ВТ){
+        if (oldTime > DAYS.ПН && oldTime <= DAYS.ВТ) {
             time.push('ВТ');
-            oldTime-= DAYS.ПН;
-        }
-        else {
+            oldTime -= DAYS.ПН;
+        } else {
             time.push('ПН');
         }
-        hours = (oldTime - (oldTime % MIN_IN_HOUR)) / MIN_IN_HOUR;
-        minutes = oldTime % MIN_IN_HOUR
-        if (hours < 10) {
-            time.push('0'+ hours);
-        }
-        else {
-            time.push(hours);
-        }
-        if (minutes < 10) {
-            time.push('0'+ minutes);
-        }
-        else {
-            time.push(minutes);
-        }
-
+        let hours = (oldTime - (oldTime % MIN_IN_HOUR)) / MIN_IN_HOUR;
+        let minutes = oldTime % MIN_IN_HOUR;
+        time.push(transform (hours));
+        time.pudh(transform(minutes));
         return time;
     }
 
@@ -210,46 +201,50 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (tryToGetTime().length !== 0) {
             return true;
         }
-
         return false;
     }
 
-    function createTimeList () {
+    function showList () {
         let timelist = [];
-        if(check()){
-            let timeInterval = tryToGetTime();
-            let n;
-            for (let i = 0; i<timeInterval.length; i++){
-                n = (timeInterval[i][0]);
-                while ((n < timeInterval[i][1]) &&
-                (timeInterval[i][1] - n >= duration)){
-                    timelist.push(n);
-                    n += 30;
-                    n += duration;
-                }
+        let timeInterval = tryToGetTime();
+        let n;
+        for (let i = 0; i < timeInterval.length; i++) {
+            n = (timeInterval[i][0]);
+            while ((n < timeInterval[i][1]) &&
+            (timeInterval[i][1] - n >= duration)){
+                timelist.push(n);
+                n += 30;
+                n += duration;
             }
         }
-
+        return timelist;
+    }
+    
+    function createTimeList() {
+        timelist = []
+        if (check()) {
+            timelist = showList();
+        }
         return timelist;
     }
 
     var topList = createTimeList();
     const lastChance = parseInt(topList.slice(-1));
 
-    function changeTemplate (template) {
+    function changeTemplate(template) {
+        let time;
         if (topList.length === 0) {
             time = changeFormate(lastChance);
-        }
-        else {
+        } else {
             time = changeFormate(topList[0]);
-            topList.splice(0,1);
+            topList.splice(0, 1);
         }
+        
         return template
-        .replace('%HH', time[1])
-        .replace('%MM', time[2])
-        .replace('%DD', time[0]);
+            .replace('%HH', time[1])
+            .replace('%MM', time[2])
+            .replace('%DD', time[0]);
     }
-    
     return {
 
         /**
@@ -268,10 +263,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (check()){
-                return(changeTemplate(template));
+            if (check()) {
+                return (changeTemplate(template));
             }
-            
             return '';
         },
 
