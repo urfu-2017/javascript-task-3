@@ -5,15 +5,51 @@
  * Реализовано оба метода и tryLater
  */
 
+function getDayNumber(day) {
+    switch (day) {
+        case 'ПН':
+            return 0;
+        case 'ВТ':
+            return 1;
+        case 'СР':
+            return 2;
+        default:
+            return -1;
+    }
+}
+
+function getTime(fullTime) {
+    return String(fullTime).substr(3);
+}
+
+function getDay(fullTime) {
+    return String(fullTime).substr(0, 2);
+}
+
+function createFullTime(day, minutesFromDayStart, timeZone) {
+
+}
+
 function getTimeZone(time) {
     return String(time).substr(6);
 }
 
-function timeToMintutesFromDayStart(time) {
+function getMintutesFromWeekStart(fullTime) {
+    var time = getTime(fullTime);
+    var dayNumber = getDayNumber(fullTime);
     var h = String(time).substr(0, 2);
     var m = String(time).substr(3, 2);
 
-    return h * 60 + m;
+    return dayNumber * 1440 + h * 60 + m;
+}
+
+function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
+    var dayNumber = getDayNumber(getDay(date));
+    var time = getTime(date);
+    var originalTimeZone = getTimeZone(time);
+    var mintutesFromWeekStart = getMintutesFromWeekStart(time);
+
+    return mintutesFromWeekStart + (timeZone - originalTimeZone) * 60;
 }
 
 exports.isStar = true;
@@ -28,8 +64,7 @@ exports.isStar = true;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    var minutesFromDayStartToBankOpen = timeToMintutesFromDayStart(workingHours.from);
-    var minutesFromDayStartToBankClose = timeToMintutesFromDayStart(workingHours.to);
+    
 
     return {
 
