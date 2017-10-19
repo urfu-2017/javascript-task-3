@@ -56,10 +56,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         if (day === 'СР') {
             return (DAYS.ВТ);
         }
-        
+
         return 0;
     }
-    
+
     function getTimeInterval(record) {
         let interval = [];
         let startTime = (record.from).split(' ');
@@ -154,7 +154,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     function checkRight(a, b, c, d) {
         let result = [];
         if ((c <= a) && (d > a)) {
-            if(((b < d) && (b - a >= duration)) ||
+            if (((b < d) && (b - a >= duration)) ||
             ((b >= d) && (d - a >= duration))) {
 
                 result.push(a);
@@ -164,7 +164,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
         return result;
     }
-    
+
     function checkInterval(gang, bank, min) {
         let result = [];
         let left = checkLeft(gang[0], gang[1], bank[0], bank[1], min);
@@ -219,7 +219,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         let minutes = oldTime % MIN_IN_HOUR;
         time.push(transform (hours));
         time.pudh(transform(minutes));
-        
+
         return time;
     }
 
@@ -247,7 +247,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
         return timelist;
     }
-    
+
     function createTimeList() {
         let timelist = [];
         if (check()) {
@@ -268,7 +268,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             time = changeFormate(topList[0]);
             topList.splice(0, 1);
         }
-        
+
         return template
             .replace('%HH', time[1])
             .replace('%MM', time[2])
