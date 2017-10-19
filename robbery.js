@@ -69,12 +69,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 function toOneArray(schedule) {
+    var newSchedule = testToFreeDays(schedule);
     var res = [];
-    res.Denny = [];
-    var keys = Object.keys(schedule);
+    var keys = Object.keys(newSchedule);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
-        var value = schedule[key];
+        var value = newSchedule[key];
         if (i === 0) {
             res.Denny = toEachDay(value);
         }
@@ -96,7 +96,7 @@ function toEachDay(oneArray) {
         weekFree.push(oT);
         openTime = [toMinuetsWhDay(oneArray[i].to)];
         if (i === oneArray.length - 1) {
-            var cT = [toMinuetsWhDay(oneArray[i].to)].concat(4320);
+            var cT = [toMinuetsWhDay(oneArray[i].to)].concat(4319);
             weekFree.push(cT);
         }
     }
@@ -229,4 +229,29 @@ function findTime(number, freeAr) {
     }
 
     return answer;
+}
+
+
+function test(one) {
+    if (one.length === 0) {
+        one.push({ from: 'ПН 00:00+0', to: 'ПН 00:00+0' });
+    }
+
+    return one;
+
+}
+
+function testToFreeDays(rasp) {
+    if ((rasp.Danny).length === 0 && (rasp.Rusty).length === 0 && (rasp.Linus).length === 0) {
+        return rasp;
+    }
+    var newRasp = {};
+    newRasp.Denny = [];
+    newRasp.Linus = [];
+    newRasp.Rusty = [];
+    newRasp.Linus = test(rasp.Linus);
+    newRasp.Rusty = test(rasp.Rusty);
+    newRasp.Denny = test(rasp.Danny);
+
+    return newRasp;
 }
