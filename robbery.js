@@ -157,6 +157,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let hours = time.getHours();
             let minutes = time.getMinutes();
 
+            if (String(hours).length === 0) {
+                hours = '0'.concat(String(hours));
+            }
+            if (String(minutes).length === 0) {
+                hours = '0'.concat(String(minutes));
+            }
+
             return template.replace('%DD', day)
                 .replace('%HH', hours)
                 .replace('%MM', minutes);
