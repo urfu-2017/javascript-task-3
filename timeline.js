@@ -1,7 +1,7 @@
 'use strict';
 
-const TIME_FORMAT = /^([А-Я]{2})\s([01]?[0-9]|2[0-3]):([0-5][0-9]|[0-9])\+(\d+)$/;
-const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '05', 'СБ': '06', 'ВС': '07' };
+const TIME_FORMAT = /^(ПН|ВТ|СР)\s(\d\d):(\d\d)\+(\d+)$/;
+const DAYS = ['ПН', 'ВТ', 'СР'];
 
 /**
  * Преобразует строковое представление времени в unixtime
@@ -11,11 +11,10 @@ const DAYS = { 'ПН': '01', 'ВТ': '02', 'СР': '03', 'ЧТ': '04', 'ПТ': '
 function parseDateString(date) {
     const [, day, hours, minutes, timezone] = TIME_FORMAT.exec(date);
 
-    return Date.parse(`${DAYS[day]} Jan 2017 ${hours}:${minutes}:00 GMT+${timezone}`);
+    return Date.UTC(2017, 1, DAYS.indexOf(day) + 1, hours - timezone, minutes);
 }
 
 class Timeline {
-
     constructor(from, to) {
         this.from = typeof from === 'string' ? parseDateString(from) : from;
         this.to = typeof to === 'string' ? parseDateString(to) : to;
@@ -27,8 +26,8 @@ class Timeline {
      * @returns {Timeline}
      */
     union(timeline) {
-        const from = this.from <= timeline.from ? this.from : timeline.from;
-        const to = this.to >= timeline.to ? this.to : timeline.to;
+        const from = Math.min(this.from, timeline.from);
+        const to = Math.max(this.to, timeline.to);
 
         return new Timeline(from, to);
     }
@@ -39,20 +38,9 @@ class Timeline {
      * @returns {Boolean}
      */
     isIntersected(timeline) {
-        return this._isInclude(timeline) || timeline._isInclude(this) ||
-            (this.from < timeline.from && this.to > timeline.from) ||
-            (this.to > timeline.to && this.from < timeline.to);
-    }
-
-    /**
-     * Содержится ли временной отрезок в другом
-     * @param {Timeline} timeline
-     * @returns {Boolean}
-     */
-    _isInclude(timeline) {
-        return this.from <= timeline.from && this.to >= timeline.to;
+        return this.from < timeline.to && this.to > timeline.from;
     }
 }
 
-exports.Timeline = Timeline;
-exports.DAYS = DAYS;
+Timeline.DAYS = DAYS;
+exports.default = Timeline;

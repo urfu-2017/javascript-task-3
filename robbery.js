@@ -1,6 +1,6 @@
 'use strict';
 
-const { Timeline, DAYS } = require('./timeline');
+const Timeline = require('./timeline').default;
 
 const MIN_AS_MILLIS = 60 * 1000;
 const HOUR_AS_MILLIS = 60 * MIN_AS_MILLIS;
@@ -24,7 +24,7 @@ function mergeTimelines(timelines) {
         return result.concat(timeline);
     }, []);
 
-    return (merged.length === timelines.length) ? merged : mergeTimelines(merged);
+    return merged.length === timelines.length ? merged : mergeTimelines(merged);
 }
 
 /**
@@ -48,25 +48,31 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
         new Timeline('СР ' + workingHours.from, 'СР ' + workingHours.to)
     ];
 
-    const gangSchedule = mergeTimelines(Object.values(schedule)
-        .reduce((result, robber) => result.concat(robber), [])
-        .map(timeline => new Timeline(timeline.from, timeline.to)));
+    const gangSchedule = mergeTimelines(
+        Object.values(schedule)
+            .reduce((result, robber) => result.concat(robber), [])
+            .map(timeline => new Timeline(timeline.from, timeline.to))
+    );
 
-    const days = Object.keys(DAYS);
     const bankTimezone = Number(workingHours.to.split('+')[1]);
     const durationMillis = duration * MIN_AS_MILLIS;
 
-    const moments = worksIntervals.reduce((previous, day, index) => {
-        for (let time = day.from; time <= day.to - durationMillis; time += LATER_TIMEOUT) {
-            const candidate = new Timeline(time, time + durationMillis);
+    const moments = worksIntervals
+        .reduce((previous, day, index) => {
+            for (let time = day.from; time <= day.to - durationMillis; time += LATER_TIMEOUT) {
+                const candidate = new Timeline(time, time + durationMillis);
 
-            if (!gangSchedule.some((timeline) => timeline.isIntersected(candidate))) {
-                previous.push({ time: candidate.from, day: days[index] });
+                if (!gangSchedule.some(timeline => timeline.isIntersected(candidate))) {
+                    previous.push({
+                        time: candidate.from,
+                        day: Timeline.DAYS[index]
+                    });
+                }
             }
-        }
 
-        return previous;
-    }, []).reverse();
+            return previous;
+        }, [])
+        .reverse();
 
     let moment = moments.pop();
 
@@ -96,10 +102,10 @@ exports.getAppropriateMoment = (schedule, duration, workingHours) => {
 
             date.setTime(moment.time + timezone);
 
-            return template.replace('%HH', String(date.getHours()).padStart(2, '0'))
+            return template
+                .replace('%HH', String(date.getHours()).padStart(2, '0'))
                 .replace('%MM', String(date.getMinutes()).padStart(2, '0'))
                 .replace('%DD', moment.day);
-
         },
 
         /**
