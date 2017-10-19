@@ -54,14 +54,6 @@ function customSort(x, y) {
     return timeToX - timeToY;
 }
 
-function getMax(maxFrom, current) {
-
-    return maxFrom > current ? convertToHours(maxFrom).match(/\d{1,2}/g)
-        .join('')
-        : convertToHours(current).match(/\d{1,2}/g)
-            .join('');
-}
-
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function convertToBankTimezone(str) {
@@ -193,22 +185,33 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
+    function getMax(maxFrom, current, from) {
+
+        return (maxFrom > current)
+            ? convertToHours(maxFrom)
+            : convertToHours(current)
+    }
+
     function createScheduleWhenFree(day, result, intervals) {
         var maxFrom = 0;
         for (var i = 1; i < intervals.length; i++) {
             intervals.sort(customSort);
-            var intervalFrom = intervals[i - 1].to.match(/\d{1,2}/g).join('');
-            var intervalTo = intervals[i].from.match(/\d{1,2}/g).join('');
+            var intervalFrom = intervals[i - 1].to;
+            var intervalTo = intervals[i].from;
             if (maxFrom < convertToMinutes(intervals[i - 1].to)) {
                 maxFrom = convertToMinutes(intervals[i - 1].to);
             }
-            if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) >=
+            if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) <
                 duration) {
-                intervalFrom = getMax(maxFrom, convertToMinutes(intervals[i - 1].to));
+                continue;
+            }
+            intervalFrom = getMax(maxFrom, convertToMinutes(intervals[i - 1].to),
+                convertToMinutes(intervals[i].from));
+            if (convertToMinutes(intervalTo) - convertToMinutes(intervalFrom) >= duration) {
                 result.push({
                     day: DAYS_OF_WEEK[day],
-                    from: intervalFrom.slice(0, 2) + ':' + intervalFrom.slice(2),
-                    to: intervalTo.slice(0, 2) + ':' + intervalTo.slice(2)
+                    from: intervalFrom,
+                    to: intervalTo
                 });
             }
         }
@@ -293,6 +296,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var intervals = [];
         var result = [];
         formResult(intervals, result);
+        console.error(result);
         if (result.length !== 0) {
             modifyResult(result);
         }
