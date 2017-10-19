@@ -6,7 +6,7 @@
  */
 exports.isStar = true;
 
-var daysOfWeeksToHours = {
+var daysOfWeeksToNumberDay = {
     'ПН': 0,
     'ВТ': 1,
     'СР': 2,
@@ -26,6 +26,180 @@ var numberDayToDayWeek = {
     6: 'ВС'
 };
 
+const HOURS_IN_DAY = 24;
+const MINUTES_IN_HOUR = 60;
+const BANK_TIMEZONE_DIFF = 0;
+const INTERVALS_END = HOURS_IN_DAY * 3 * 60 - 1;
+
+function getRobbersSchedule(schedule) {
+    let allEntries = [].concat(schedule.Danny, schedule.Rusty, schedule.Linus);
+
+    return allEntries.map(parseEntry);
+}
+
+function parseEntry(entry) {
+    let [dayFrom, timeFrom] = entry.from.split(' ');
+    let [dayTo, timeTo] = entry.to.split(' ');
+
+    return {
+        dayFrom,
+        dayTo,
+        from: getTime(timeFrom),
+        to: getTime(timeTo)
+    };
+}
+
+function getTime(time) {
+    let [hoursAndMinutes, timeZone] = time.split('+');
+    let [hours, minutes] = hoursAndMinutes.split(':');
+
+    return {
+        timeZone: Number(timeZone),
+        hours: Number(hours),
+        minutes: Number(minutes)
+    };
+}
+
+function getBankInfo(workingHours) {
+    let from = getTime(workingHours.from);
+    let to = getTime(workingHours.to);
+
+    let bankWorkIntervals = [];
+    let workDays = ['ПН', 'ВТ', 'СР'];
+
+    for (var i = 0; i < workDays.length; i++) {
+        var day = workDays[i];
+
+        bankWorkIntervals.push({
+            start: getTimeInMinutes(day, BANK_TIMEZONE_DIFF, from.hours, from.minutes),
+            end: getTimeInMinutes(day, BANK_TIMEZONE_DIFF, to.hours, to.minutes)
+        });
+    }
+
+    return {
+        bankWorkIntervals,
+        bankTimezone: from.timeZone
+    };
+}
+
+function getTimeInMinutes(day, timeZoneDifferent, hours, minutes) {
+    let allMinutes = (hours + timeZoneDifferent + daysOfWeeksToNumberDay[day] * HOURS_IN_DAY) *
+        MINUTES_IN_HOUR + minutes;
+
+    return allMinutes;
+}
+
+function getEmploymentIntervals(robbersSchedule, bankTimezone) {
+    return robbersSchedule.map(entry => {
+        let timeZoneDifferent = bankTimezone - entry.from.timeZone;
+
+        let from = entry.from;
+        let to = entry.to;
+
+        return {
+            start: getTimeInMinutes(entry.dayFrom, timeZoneDifferent, from.hours, from.minutes),
+            end: getTimeInMinutes(entry.dayTo, timeZoneDifferent, to.hours, to.minutes)
+        };
+    });
+}
+
+function mergeEmploymentIntervals(sortedIntervals) {
+    let uniounIntervals = [];
+    let interval = sortedIntervals[0];
+    let start = interval.start;
+    let end = interval.end;
+    for (var i = 0; i < sortedIntervals.length; i++) {
+        interval = sortedIntervals[i];
+        if (end >= interval.end) {
+            continue;
+        }
+        if (end >= interval.start) {
+            end = interval.end;
+        } else {
+            uniounIntervals.push({ start, end });
+
+            start = interval.start;
+            end = interval.end;
+        }
+    }
+    uniounIntervals.push({ start, end });
+
+    return uniounIntervals;
+}
+
+function getFreeIntervals(unionEmploymentIntervals) {
+    let start = 0;
+    let end = 0;
+
+    let freeIntervals = [];
+    let intervals = unionEmploymentIntervals.filter(x => x.start < INTERVALS_END)
+        .map(x => {
+            if (x.end > INTERVALS_END) {
+                x.end = INTERVALS_END;
+            }
+
+            return x;
+        });
+
+    for (let interval of intervals) {
+        end = interval.start;
+
+        freeIntervals.push({ start, end });
+
+        start = interval.end;
+    }
+    if (start !== INTERVALS_END) {
+        freeIntervals.push({ start, end: INTERVALS_END });
+    }
+
+    return freeIntervals;
+}
+
+function getIntervalsWhenBankIsWorking(freeIntervals, bankStart, bankEnd) {
+    let copyIntervals = freeIntervals.slice();
+
+    return copyIntervals.filter(x => {
+        return ((bankStart < x.end && bankStart >= x.start) ||
+            (bankEnd > x.start && bankEnd <= x.end) ||
+            (bankStart <= x.start && bankEnd >= x.end));
+    });
+}
+
+function getNeededIntervals(intervalsForDay, bankStart, bankEnd) {
+    let result = [];
+    for (let interval of intervalsForDay) {
+        let start = interval.start;
+        let end = interval.end;
+        if (start < bankStart) {
+            start = bankStart;
+        }
+        if (end > bankEnd) {
+            end = bankEnd;
+        }
+        let different = end - start;
+
+        result.push({ start, end, different });
+    }
+
+    return result;
+}
+
+function getAppropriateIntervals(freeIntervals, bankWorkIntervals) {
+    let appropriateIntervals = [];
+
+    for (let bankWorkInterval of bankWorkIntervals) {
+        let bankStart = bankWorkInterval.start;
+        let bankEnd = bankWorkInterval.end;
+
+        let intervalsForDay = getIntervalsWhenBankIsWorking(freeIntervals, bankStart, bankEnd);
+        let result = getNeededIntervals(intervalsForDay, bankStart, bankEnd);
+
+        appropriateIntervals = appropriateIntervals.concat(result);
+    }
+
+    return appropriateIntervals;
+}
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -35,19 +209,17 @@ var numberDayToDayWeek = {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let [, , bankTimezone] = workingHours.from.split(/:|\+/)
-        .map(x => Number(x));
+    let robbersSchedule = getRobbersSchedule(schedule);
+    let bankInfo = getBankInfo(workingHours);
 
-    let robberInterval = getAllScheduleEntries(schedule)
-        .map(parseScheduleEntry)
-        .map(x => getlRobberTimeInterval(x, bankTimezone))
-        .sort((a, b) => a.totalMinutesFrom > b.totalMinutesFrom);
+    let employmentIntervals = getEmploymentIntervals(robbersSchedule, bankInfo.bankTimezone);
+    let sortedEmploymentIntervals = employmentIntervals.sort((a, b) => a.start - b.start);
+    let unionEmploymentIntervals = mergeEmploymentIntervals(sortedEmploymentIntervals);
+    let freeIntervals = getFreeIntervals(unionEmploymentIntervals);
 
-    let mergedRobberIntervals = robberInterval.length !== 0 ? getMergeTimeIntervals(robberInterval)
-        : [];
-    let bankWorkIntervals = getbankWorkIntervals(workingHours);
+    let appropriateIntervals = getAppropriateIntervals(freeIntervals, bankInfo.bankWorkIntervals);
 
-    let appropriateMoments = getAppropriateMoments(mergedRobberIntervals, bankWorkIntervals)
+    let appropriateMoments = appropriateIntervals
         .filter(x => x.different >= duration)
         .map((x, i) => {
             x.next = i + 1;
@@ -78,7 +250,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            let startTimeInMinutes = currentAnswer.startMoment;
+            let startTimeInMinutes = currentAnswer.start;
             let minutes = startTimeInMinutes % 60;
             let totalHours = Math.floor(startTimeInMinutes / 60);
             let day = Math.floor(totalHours / 24);
@@ -111,204 +283,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-
-function parseScheduleEntry(x) {
-    let startDay = x.from.substring(0, 2);
-    let [hoursFrom, minutesFrom, robberTimezone] = x.from.substring(2).split(/:|\+/)
-        .map(y => Number(y));
-
-    let endDay = x.to.substring(0, 2);
-    let [hoursTo, minutesTo] = x.to.substring(2).split(/:|\+/)
-        .map(y => Number(y));
-
-    return {
-        startDay,
-        hoursFrom,
-        minutesFrom,
-        endDay,
-        hoursTo,
-        minutesTo,
-        robberTimezone
-    };
-}
-
-function getlRobberTimeInterval(x, bankTimezone) {
-    let timezoneDiff = bankTimezone - x.robberTimezone;
-
-    let totalHoursFrom = x.hoursFrom + timezoneDiff + daysOfWeeksToHours[x.startDay] * 24;
-    let totalHoursTo = x.hoursTo + timezoneDiff + daysOfWeeksToHours[x.endDay] * 24;
-    if (totalHoursFrom < 0) {
-        totalHoursFrom = 0;
-    }
-    if (totalHoursTo < 0) {
-        totalHoursTo = 0;
-    }
-    let totalMinutesFrom = totalHoursFrom * 60 + x.minutesFrom;
-    let totalMinutesTo = totalHoursTo * 60 + x.minutesTo;
-
-    return {
-        totalMinutesFrom,
-        totalMinutesTo
-    };
-}
-
-function getAllScheduleEntries(schedule) {
-    let allEntries = [];
-    let keys = Object.keys(schedule);
-    for (let key of keys) {
-        allEntries = allEntries.concat(schedule[key]);
-    }
-
-    return allEntries;
-}
-
-function getTotalMinutesFromStartWeek(hours, minutes, dayWeek) {
-    return (hours + daysOfWeeksToHours[dayWeek] * 24) * 60 + minutes;
-}
-
-function getMergeTimeIntervals(sortedTimeIntervals) {
-    let mergeTimeIntervals = [];
-    let currentTimeInterval = sortedTimeIntervals[0];
-    let start = currentTimeInterval.totalMinutesFrom;
-    let end = currentTimeInterval.totalMinutesTo;
-    for (var i = 1; i < sortedTimeIntervals.length; i++) {
-        currentTimeInterval = sortedTimeIntervals[i];
-        if (end > currentTimeInterval.totalMinutesTo) {
-            continue;
-        }
-        if (end >= currentTimeInterval.totalMinutesFrom) {
-            end = currentTimeInterval.totalMinutesTo;
-        } else {
-            mergeTimeIntervals.push({ start, end });
-
-            start = currentTimeInterval.totalMinutesFrom;
-            end = currentTimeInterval.totalMinutesTo;
-        }
-    }
-    mergeTimeIntervals.push({ start, end });
-
-    return mergeTimeIntervals;
-}
-
-function getbankWorkIntervals(workingHours) {
-    let [bankHoursFrom, bankMinutesFrom] = workingHours.from.split(/:|\+/)
-        .map(x => Number(x));
-    let [bankHoursTo, bankMinutesTo] = workingHours.to.split(/:|\+/)
-        .map(x => Number(x));
-
-    let bankWorkIntervals = [];
-    let workDays = ['ПН', 'ВТ', 'СР'];
-
-    workDays.forEach(function (workDay) {
-        bankWorkIntervals.push({
-            start: getTotalMinutesFromStartWeek(bankHoursFrom, bankMinutesFrom, workDay),
-            end: getTotalMinutesFromStartWeek(bankHoursTo, bankMinutesTo, workDay)
-        });
-    });
-
-    return bankWorkIntervals;
-}
-
-function getResult(bankWorkInterval, intervals) {
-    let appropriateMoments = [];
-
-    let currentInterval = intervals[0];
-
-    let startMoment = getStartMoment(currentInterval, bankWorkInterval);
-    let endMoment = getEndMoment(currentInterval, bankWorkInterval);
-
-    if (intervals.length === 1) {
-        appropriateMoments.push({
-            startMoment,
-            endMoment,
-            different: endMoment - startMoment
-        });
-
-        startMoment = currentInterval.end;
-    }
-
-    for (var i = 1; i < intervals.length; i++) {
-        currentInterval = intervals[i];
-        endMoment = getEndMoment(currentInterval, bankWorkInterval);
-
-        appropriateMoments.push({
-            startMoment,
-            endMoment,
-            different: endMoment - startMoment
-        });
-
-        startMoment = currentInterval.end;
-    }
-    if (startMoment < bankWorkInterval.end) {
-        appropriateMoments.push({
-            startMoment,
-            endMoment: bankWorkInterval.end,
-            different: bankWorkInterval.end - startMoment
-        });
-    }
-
-    return appropriateMoments;
-}
-
-function getAppropriateMoments(mergedIntervals, bankWorkIntervals) {
-    let results = [];
-
-    for (let i = 0; i < bankWorkIntervals.length; i++) {
-        let bankWorkInterval = bankWorkIntervals[i];
-
-        let start = bankWorkInterval.start;
-        let end = bankWorkInterval.end;
-
-        if (mergedIntervals.some(x => x.start <= start && x.end >= end)) {
-            continue;
-        }
-
-        let intervals = mergedIntervals.filter(x => {
-            return (x.start > start && x.start < end) ||
-                (x.end > start && x.end < end);
-        });
-
-        let res = getResult(bankWorkInterval, intervals)
-            .map(x => {
-                if (x.endMoment > end) {
-                    x.endMoment = end;
-                }
-
-                return x;
-            });
-
-        results = results.concat(res);
-    }
-
-    return results;
-}
-
-function getStartMoment(currentInterval, bankWorkInterval) {
-    if (typeof currentInterval === 'undefined') {
-        return bankWorkInterval.start;
-    }
-
-    return currentInterval.start <= bankWorkInterval.start ? currentInterval.end
-        : bankWorkInterval.start;
-}
-
-function getEndMoment(currentInterval, bankWorkInterval) {
-    if (typeof currentInterval === 'undefined') {
-        return bankWorkInterval.end;
-    }
-
-    return currentInterval.start < bankWorkInterval.end ? currentInterval.start
-        : bankWorkInterval.end;
-}
-
 function getNextAnswer(currentAnswer, answer, duration) {
-    let newStartMoment = currentAnswer.startMoment + 30;
-    let newDuration = currentAnswer.endMoment - newStartMoment;
+    let newStartMoment = currentAnswer.start + 30;
+    let newDuration = currentAnswer.end - newStartMoment;
     if (newDuration >= duration) {
         return {
-            startMoment: newStartMoment,
-            endMoment: currentAnswer.endMoment,
-            duration: newDuration,
+            start: newStartMoment,
+            end: currentAnswer.end,
+            different: newDuration,
             next: currentAnswer.next
         };
     }
