@@ -1,36 +1,37 @@
 'use strict';
 
+const _secsToMsecs = secs => secs * 1000;
+const _minutesToMsecs = mins => _secsToMsecs(mins) * 60;
+const _hoursToMsecs = hours => _minutesToMsecs(hours) * 60;
 
-const MILLISECS = 1000;
-const ORDER = 60;
-const TRY_LATER_OFFSET = 30 * MILLISECS * ORDER;
+const TRY_LATER_OFFSET = _minutesToMsecs(30);
 const DAYS_OF_WEEK = 'ПН ВТ СР ЧТ ПТ СБ ВС'.split(' ');
 const DAYS_INDICES = new Map(DAYS_OF_WEEK.map((d, i) => [d, i]));
 
 
-function getUnixTimestamp(str) {
+function _getUnixTimestamp(str) {
     let [day, ...rest] = str.split(/[\s:+]/);
-    let [hour, minute, zone] = rest.map(x => parseInt(x));
+    let [hour, minute, zone] = rest.map(x => parseInt(x, 10));
 
-    return new Date(`${DAYS_INDICES.get(day) + 1} Jan 2042 ${hour}:${minute}:00 GMT+${zone}`)
+    return new Date(`${DAYS_INDICES.get(day) + 1} Feb 1970 ${hour}:${minute}:00 GMT+${zone}`)
         .getTime();
 }
 
 
-function replaceAll(str, from, to) {
+function _replaceAll(str, from, to) {
     return str.replace(new RegExp(from, 'g'), to);
 }
 
 
-function formatUnixTimestamp(template, time, zone) {
-    const date = new Date(time + zone * MILLISECS * ORDER * ORDER);
+function _formatUnixTimestamp(template, time, zone) {
+    const date = new Date(time + _hoursToMsecs(zone));
     const getPaddedInt = n => ('0' + n).slice(-2);
 
     return [
         ['%DD', DAYS_OF_WEEK[date.getDate() - 1]],
         ['%HH', date.getHours()],
         ['%MM', date.getMinutes()]
-    ].reduce((acc, curr) => replaceAll(acc, curr[0], getPaddedInt(curr[1])), template);
+    ].reduce((acc, curr) => _replaceAll(acc, curr[0], getPaddedInt(curr[1])), template);
 }
 
 
@@ -42,8 +43,8 @@ class TimeSpan {
 
     static fromStrings(from, to) {
         return new TimeSpan(
-            getUnixTimestamp(from),
-            getUnixTimestamp(to)
+            _getUnixTimestamp(from),
+            _getUnixTimestamp(to)
         );
     }
 
@@ -59,8 +60,8 @@ class TimeSpan {
 
     union(other) {
         return new TimeSpan(
-            this.from < other.from ? this.from : other.from,
-            this.to > other.to ? this.to : other.to
+            Math.min(this.from, other.from),
+            Math.max(this.to, other.to)
         );
     }
 
@@ -72,16 +73,16 @@ class TimeSpan {
 
 class Schedule {
     constructor(intervals, workingIntervals, duration, bankZone) {
-        this.intervals = Schedule.uniteIntersectingIntervals(intervals);
+        this.intervals = Schedule._uniteIntersectingIntervals(intervals);
         this.workingIntervals = workingIntervals;
         this.duration = duration;
         this.bankZone = bankZone;
 
-        this.generator = this.generateResults();
-        this.currentResult = this.generator.next().value;
+        this._generator = this._generateResults();
+        this._currentResult = this._generator.next().value;
     }
 
-    static uniteIntersectingIntervals(intervals) {
+    static _uniteIntersectingIntervals(intervals) {
         const result = [];
         if (intervals.length === 0) {
             return result;
@@ -101,8 +102,8 @@ class Schedule {
         return result;
     }
 
-    * findWithinInterval(interval) {
-        let offset = Math.max((this.currentResult + TRY_LATER_OFFSET) || 0,
+    * _findWithinInterval(interval) {
+        let offset = Math.max((this._currentResult + TRY_LATER_OFFSET) || 0,
             interval.from);
         let end = offset + this.duration;
         while (end <= interval.to) {
@@ -119,9 +120,9 @@ class Schedule {
         }
     }
 
-    * generateResults() {
+    * _generateResults() {
         for (let day of this.workingIntervals) {
-            yield* this.findWithinInterval(day);
+            yield* this._findWithinInterval(day);
         }
     }
 
@@ -130,7 +131,7 @@ class Schedule {
      * @returns {Boolean}
      */
     exists() {
-        return this.currentResult !== undefined;
+        return this._currentResult !== undefined;
     }
 
 
@@ -146,7 +147,7 @@ class Schedule {
             return '';
         }
 
-        return formatUnixTimestamp(template, this.currentResult, this.bankZone);
+        return _formatUnixTimestamp(template, this._currentResult, this.bankZone);
     }
 
 
@@ -156,9 +157,9 @@ class Schedule {
      * @returns {Boolean}
      */
     tryLater() {
-        const next = this.generator.next();
+        const next = this._generator.next();
         if (!next.done) {
-            this.currentResult = next.value;
+            this._currentResult = next.value;
 
             return true;
         }
@@ -194,7 +195,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             )
         );
 
-    const bankZone = parseInt(workingHours.from.split('+')[1]);
+    const bankZone = parseInt(workingHours.from.split('+')[1], 10);
 
-    return new Schedule(intervals, workingIntervals, duration * MILLISECS * ORDER, bankZone);
+    return new Schedule(intervals, workingIntervals, _minutesToMsecs(duration), bankZone);
 };
