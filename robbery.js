@@ -109,6 +109,9 @@ function calcGangPartyFreeTime(scheduleArr) {
 
 function stringToInt(time) {
     let format = time.match(/([А-Я]{2})\s(\d{2}):(\d{2})\+(\d+)/);
+    if (!format || Number(format[2] > 23 || Number(format[3]) > 59)) {
+        return null;
+    }
     let hours = WEEK_DAYS.indexOf(format[1]) * HOUR_IN_DAY;
     let delta = GTM_BANK - Number(format[4]);
     hours += Number(format[2]) + delta;
