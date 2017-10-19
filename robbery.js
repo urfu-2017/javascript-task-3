@@ -1,5 +1,13 @@
 'use strict';
 
+module.exports = {
+    formatTimeToMinutes: formatTimeToMinutes,
+    getMintutesFromWeekStart: getMintutesFromWeekStart,
+    getDay: getDay,
+    leadMinutesToCertainTimeZone: leadMinutesToCertainTimeZone,
+
+};
+
 /**
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
@@ -36,11 +44,11 @@ function getTimeZone(time) {
 
 function getMintutesFromWeekStart(fullTime) {
     var time = getTime(fullTime);
-    var dayNumber = getDayNumber(fullTime);
+    var dayNumber = getDayNumber(getDay(fullTime));
     var h = String(time).substr(0, 2);
     var m = String(time).substr(3, 2);
 
-    return dayNumber * 1440 + h * 60 + m;
+    return Number(dayNumber) * 1440 + Number(h) * 60 + Number(m);
 }
 
 function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
@@ -50,6 +58,70 @@ function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
     var mintutesFromWeekStart = getMintutesFromWeekStart(time);
 
     return mintutesFromWeekStart + (timeZone - originalTimeZone) * 60;
+}
+
+function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone) {
+    return minutes + (targetTimeZone - originalTimeZone) * 60;
+}
+
+function generateBankTimes(startTime, endTime) {
+    var res = [];
+    for (var i = 0; i < 3; i++) {
+        res.push({ from: 1440 * i + startTime, end: 1440 * i + endTime });
+    }
+
+    return res;
+}
+
+function checkEndsOfSegment(left, right) {
+    if (left < right) {
+        return { from: left, to: right };
+    }
+
+    return { from: 0, to: 0 };
+}
+
+function findInterSection(firstIntervals, secondIntervals) {
+    var res = [];
+    for (var i = 0; i < firstIntervals.length; i++) {
+        for (var j = 0; j < secondIntervals.length; j++) {
+            var left = Math.max(firstIntervals[i].from, secondIntervals[j].from);
+            var right = Math.min(firstIntervals[i].to, secondIntervals[j].to);
+            res.push(checkEndsOfSegment(left, right));
+        }
+    }
+
+    return res;
+}
+
+function findInterSections(dannyTimes, rustyTimes, linusTimes, bankTimes) {
+    var appropriateDannyTime = findInterSection(dannyTimes, bankTimes);
+    var appropriateRustyTime = findInterSection(rustyTimes, bankTimes);
+    var appropriateLinusTime = findInterSection(linusTimes, bankTimes);
+    var appropriateDannyAndRustyTime = findInterSection(appropriateDannyTime, appropriateRustyTime);
+
+    return findInterSection(appropriateDannyAndRustyTime, appropriateLinusTime);
+}
+
+function formatTimeToMinutes(timesArray, bankTimeZone) {
+    var res = [];
+    var i = 0;
+    var l = timesArray.length;
+    while (i < l) {
+        var originalTimeZone = getTimeZone(getTime(timesArray[i].from));
+        var startMinutes =
+            leadMinutesToCertainTimeZone(
+                getMintutesFromWeekStart(
+                    timesArray[i].from), originalTimeZone, bankTimeZone);
+        var endMinutes =
+            leadMinutesToCertainTimeZone(
+                getMintutesFromWeekStart(
+                    timesArray[i].to), originalTimeZone, bankTimeZone);
+        res.push({ from: startMinutes, to: endMinutes });
+        i++;
+    }
+
+    return res;
 }
 
 exports.isStar = true;
@@ -64,7 +136,13 @@ exports.isStar = true;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    
+    var bankTimeZone = getTimeZone(workingHours.from);
+    var dannyTimes = formatTimeToMinutes(schedule.Danny, bankTimeZone);
+    var rustyTimes = formatTimeToMinutes(schedule.Rusty, bankTimeZone);
+    var linusTimes = formatTimeToMinutes(schedule.Linus, bankTimeZone);
+    var answer =
+        findInterSections(dannyTimes, rustyTimes, linusTimes,
+            generateBankTimes(workingHours.from, workingHours.to));
 
     return {
 
@@ -73,7 +151,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return answer.length !== 0;
         },
 
         /**
@@ -84,7 +162,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (answer.length === 0) {
+                return '';
+            }
+
+
         },
 
         /**
