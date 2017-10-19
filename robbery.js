@@ -71,8 +71,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return a - b;
     });
     findInterval();
-    console.log('busy', busyTime);
-    console.log('free', freeTime);
     let intervals = selection(duration);
     if (intervals.length !== 0) {
         ifCalltryLater(intervals, duration);
