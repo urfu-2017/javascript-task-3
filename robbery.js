@@ -62,7 +62,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var dayToRub = canRobbing(freeByDays, duration, this.dayToRubbig.day.from);
+            var dayToRub = canRobbing(freeByDays, duration, this.dayToRubbig.day);
             if (dayToRub.isCanRub) {
                 this.dayToRubbig = dayToRub;
             }
@@ -72,15 +72,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-function canRobbing(robbersFree, duration, lastFrom) {
+function canRobbing(robbersFree, duration, lastDay) {
     var timeToRob = [];
     for (var day in robbersFree) {
         if (!robbersFree.hasOwnProperty(day)) {
             continue;
         }
         robbersFree[day].forEach(function (time) {
-            if (lastFrom && time.from <= lastFrom) {
-                if (time.from === lastFrom) {
+            if (lastDay && time.from <= lastDay.from) {
+                if (time.from === lastDay.from && time.day === lastDay.day) {
                     var curDate = new Date();
                     curDate.setHours(parseInt(time.from.slice(0, 2)),
                         parseInt(time.from.slice(2, 4)), 0);
@@ -167,7 +167,7 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
             return Number(a.to) - Number(b.to);
         });
     sortedDay.reduceRight(function (acc, item, index) {
-        if (acc.from > item.to) {
+        if (acc.from >= item.to) {
             robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
         }
         if (acc.from < item.from) {
