@@ -60,11 +60,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             minutes %= HOUR_IN_DAY * MINUTES_IN_HOUR;
             let hours = ((minutes - minutes % MINUTES_IN_HOUR) / MINUTES_IN_HOUR).toString();
             minutes %= MINUTES_IN_HOUR;
-            minutes = minutes === 0 ? '00' : minutes;
 
             return template.replace('%DD', day)
-                .replace('%HH', hours)
-                .replace('%MM', minutes);
+                .replace('%HH', (hours < 10 ? '0' : '') + hours)
+                .replace('%MM', (minutes < 10 ? '0' : '') + minutes);
         },
 
         /**
@@ -109,9 +108,6 @@ function calcGangPartyFreeTime(scheduleArr) {
 
 function stringToInt(time) {
     let format = time.match(/([А-Я]{2})\s(\d{2}):(\d{2})\+(\d+)/);
-    if (!format || Number(format[2] > 23 || Number(format[3]) > 59)) {
-        return null;
-    }
     let hours = WEEK_DAYS.indexOf(format[1]) * HOUR_IN_DAY;
     let delta = GTM_BANK - Number(format[4]);
     hours += Number(format[2]) + delta;
