@@ -83,6 +83,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function splitIntervalsOverDay(robber, record) {
         var dayOfWeek = schedule[robber][record].from.slice(0, 2);
+        if (DAYS_OF_WEEK.indexOf(schedule[robber][record].to.slice(0, 2)) === -1) {
+            schedule[robber][record].to = 'СР 23:59+5';
+        }
         if (dayOfWeek === 'ПН' && schedule[robber][record].to.slice(0, 2) === 'СР') {
             schedule[robber].push({
                 from: 'СР 00:00+5',
@@ -293,11 +296,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var intervals = [];
         var result = [];
         formResult(intervals, result);
-        console.error(result);
         if (result.length !== 0) {
             modifyResult(result);
         }
-
+        console.error(result);
         return result;
     }
 
