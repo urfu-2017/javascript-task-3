@@ -1,6 +1,6 @@
 'use strict';
 
-exports.isStar = true;
+exports.isStar = false;
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let profit = [];
