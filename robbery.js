@@ -79,13 +79,13 @@ function cutout(typeConf, k, busy1, busy2) {
 
 function typeOfConfluence(k, busy1, busy2) {
     var typeConf = 0;
-    if ((busy1 >= t2[k]) || (busy2 <= t1[k])) {
+    if ((busy1 > t2[k]) || (busy2 < t1[k])) {
         typeConf = 0;
-    } else if ((busy1 >= t1[k]) && (busy2 <= t2[k])) {
+    } else if ((busy1 > t1[k]) && (busy2 < t2[k])) {
         typeConf = 3;
-    } else if (busy1 >= t1[k]) {
+    } else if (busy1 > t1[k]) {
         typeConf = 2;
-    } else if (busy2 <= t2[k]) {
+    } else if (busy2 < t2[k]) {
         typeConf = 1;
     } else {
         t1.splice(k, 1);
