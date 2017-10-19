@@ -77,8 +77,8 @@ function getRobTime(bankTimetable, schedule) {
 }
 
 function inverseIntervals(schedule, bankTimezone) {
-    let from = parseDateString('ПН 00:00+' + bankTimezone);
-    let to = parseDateString('СР 23:59+' + bankTimezone);
+    let from = parseDateString('ПН 00:00+' + String(bankTimezone));
+    let to = parseDateString('СР 23:59+' + String(bankTimezone));
     let inversed = [{ from, to: schedule[0].from }];
     for (let i = 0; i <= schedule.length - 2; i++) {
         inversed.push({ from: schedule[i].to, to: schedule[i + 1].from });
