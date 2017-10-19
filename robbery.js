@@ -97,6 +97,22 @@ function combineTime(schedule) {
     return busyTime;
 }
 
+function splitDays(schedule) {
+    var newSchedule = [];
+    for (var i = 0; i < schedule.length; i++) {
+        if (schedule[i].from.split(' ')[0] !== schedule[i].to.split(' ')[0]) {
+            newSchedule.push({ from: schedule[i].from, 
+                to: schedule[i].from.split(' ')[0] + ' 23:59' });
+            schedule[i] = { from: schedule[i].to.split(' ')[0] + ' 00:00', to: schedule[i].to };
+            i--;
+        } else {
+            newSchedule.push(schedule[i]);
+        }
+    }
+
+    return newSchedule;
+}
+
 function timecount(from, to) {
     var [startHours, startMinutes] = from.split(' ')[1].split(':');
     var [finishHours, finishMinutes] = to.split(' ')[1].split(':');
@@ -104,43 +120,6 @@ function timecount(from, to) {
     to = parseInt(finishHours) * 60 + parseInt(finishMinutes);
 
     return to - from;
-}
-
-function findInDay(openTime, closeTime, day, schedule) {
-    var i = 0;
-    var freeTime = [];
-    openTime = day + openTime;
-    closeTime = day + closeTime;
-    currentTime = openTime;
-    while(timeCompare(currentTime, closeTime) !== 1 || i < schedule.length) {
-        if (timeCompare(openTime, schedule[i].from) === -1 &&
-            timeCompare(closeTime, schedule[i].to) === 1) {
-            freeTime.
-        }
-        if (timeCompare() && timeCompare() && timeCompare()) {
-
-        }
-        if (timeCompare() && timeCompare() && timeCompare()) {
-
-        }
-    }
-}
-
-function findFreeWorkTime(schedule, workingHours) {
-    console.info(schedule);
-    var openTime = WEEK[j] + ' ' + workingHours.to.split('+')[0];
-    var closeTime = WEEK[j] + ' ' +workingHours.to.split('+')[0];
-    var workingWeek = [{ from: 'ПН ' + openTime, to: 'ПН ' + closeTime },
-        { from: 'ВТ ' + openTime, to: 'ВТ ' + closeTime }, 
-        { from: 'СР ' + openTime, to: 'СР ' + closeTime }]
-    schedule = deleteUnworkingHours(schedule, workingWeek);
-    console.info(schedule);
-    var appropriateMoments = [];
-    var j = 0;
-    var i = 0;
-   
-
-    return appropriateMoments;
 }
 
 function add30Seconds(time) {
@@ -155,6 +134,50 @@ function add30Seconds(time) {
     return forming(day, hours, minutes);
 }
 
+function bankCompare(bank, time) {
+    bank = time.split(' ')[0] + ' ' + bank;
+
+    return timeCompare(bank, time);
+}
+
+function findMoment(schedule, workingHours) {
+    var avalibleTime = []
+    var start = workingHours.from.split('+')[0];
+    var finish = workingHours.to.split('+')[0];
+    for (var i = 0; i < schedule.length; i++) {
+        var day = schedule[i].from.split(' ')[0] + ' ';
+        if (bankCompare(start, schedule[i].to) === 1 ||
+            bankCompare(finish, schedule[i].from) === -1) {
+                avalibleTime.push({ from: day + start, to: day + finish });
+            }
+        if (bankCompare(start, schedule[i].from) === -1 &&
+            bankCompare(finish, schedule[i].to) === 1) {
+                avalibleTime.push({ from: day + start , to: schedule[i].from });
+                avalibleTime.push({ from: schedule[i].to , to: day + finish });
+            }
+        if (bankCompare(start, schedule[i].from) === -1 &&
+            bankCompare(finish, schedule[i].to) === -1 &&
+            bankCompare(finish, schedule[i].from) === 1) {
+                avalibleTime.push({ from: schedule[i].from, to: day + finish });
+            }
+        if (bankCompare(start, schedule[i].from) === 1 &&
+            bankCompare(finish, schedule[i].to) === 1) {
+                avalibleTime.push({ from: schedule[i].to , to: day + finish });
+            }
+    }
+
+    return concatTime(avalibleTime);
+}
+
+function concatTime(avalibleTime) {
+    var timeToGo = [];
+    var day = avalibleTime[0].from.split(' ')[0];
+    for(var i = 1; i < avalibleTime.length; i++) {
+        var currentDay = avalibleTime[i].from.split(' ')[0];
+        if ()
+    }
+}
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -166,9 +189,12 @@ function add30Seconds(time) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var oneTimeSchedule = toOneTimeZone(schedule, workingHours);
-    var appropriateTime = findFreeWorkTime(combineTime(oneTimeSchedule), workingHours);
-    var startTime = appropriateTime.find(moment => moment.time >= duration);
+    var appropriateTime = splitDays(combineTime(oneTimeSchedule), workingHours);
+    console.info('--------------');
     console.info(appropriateTime);
+    console.info('--------------');
+    console.info(findMoment(appropriateTime, workingHours));
+    var startTime = appropriateTime.find(moment => moment.time >= duration);
 
     return {
 
