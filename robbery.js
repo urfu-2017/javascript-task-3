@@ -37,6 +37,13 @@ function convertToMinutes(time) {
     return hours * 60 + mins;
 }
 
+function getMax(maxFrom, current) {
+
+    return (maxFrom > current)
+        ? convertToHours(maxFrom)
+        : convertToHours(current);
+}
+
 function customSort(x, y) {
     var dayFromX = x.day;
     var dayFromY = y.day;
@@ -185,13 +192,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     }
 
-    function getMax(maxFrom, current, from) {
-
-        return (maxFrom > current)
-            ? convertToHours(maxFrom)
-            : convertToHours(current)
-    }
-
     function createScheduleWhenFree(day, result, intervals) {
         var maxFrom = 0;
         for (var i = 1; i < intervals.length; i++) {
@@ -205,8 +205,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 duration) {
                 continue;
             }
-            intervalFrom = getMax(maxFrom, convertToMinutes(intervals[i - 1].to),
-                convertToMinutes(intervals[i].from));
+            intervalFrom = getMax(maxFrom, convertToMinutes(intervals[i - 1].to));
             if (convertToMinutes(intervalTo) - convertToMinutes(intervalFrom) >= duration) {
                 result.push({
                     day: DAYS_OF_WEEK[day],
