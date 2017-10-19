@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 const TIME_REGEX = /^(\d{2}):(\d{2})\+(\d+)$/;
 const BANK_ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
