@@ -242,9 +242,6 @@ function test(one) {
 }
 
 function testToFreeDays(rasp) {
-    if ((rasp.Danny).length === 0 && (rasp.Rusty).length === 0 && (rasp.Linus).length === 0) {
-        return rasp;
-    }
     var newRasp = {};
     newRasp.Denny = [];
     newRasp.Linus = [];
