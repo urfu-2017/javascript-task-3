@@ -29,12 +29,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var bankWorkingHours = getTimeInterval(workingHours);
     var gangSchedule = getWorkingSchedule(schedule, TIME_ZONE);
     var possibleStarts = tryToGetTime(gangSchedule, bankWorkingHours, duration);
-    
     var timeForCrime = formatList(createTimeList(possibleStarts, duration));
     var lastChance = timeForCrime.slice(-1);
-    
 
-    function changeTemplate(template) {
+    function changeTemplate() {
         let time;
         if (isEmpty()) {
             time = lastChance;
@@ -42,6 +40,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             time = timeForCrime[0];
             timeForCrime.splice(0, 1);
         }
+
         return time;
     }
 
@@ -67,13 +66,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            let time = changeTemplate(template);
+            let time = changeTemplate();
             if (!isEmpty()) {
                 return template
                     .replace('%HH', time[1])
                     .replace('%MM', time[2])
                     .replace('%DD', time[0]);
             }
+
             return '';
         },
 
@@ -149,6 +149,14 @@ function getSchedule(schedule, timeZone) {
     return reversedSchedule.sort(compareElements);
 }
 
+function getMax(a, b) {
+    if (a > b) {
+        return a;
+    }
+
+    return b;
+}
+
 function getWorkingSchedule(schedule, timeZone) {
     let oldSchedule = getSchedule(schedule, timeZone);
     let resultSchedule = [];
@@ -192,28 +200,28 @@ function getMin(a, b) {
     return b;
 }
 
-function checkLeft(a, b, c, d) {
+function checkLeft(a, b, duration) {
     let result = [];
-    if ((a <= c) && (b > c)) {
-        if (((b < d) && (b - c >= duration)) ||
-        ((b >= d) && (d - c >= duration))) {
+    if ((a[0] <= b[0]) && (a[1] > b[0])) {
+        if (((a[1] < b[1]) && (a[1] - b[0] >= duration)) ||
+        ((a[1] >= b[1]) && (b[1] - b[0] >= duration))) {
 
-            result.push(c);
-            result.push(getMin(d, b));
+            result.push(b[0]);
+            result.push(getMin(a[1], b[1]));
         }
     }
 
     return result;
 }
 
-function checkRight(a, b, c, d) {
+function checkRight(a, b, duration) {
     let result = [];
-    if ((c <= a) && (d > a)) {
-        if (((b < d) && (b - a >= duration)) ||
-        ((b >= d) && (d - a >= duration))) {
+    if ((b[0] <= a[0]) && (b[1] > a[0])) {
+        if (((a[1] < d) && (a[1] - a[0] >= duration)) ||
+        ((a[1] >= b[1]) && (b[1] - a[0] >= duration))) {
 
-            result.push(a);
-            result.push(getMin(d, b));
+            result.push(a[0]);
+            result.push(getMin(a[1], b[1]));
         }
     }
 
@@ -222,8 +230,8 @@ function checkRight(a, b, c, d) {
 
 function checkInterval(gang, bank, min) {
     let result = [];
-    let left = checkLeft(gang[0], gang[1], bank[0], bank[1], min);
-    let right = checkRight(gang[0], gang[1], bank[0], bank[1], min);
+    let left = checkLeft(gang, bank, min);
+    let right = checkRight(gang, bank, min);
     if (left.length !== 0) {
         result = left;
     }
@@ -243,7 +251,7 @@ function check(records) {
 }
 
 function showList(records, duration) {
-    let timelist = [];;
+    let timelist = [];
     let n;
     for (let i = 0; i < records.length; i++) {
         n = (records[i][0]);
@@ -304,5 +312,6 @@ function formatList(timeList) {
     for (let i = 0; i < timeList.length; i++) {
         result.push(changeFormate(timeList[i]));
     }
+
     return result;
 }
