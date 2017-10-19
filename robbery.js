@@ -28,6 +28,31 @@ function getDayNumber(day) {
     }
 }
 
+function getDayNameByNumber(dayNumber) {
+    switch (dayNumber) {
+        case 0:
+            return 'ПН';
+        case 1:
+            return 'ВТ';
+        case 2:
+            return 'СР';
+        default:
+            return '';
+    }
+}
+
+function devideTime(minutes) {
+    var day = getDayNameByNumber(Math.floor(minutes / 1440));
+    var h = Math.floor((minutes % 1440) / 60);
+    var m = Math.floor(minutes % 1440) % 60;
+
+    return {
+        day: day,
+        hours: h,
+        minutes: m
+    };
+}
+
 function getTime(fullTime) {
     return String(fullTime).substr(3);
 }
@@ -80,14 +105,14 @@ function getMinutesFromDayStart(time) {
     return Number(h) * 60 + Number(m);
 }
 
-function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
+/* function leadTimeToCertainTimeZoneMinutesFromWeekStart(date, timeZone) {
     var dayNumber = getDayNumber(getDay(date));
     var time = getTime(date);
     var originalTimeZone = getTimeZone(time);
     var mintutesFromWeekStart = getMintutesFromWeekStart(time);
 
     return mintutesFromWeekStart + (timeZone - originalTimeZone) * 60;
-}
+}*/
 
 function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone) {
     return minutes + (targetTimeZone - originalTimeZone) * 60;
@@ -199,8 +224,11 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             if (answer.length === 0) {
                 return '';
             }
+            var t = devideTime(answer[0].from);
 
-            return template;
+            return template.replace('%DD', t.day)
+                .replace('%HH', t.hours)
+                .replace('%MM', t.minutes);
         },
 
         /**
