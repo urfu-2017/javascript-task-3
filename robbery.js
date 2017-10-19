@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
@@ -126,6 +126,11 @@ function getMomentForPair(goodTime, badTime) {
     return goodTime;
 }
 
+/**
+ * Добавляет пол часа к текущему времени
+ * @param {String} time
+ * @returns {String}
+ */
 function addHalfHour(time) {
     let minutes = Number(time.slice(6, 8)) + 30;
     let hours = Number(time.slice(3, 5)) + 1;
