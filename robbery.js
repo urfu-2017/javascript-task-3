@@ -22,8 +22,8 @@ function replaceAll(str, from, to) {
 }
 
 
-function formatUnixTimestamp(template, time) {
-    const date = new Date(time);
+function formatUnixTimestamp(template, time, zone) {
+    const date = new Date(time + zone * MILLISECS * ORDER * ORDER);
     const getPaddedInt = n => ('0' + n).slice(-2);
 
     return [
@@ -71,10 +71,11 @@ class TimeSpan {
 
 
 class Schedule {
-    constructor(intervals, workingIntervals, duration) {
+    constructor(intervals, workingIntervals, duration, bankZone) {
         this.intervals = Schedule.uniteIntersectingIntervals(intervals);
         this.workingIntervals = workingIntervals;
         this.duration = duration;
+        this.bankZone = bankZone;
 
         this.generator = this.generateResults();
         this.currentResult = this.generator.next().value;
@@ -193,5 +194,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             )
         );
 
-    return new Schedule(intervals, workingIntervals, duration * MILLISECS * ORDER);
+    const bankZone = parseInt(workingHours.from.split('+')[1]);
+
+    return new Schedule(intervals, workingIntervals, duration * MILLISECS * ORDER, bankZone);
 };
