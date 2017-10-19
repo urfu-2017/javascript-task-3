@@ -160,8 +160,7 @@ function findSuitableTime(schedule, duration, workingHours) {
     let globalDiff = diffTime(startHour, endHour);
     if (schedule.length === 0 && globalDiff >= duration) {
         return [{ start: startHour, freeTime: globalDiff }];
-    }
-    if (schedule.length === 0){
+    } else if (schedule.length === 0) {
         return [];
     }
     let diffWithStart = diffTime(startHour, schedule[0].from);
@@ -202,20 +201,28 @@ function diffTime(first, second) {
 function cutSchedule(schedule, workingHours) {
     let startHour = workingHours.from.split('+')[0];
     let endHour = workingHours.to.split('+')[0];
-    let newSchedule = [];
     if (startHour === endHour) {
-        return newSchedule;
+        return [];
     }
+    let newSchedule = addSegmentsInWorkHours(schedule, startHour, endHour);
+
+    return newSchedule;
+}
+
+function addSegmentsInWorkHours(schedule, startHour, endHour) {
+    let newSchedule = [];
     for (let currentSegment of schedule) {
+        let newElement;
         if (currentSegment.to < startHour || currentSegment.from > endHour) {
             continue;
         } else if (currentSegment.from < startHour && currentSegment.to > startHour) {
-            newSchedule.push({ from: startHour, to: currentSegment.to });
+            newElement = { from: startHour, to: currentSegment.to };
         } else if ((currentSegment.from < endHour && currentSegment.to > endHour)) {
-            newSchedule.push({ from: currentSegment.from, to: endHour });
+            newElement = { from: currentSegment.from, to: endHour };
         } else {
-            newSchedule.push(currentSegment);
+            newElement = currentSegment;
         }
+        newSchedule.push(newElement);
     }
 
     return newSchedule;
