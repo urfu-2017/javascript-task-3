@@ -59,7 +59,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         return a.from - b.from;
     });
     busyTime.forEach(function (item, index) {
-        check(item, index);
+        check(item, index + 1);
     });
     findIntevals(duration, busyTime[0], 0);
 
@@ -176,10 +176,9 @@ function findIntevals(duration, item) {
 }
 
 
-function check(item, index) {
-    let i = index + 1;
+function check(item, i) {
     while (i < busyTime) {
-    // сливаются ли занятые интервалы
+        // сливаются ли занятые интервалы
         if (item.from >= busyTime[i].from && item.to <= busyTime[i].to ||
             item.from <= busyTime[i].from && item.to >= busyTime[i].to) {
             item.from = Math.min(item.from, busyTime[i].from);
