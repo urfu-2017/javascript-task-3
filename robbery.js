@@ -274,7 +274,7 @@ function minTime(first, second) {
 }
 
 function divideIntoDays(from, to) {
-    let weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ'];
+    let weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
     let segmentByDays = {};
     let startDay = weekDays.indexOf(from.day);
     let endDay = weekDays.indexOf(to.day);
@@ -307,7 +307,7 @@ function transformTime(dayAndTime, bankTimezone) {
 }
 
 function getWeekDay(currentDay, shift) {
-    let weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ'];
+    let weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
     let currentIndex = weekDays.indexOf(currentDay);
 
     return weekDays[currentIndex + shift];
