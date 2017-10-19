@@ -62,7 +62,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (!robberyMoment.found) {
+                return '';
+            }
+
+            let timePieces = extractTimeComponents(robberyMoment.startTime, bankTimezone);
+
+            return template.replace('%HH', timePieces.HH)
+                .replace('%MM', timePieces.MM)
+                .replace('%DD', timePieces.DD);
         },
 
         /**
@@ -71,7 +79,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            if (!robberyMoment.found) {
+                return false;
+            }
+
+            const nextMoment = findRobberyMoment(
+                robberyMoment.startTime + 30, duration,
+                robbersSchedule, bankSchedule
+            );
+
+            if (nextMoment.found) {
+                robberyMoment = nextMoment;
+            }
+
+            return nextMoment.found;
         }
     };
 };
@@ -138,28 +159,29 @@ function extractTimeComponents(totalMinutes, timezone) {
  * @returns {Object}
  */
 function findRobberyMoment(startTime, duration, robbersSchedule, bankSchedule) {
-    const maxTime = 24 * 60 * BANK_ROBBERY_DAYS.length;
+    const endTime = BANK_ROBBERY_DAYS.length * 24 * 60;
 
-    for (; startTime < maxTime; startTime++) {
-        const isFreeTime = robbersSchedule.filter(({ from, to }) =>
-            (startTime < from.robberyMoment && startTime + duration <= from.robberyMoment) ||
-            (startTime >= to.robberyMoment && startTime + duration >= to.robberyMoment)
+    let checkRobbersTime = (current, { from, to }) =>
+        (current < from && current + duration <= from) ||
+        (current >= to && current + duration >= to);
+    let checkBankTime = (current, { from, to }) => current >= from && current + duration <= to;
+
+    for (; startTime < endTime; startTime++) {
+        let canAllRobbersParticipate = robbersSchedule.filter(
+            checkRobbersTime.bind(null, startTime)
         ).length === robbersSchedule.length;
+        let isBankWorks = bankSchedule.filter(checkBankTime.bind(null, startTime)).length >= 1;
 
-        const isWorkTime = bankSchedule.filter(
-            ({ from, to }) => startTime >= from.robberyMoment && startTime + duration <= to.robberyMoment
-        ).length >= 1;
-
-        if (isFreeTime && isWorkTime) {
+        if (canAllRobbersParticipate && isBankWorks) {
             return {
-                found: false,
-                robberyMoment: startTime
+                found: true,
+                startTime: startTime
             };
         }
     }
 
     return {
         found: false,
-        robberyMoment: 0
+        startTime: 0
     };
 }
