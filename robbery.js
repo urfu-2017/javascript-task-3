@@ -87,14 +87,14 @@ function toMinsFromMonday(date) {
         default:
             break;
     }
-    res += (parseInt(hours)-parseInt(zone)) * 60 + parseInt(mins);
+    res += (parseInt(hours) - parseInt(zone)) * 60 + parseInt(mins);
 
     return res;
 }
 function minsFromMonToDay(mins, bankZone) {
     mins += bankZone * 60;
-    var d = (mins / 1440 | 0);
-    var h = ((mins - (d * 1440)) / 60 | 0);
+    var d = Math.floor(mins / 1440);
+    var h = Math.floor((mins - (d * 1440)) / 60);
     var m = mins - (d * 1440) - (h * 60);
     h = h.toString();
     m = m.toString();
@@ -198,6 +198,19 @@ function helper2(out, bank, duration) {
 
     return time;
 }
+function  helper3(danny, rusty, linus, bank, duration) {
+    var out = [];
+    for (var z = 0; z < danny.length; z++) {
+        for (var j = 0; j < rusty.length; j++) {
+            var res = findIntersection(danny[z], rusty[j]);
+            out.push(trickSystem(res, linus));
+        }
+    }
+    out = cleanUp(out);
+    var time = helper2(out, bank, duration);
+
+    return time;
+}
 function getRightTime(schedule, duration, workingHours) {
     var danny = [];
     var rusty = [];
@@ -210,15 +223,7 @@ function getRightTime(schedule, duration, workingHours) {
     danny = getFreeTimeIntervals(danny);
     rusty = getFreeTimeIntervals(rusty);
     linus = getFreeTimeIntervals(linus);
-    var out = [];
-    for (var z = 0; z < danny.length; z++) {
-        for (var j = 0; j < rusty.length; j++) {
-            var res = findIntersection(danny[z], rusty[j]);
-            out.push(trickSystem(res, linus));
-        }
-    }
-    out = cleanUp(out);
-    var time = helper2(out, bank, duration);
+    var time = helper3(danny, rusty, linus, bank, duration);
 
     return time;
 }
