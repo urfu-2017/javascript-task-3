@@ -16,12 +16,13 @@ exports.isStar = true;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let bankTimezone = getTimezone(workingHours.from);
-    let bandBusyTime = { 'ПН': [], 'ВТ': [], 'СР': [] };
+    let bandBusyTime = { 'ВС': [], 'ПН': [], 'ВТ': [], 'СР': [], 'ЧТ': [], 'ПТ': [], 'СБ': [] };
     for (let busyTimeList of Object.values(schedule)) {
         for (let currentBusyTime of busyTimeList) {
             createGeneralSchedule(bandBusyTime, currentBusyTime, bankTimezone);
         }
     }
+    deleteWrongDays(bandBusyTime);
     let timesForRob = { 'ПН': [], 'ВТ': [], 'СР': [] };
     for (let day of Object.keys(bandBusyTime)) {
         let scheduleInWorkHours = cutSchedule(bandBusyTime[day], workingHours);
@@ -109,6 +110,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
+
+function deleteWrongDays(bandBusyTime) {
+    delete bandBusyTime['ВС'];
+    delete bandBusyTime['ЧТ'];
+    delete bandBusyTime['ПТ'];
+    delete bandBusyTime['СБ'];
+}
 
 function createGeneralSchedule(bandBusyTime, currentBusyTime, bankTimezone) {
     let from = transformTime(currentBusyTime.from, bankTimezone);
