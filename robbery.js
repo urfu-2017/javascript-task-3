@@ -157,10 +157,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let hours = time.getHours();
             let minutes = time.getMinutes();
 
-            if (String(hours).length === 0) {
+            if (String(hours).length === 1) {
                 hours = '0'.concat(String(hours));
             }
-            if (String(minutes).length === 0) {
+            if (String(minutes).length === 1) {
                 hours = '0'.concat(String(minutes));
             }
 
