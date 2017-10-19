@@ -174,6 +174,9 @@ function toOneFreeTime(P1, P2) {
 }
 
 function result(raspisan, timeToLo, workTime) {
+    if (raspisan === null) {
+        return '';
+    }
     var answer = [];
     var oneAr = toOneArray(raspisan);
     var timeBank = timeToArray(workTime);
