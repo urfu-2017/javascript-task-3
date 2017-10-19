@@ -45,6 +45,12 @@ function devideTime(minutes) {
     var day = getDayNameByNumber(Math.floor(minutes / 1440));
     var h = Math.floor((minutes % 1440) / 60);
     var m = Math.floor(minutes % 1440) % 60;
+    if (String(h).length === 1) {
+        h = '0' + h;
+    }
+    if (String(m).length === 1) {
+        m = '0' + m;
+    }
 
     return {
         day: day,
