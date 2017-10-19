@@ -15,7 +15,7 @@ exports.isStar = false;
  * @returns {Object}
  */
 const dayMinute = 1440;
-var y = 0;
+var bankTimeZone = 0;
 function splitTime(time) {
     var t = String(time).split(/ |:|\+/);
     var info = {
@@ -29,17 +29,17 @@ function splitTime(time) {
 }
 
 function getBankTimeZone(workingHours) {
-    var i = String(workingHours.from).split('+');
-    y = i[1];
+    bankTimeZone = bankSplitTime(workingHours.from).timeZone;
 
-    return y;
+    return bankTimeZone;
 }
 
 function bankSplitTime(time) {
     var t = String(time).split(/ |:|\+/);
     var info = {
         hour: Number(t[0]),
-        minute: Number(t[1])
+        minute: Number(t[1]),
+        timeZone: Number(t[2])
     };
 
     return info;
@@ -48,8 +48,7 @@ function bankSplitTime(time) {
 function bankIntervals(workingHour) {
     var interval = [];
     var bank = bankSplitTime(workingHour);
-    var weekDay = ['ПН', 'ВТ', 'СР'];
-    for (let i = 0; i < weekDay.length; i++) {
+    for (let i = 0; i < 3; i++) {
         interval.push(bank.hour * 60 + bank.minute + i * dayMinute);
     }
 
@@ -64,6 +63,15 @@ function gangIntervals(schedule) {
         }
     }
 }
+function sorti(time1, time2) {
+    if (time1 > time2) {
+        return 1;
+    } else if (time1 < time2) {
+        return -1;
+    }
+
+    return 0;
+}
 
 function checkInterval(q, p, duration) {
     var apprepriateTime = [];
@@ -72,6 +80,8 @@ function checkInterval(q, p, duration) {
             apprepriateTime.push(q[i]);
         }
     }
+    q.sort(sorti);
+    p.sort(sorti);
 
     return (apprepriateTime);
 }
@@ -84,11 +94,9 @@ function ingoing(from, to) {
     for (let m = 0; m < q.length; m++) {
         if (to > q[m] && from < q[m] && to < p[m]) {
             q[m] = to;
-        }
-        if (to > p[m] && from > q[m] && from < p[m]) {
+        } else if (to > p[m] && from > q[m] && from < p[m]) {
             p[m] = from;
-        }
-        if (to < p[m] && from > q[m]) {
+        } else if (to < p[m] && from > q[m]) {
             p.push(p[m]);
             q.push(to);
             p[m] = from;
@@ -99,10 +107,7 @@ function ingoing(from, to) {
 function busyMinutes(time) {
     var busy = splitTime(time);
     var day = busy.day;
-    var m = busy.hour * 60 + busy.minute + 60 * (y - busy.timeZone);
-    if (day === 'ПН') {
-        m += 0;
-    }
+    var m = busy.hour * 60 + busy.minute + 60 * (bankTimeZone - busy.timeZone);
     if (day === 'ВТ') {
         m += dayMinute;
     }
@@ -117,7 +122,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     q = bankIntervals(workingHours.from);
     p = bankIntervals(workingHours.to);
     getBankTimeZone(workingHours);
-    bankIntervals(workingHours);
     gangIntervals(schedule);
     console.info(schedule, duration, workingHours);
     var check = checkInterval(q, p, duration);
