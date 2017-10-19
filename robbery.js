@@ -68,6 +68,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var day = str.split(' ')[0];
         var time = str.match(/\d{1,2}/g);
         var newHours = parseInt(time[0]) + bankTimezone - str.split('+')[1];
+        if (isNaN(str.split('+')[1])) {
+            return '';
+        }
         if (newHours > 24) {
             newHours -= 24;
         } else if (newHours < 0) {
@@ -153,6 +156,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var record in schedule[robber]) {
             if (!schedule[robber].hasOwnProperty(record)) {
                 continue;
+            }
+            if (convertToBankTimezone(schedule[robber][record].from) === '' ||
+                convertToBankTimezone(schedule[robber][record].to) === '') {
+                schedule[robber].splice(parseInt(record), 1);
+                break;
             }
             schedule[robber][record].from =
                 convertToBankTimezone(schedule[robber][record].from);
