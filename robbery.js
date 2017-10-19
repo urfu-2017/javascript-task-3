@@ -59,7 +59,7 @@ function getMax(maxFrom, current) {
     return maxFrom > current ? convertToHours(maxFrom).match(/\d{1,2}/g)
         .join('')
         : convertToHours(current).match(/\d{1,2}/g)
-            .join('');
+        .join('');
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
@@ -196,11 +196,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     function createScheduleWhenFree(day, result, intervals) {
         var maxFrom = 0;
         for (var i = 1; i < intervals.length; i++) {
-            intervals.sort(function (x, y) {
-
-                return x.to.match(/\d{1,2}/g).join('') -
-                    y.to.match(/\d{1,2}/g).join('');
-            });
+            intervals.sort(customSort);
             var intervalFrom = intervals[i - 1].to.match(/\d{1,2}/g).join('');
             var intervalTo = intervals[i].from.match(/\d{1,2}/g).join('');
             if (maxFrom < convertToMinutes(intervals[i - 1].to)) {
@@ -257,6 +253,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function modifyResult(result) {
+        result.sort(customSort);
         for (var i = 0; i < result.length; i++) {
             if (convertToMinutes(result[i].to) - convertToMinutes(result[i].from) >=
                 duration + 30) {
