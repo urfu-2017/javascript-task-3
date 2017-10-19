@@ -152,7 +152,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var days = ['ПН', 'ВТ', 'СР'];
             var weekDay = days[day];
             var hour = Math.floor((check[0] % dayMinute) / 60);
+            hour = (hour < 10 ? '0' : '') + hour;
             var minute = (check[0] % dayMinute) % 60;
+            minute = (minute < 10 ? '0' : '') + minute;
 
             return template
                 .replace('%DD', weekDay)
