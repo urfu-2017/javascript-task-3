@@ -129,15 +129,21 @@ function getMomentForPair(goodTime, badTime) {
 function addHalfHour(time) {
     let minutes = Number(time.slice(6, 8)) + 30;
     let hours = Number(time.slice(3, 5)) + 1;
+    let timezone = Number(time.split('+')[1]);
     if (minutes < 60) {
-        return time.slice(0, 6) + minutes;
+        return time.slice(0, 6) + `${minutes}+${timezone}`;
     }
+    let newMinutes = (minutes % 60);
     if (hours < 23) {
-        return time.slice(0, 3) + (hours + 1) + (minutes % 60);
+        return `${time.slice(0, 3) + (hours < 9 ? '0' + hours : String(hours))}:${
+            newMinutes < 9 ? '0' + newMinutes : String(newMinutes)}+${timezone}`;
     }
 
-    return days[days.indexOf(time.slice(0, 2)) + 1] + '00:' + (minutes % 60);
+    return `${days[days.indexOf(time.slice(0, 2)) + 1]} 00:${
+        newMinutes < 9 ? '0' + newMinutes : String(newMinutes)}+${timezone}`;
 }
+
+exports.add = addHalfHour;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -149,7 +155,7 @@ function addHalfHour(time) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let listOfTimes = [];
-    let bankZone = Number(workingHours.to.slice(-1));
+    let bankZone = Number(workingHours.to.split('+')[1]);
     for (let guy of Object.keys(schedule)) {
         listOfTimes.push(schedule[guy].map(el => {
             return { from: convertTime(el.from, bankZone), to: convertTime(el.to, bankZone) };
@@ -212,6 +218,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             let time = this.allMoments[this.momentNumber];
+            if (!time) {
+                return false;
+            }
             if (toMinutes(time.to) - toMinutes(time.from) >= this.duration + 30) {
                 this.allMoments[this.momentNumber] = {
                     from: addHalfHour(time.from),

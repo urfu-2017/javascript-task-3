@@ -24,6 +24,15 @@ describe('robbery.less()', function () {
     });
 });
 
+describe('Добавка получаса', function () {
+    it('should add', function () {
+        assert.strictEqual(robbery.add('ПН 11:30+1'), 'ПН 12:00+1');
+        assert.strictEqual(robbery.add('ПН 23:00+1'), 'ПН 23:30+1');
+        assert.strictEqual(robbery.add('ПН 23:59+1'), 'ВТ 00:29+1');
+        assert.strictEqual(robbery.add('СР 23:59+1'), 'ЧТ 00:29+1');
+    });
+});
+
 describe('robbery.getAppropriateMoment()', function () {
     function getMomentFor(time) {
         return robbery.getAppropriateMoment(
