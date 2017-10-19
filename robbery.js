@@ -20,12 +20,12 @@ let formInterval = {
 function parseHour(time, min, day) {
 
     return (time - min - START_DAYS[DAYS_WEEK.indexOf(day)] * 60) / 60;
-};
+}
 
 function parseMin(time) {
     let minute = time % 60;
 
-     return minute <= 9 ? '0' + minute : minute;
+    return minute <= 9 ? '0' + minute : minute;
 }
 
 function parseDay(time) {
@@ -111,14 +111,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 function workBank(workingHours) {
     let from = parseTimeBank(PARSE_BANK.exec(workingHours.from));
     let to = parseTimeBank(PARSE_BANK.exec(workingHours.to));
-    let startDay = {from: from, to: from};
+    let startDay = {
+        from: from,
+        to: from
+    };
     busyTime.push(startDay);
     for (let i = 0; i < 3; i++) {
         let interval = Object.create(formInterval);
         interval.from = from + START_DAYS[i] * 60;
         interval.to = to + START_DAYS[i] * 60;
         timeWorkBank.push(interval);
-        let finishDay = {from: to, to: from + START_DAYS[i + 1] * 60};
+        let finishDay = {
+            from: to,
+            to: from + START_DAYS[i + 1] * 60
+        };
         busyTime.push(finishDay);
     }
 }
@@ -141,16 +147,16 @@ function formattingTimeGang(schedulePerson) {
 function parseTime(item) {
     let time = PARSE_TIME.exec(item);
     let hour = Number(time[2]) + TIMEZONE - Number(time[4]);
-    let parseTime = hour * 60 + Number(time[3]);
+    let parseStr = hour * 60 + Number(time[3]);
 
-    return createData(time, hour, parseTime);
+    return createData(time, hour, parseStr);
 }
 
-function createData(time, hour, parseTime) {
+function createData(time, hour, parseStr) {
     let indexDay = DAYS_WEEK.indexOf(time[1]);
     let timeDay = START_DAYS[indexDay] * 60;
 
-    return parseTime + timeDay;
+    return parseStr + timeDay;
 }
 
 function findIntevals(duration, item) {
@@ -171,29 +177,28 @@ function findIntevals(duration, item) {
 
 
 function check(item, index) {
-    for (let i = index + 1; i < busyTime.length; i++) {
+    let i = index + 1;
+    while (i < busyTime) {
     // сливаются ли занятые интервалы
         if (item.from >= busyTime[i].from && item.to <= busyTime[i].to ||
             item.from <= busyTime[i].from && item.to >= busyTime[i].to) {
             item.from = Math.min(item.from, busyTime[i].from);
             item.to = Math.max(item.to, busyTime[i].to);
             busyTime.splice(i, 1);
-            i--;
             continue;
         }
         // Если второй пересекает первого слева
         if (item.from >= busyTime[i].from && item.from <= item.to) {
             item.from = busyTime[i].from;
             busyTime.splice(i, 1);
-            i--;
             continue;
         }
         // Если второй пересекает первого справа
         if (item.to <= busyTime[i].to && item.to >= busyTime[i].from) {
             item.to = busyTime[i].to;
             busyTime.splice(i, 1);
-            i--;
             continue;
         }
+        i++;
     }
 }
