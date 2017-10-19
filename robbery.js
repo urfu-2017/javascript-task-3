@@ -17,11 +17,7 @@ const LATER_OFFSET = 30 * MILLIS_IN_MIN;
  */
 class TimeInterval {
     constructor(start, end) {
-        if (typeof start === 'string') {
-            this._parse(start, end);
-        } else {
-            this._init(start, end);
-        }
+        this._parse(start, end);
     }
 
     /**
@@ -63,6 +59,8 @@ class TimeInterval {
     setRange(start, end) {
         this.start = start;
         this.end = end;
+
+        return this;
     }
 
     /**
@@ -80,9 +78,8 @@ class TimeInterval {
      * @returns {TimeInterval} - интервал, включающий в себя оба интервала
      */
     combine(interval) {
-        return new TimeInterval(
-            Math.min(this.start, interval.start), Math.max(this.end, interval.end)
-        );
+        return new TimeInterval(interval.unparsedStart, interval.unparsedEnd)
+            .setRange(Math.min(this.start, interval.start), Math.max(this.end, interval.end));
     }
 
     /**
