@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -271,7 +271,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
             createScheduleWhenBusy(i, intervals);
             intervals.sort(customSort);
-            if (intervals.length === 0) {
+            if (workingHours.from !== workingHours.to && intervals.length === 0) {
                 result.push({
                     day: DAYS_OF_WEEK[i],
                     from: workingHours.from.split('+')[0],
@@ -295,11 +295,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         var intervals = [];
         var result = [];
         formResult(intervals, result);
-        console.error(result);
+
         if (result.length !== 0) {
             modifyResult(result);
         }
-
+        console.error(result);
         return result;
     }
 
