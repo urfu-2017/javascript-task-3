@@ -33,6 +33,9 @@ function helper1(t1, t2, t3, t4) {
     if (t1 <= t3 && t2 <= t4 && t2 >= t3) {
         return [t3, t2];
     }
+    if (t1 <= t3 && t2 >= t4) {
+        return [t3, t4];
+    }
 
     return [];
 }
@@ -49,9 +52,6 @@ function findIntersection(inter1, inter2) {
     }
     if ((t2 <= t3) || (t1 >= t4)) {
         return [];
-    }
-    if (t1 <= t3 && t2 >= t4) {
-        return [t3, t4];
     }
 
     return helper1(t1, t2, t3, t4);
@@ -152,9 +152,9 @@ function cleanUp(match) {
             temp.push(match[i][j]);
         }
     }
-    for (var i = 0; i < temp.length; i++) {
-        if (temp[i].length > 0) {
-            out.push(temp[i]);
+    for (var q = 0; q < temp.length; q++) {
+        if (temp[q].length > 0) {
+            out.push(temp[q]);
         }
     }
 
@@ -178,6 +178,26 @@ function timesForRobbery(results) {
 
     return out;
 }
+function helper2(out, bank, duration) {
+
+    var result = bankMatches(out, bank);
+    var cleanRes = [];
+    for (var x = 0; x < result.length; x++) {
+        if (result[x].length > 0) {
+            cleanRes.push(result[x]);
+        }
+    }
+    var times = timesForRobbery(cleanRes);
+    var time = -1;
+    for (var a = 0; a < times.length; a++) {
+        if (times[a] >= duration) {
+            time = cleanRes[a];
+            return time;
+        }
+    }
+
+    return time;
+}
 function getRightTime(schedule, duration, workingHours) {
     var danny = [];
     var rusty = [];
@@ -191,28 +211,15 @@ function getRightTime(schedule, duration, workingHours) {
     rusty = getFreeTimeIntervals(rusty);
     linus = getFreeTimeIntervals(linus);
     var out = [];
-    for (var i = 0; i < danny.length; i++) {
+    for (var z = 0; z < danny.length; z++) {
         for (var j = 0; j < rusty.length; j++) {
-            var res = findIntersection(danny[i], rusty[j]);
+            var res = findIntersection(danny[z], rusty[j]);
             out.push(trickSystem(res, linus));
         }
     }
     out = cleanUp(out);
-    var result = bankMatches(out, bank);
-    var cleanRes = [];
-    for (var i = 0; i < result.length; i++) {
-        if (result[i].length > 0) {
-            cleanRes.push(result[i]);
-        }
-    }
-    var times = timesForRobbery(cleanRes);
-    var time = -1;
-    for (var i = 0; i < times.length; i++) {
-        if (times[i] >= duration) {
-            time = cleanRes[i];
-            return time;
-        }
-    }
+    var time = helper2(out, bank, duration);
+
     return time;
 }
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
@@ -225,39 +232,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            var danny = [];
-            var rusty = [];
-            var linus = [];
-            var bank = [];
-            bank = getBank(workingHours);
-            danny = formDict(schedule.Danny);
-            rusty = formDict(schedule.Rusty);
-            linus = formDict(schedule.Linus);
-            danny = getFreeTimeIntervals(danny);
-            rusty = getFreeTimeIntervals(rusty);
-            linus = getFreeTimeIntervals(linus);
-            var out = [];
-            for (var i = 0; i < danny.length; i++) {
-                for (var j = 0; j < rusty.length; j++) {
-                    var res = findIntersection(danny[i], rusty[j]);
-                    out.push(trickSystem(res, linus));
-                }
-            }
-            out = cleanUp(out);
-            var result = bankMatches(out, bank);
-            var cleanRes = [];
-            for (var i = 0; i < result.length; i++) {
-                if (result[i].length > 0) {
-                    cleanRes.push(result[i]);
-                }
-            }
-            var times = timesForRobbery(cleanRes);
-            // console.log(times);
+            var rTime = getRightTime(schedule, duration, workingHours);
             var exists = false;
-            for (var i = 0; i < times.length; i++) {
-                if (times[i] >= duration) {
-                    exists = true;
-                }
+            if (rTime !== -1) {
+                exists = true;
             }
 
             return exists;
