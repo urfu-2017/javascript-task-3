@@ -200,10 +200,9 @@ function toBankOffset(bankHours, hours) {
     var bankOffset = Number(bankHours.from.split('+')[1]);
     var timeFrom = hours.from.split(/[: +]/);
     var timeTo = hours.to.split(/[: +]/);
-    
+
     timeFrom[1] = checkOffset(bankOffset, timeFrom);
     timeTo[1] = checkOffset(bankOffset, timeTo);
-    
 
     if (timeFrom[0] !== timeTo[0]) {
         return chushToTwoDays(timeFrom, timeTo);
