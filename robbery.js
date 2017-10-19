@@ -145,7 +145,7 @@ function toBankTimeRange(workingHours, hours) {
         hours.from = bankFrom.toString();
     }
     if (hoursTo >= bankTo) {
-        if (hoursFrom >= bankFrom) {
+        if (hoursFrom >= bankTo) {
             return false;
         }
         hours.to = bankTo.toString();
