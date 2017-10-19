@@ -9,7 +9,7 @@ var days = time.days;
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 function getBankTimetable(workingHours) {
     var result = [];
@@ -109,6 +109,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (i >= available.length) {
+                return false;
+            }
             var [, repeat] = available[i];
             if (++j > repeat) {
                 j = 0;
