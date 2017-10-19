@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 var days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 var invalidDays = 'ЧТПТСБВС';
@@ -77,6 +77,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (timeOfRobbery === '') {
+                return false;
+            }
             let day = timeOfRobbery.split(' ')[0];
             let flag = true;
             for (let interval of time[day]) {
