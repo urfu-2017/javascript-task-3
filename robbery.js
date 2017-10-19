@@ -58,7 +58,11 @@ function getShedule(schedule, bankUTCZone) {
                 from: from,
                 to: to
             });
+
+            return 1;
         });
+
+        return 1;
     });
 
     return generalShadule;
