@@ -100,6 +100,9 @@ function ingoing(from, to) {
             p.push(p[m]);
             q.push(to);
             p[m] = from;
+        } else if (to === p[m] && from === q[m]) {
+            q.splice(m, 1);
+            p.splice(m, 1);
         }
     }
 }
@@ -134,7 +137,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         exists: function () {
 
-            return (check.length !== 0);
+            return (check.length > 0);
         },
 
         /**
