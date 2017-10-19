@@ -53,7 +53,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return this.template;
             }
 
-            return '1';
+            return '';
         },
 
         /**

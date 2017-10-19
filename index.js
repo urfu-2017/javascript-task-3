@@ -42,17 +42,17 @@ if (robbery.isStar) {
     moment.tryLater();
     // "ВТ 16:00"
     console.info(moment.format('%DD %HH:%MM'));
-    
+
     // Вернет true
     moment.tryLater();
     // "ВТ 16:30"
     console.info(moment.format('%DD %HH:%MM'));
-    
+
     // Вернет true
     moment.tryLater();
     // "СР 10:00"
     console.info(moment.format('%DD %HH:%MM'));
-    
+
     // Вернет false
     moment.tryLater();
     // "СР 10:00"
