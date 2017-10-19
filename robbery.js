@@ -101,6 +101,32 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
     let robTimes;
     let bankTimezone = ('ПН ' + workingHours.from).match(dateRegex)[4];
+    let names = Object.keys(schedule);
+    let parsedSchedule = [];
+    names.forEach(function (name) {
+        schedule[name].forEach(function (namedSchedule) {
+            parsedSchedule.push({
+                from: parseDateString(namedSchedule.from),
+                to: parseDateString(namedSchedule.to)
+            });
+
+        });
+    }
+    );
+
+
+    let out = performIntersectIntervals(parsedSchedule);
+
+    let timeTable = getBankTimeTable(workingHours);
+
+    let inversed = inverseIntervals(out, bankTimezone);
+
+    robTimes = getRobTime(timeTable, inversed);
+    robTimes = robTimes.filter(function (time) {
+        let timeToRob = (time.to - time.from) / 60000;
+
+        return duration <= timeToRob;
+    });
 
     return {
 
@@ -109,32 +135,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            let names = Object.keys(schedule);
-            let parsedSchedule = [];
-            names.forEach(function (name) {
-                schedule[name].forEach(function (namedSchedule) {
-                    parsedSchedule.push({
-                        from: parseDateString(namedSchedule.from),
-                        to: parseDateString(namedSchedule.to)
-                    });
-
-                });
-            }
-            );
-
-
-            let out = performIntersectIntervals(parsedSchedule);
-
-            let timeTable = getBankTimeTable(workingHours);
-
-            let inversed = inverseIntervals(out, bankTimezone);
-
-            robTimes = getRobTime(timeTable, inversed);
-            robTimes = robTimes.filter(function (time) {
-                let timeToRob = (time.to - time.from) / 60000;
-
-                return duration <= timeToRob;
-            });
 
             return robTimes.length > 0;
         },
@@ -161,7 +161,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 hours = '0'.concat(String(hours));
             }
             if (String(minutes).length === 1) {
-                hours = '0'.concat(String(minutes));
+                minutes = '0'.concat(String(minutes));
             }
 
             return template.replace('%DD', day)
