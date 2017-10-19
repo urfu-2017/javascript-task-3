@@ -8,7 +8,7 @@ class Timestamp {
         this.hour = hour;
         this.min = min;
         this.offset = offset;
-        this.week = 0;
+        this.week = 1;
     }
 
     totalMinutes() {
@@ -39,9 +39,9 @@ class Timestamp {
 
     format(template) {
         return template
-            .replace('%HH', (this.hour > 9 ? '' : '0') + this.hour)
-            .replace('%MM', (this.min > 9 ? '' : '0') + this.min)
-            .replace('%DD', days[this.day]);
+            .replace(/%HH/g, (this.hour > 9 ? '' : '0') + this.hour)
+            .replace(/%MM/g, (this.min > 9 ? '' : '0') + this.min)
+            .replace(/%DD/g, days[this.day]);
     }
 
     static fromString(timeStr) {
@@ -52,12 +52,15 @@ class Timestamp {
     }
 
     static min() {
-        return new Timestamp(0, 0, 0, 0);
+        var result = new Timestamp(0, 0, 0, 0);
+        result.week = 0;
+
+        return result;
     }
 
     static max() {
-        var ts = new Timestamp(6, 23, 59, 23);
-        ts.week = 1;
+        var ts = new Timestamp(6, 23, 59, 0);
+        ts.week = 2;
 
         return ts;
     }
@@ -72,9 +75,6 @@ class Timedelta {
     static fromObj(obj) {
         var fromTs = Timestamp.fromString(obj.from);
         var toTs = Timestamp.fromString(obj.to);
-        if (toTs.totalMinutes() < fromTs.totalMinutes()) {
-            toTs.week = 1;
-        }
 
         return new Timedelta(fromTs, toTs);
     }

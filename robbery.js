@@ -9,7 +9,7 @@ var days = time.days;
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 function getBankTimetable(workingHours) {
     var result = [];
@@ -22,28 +22,11 @@ function getBankTimetable(workingHours) {
     return result;
 }
 
-function product2(a, b) {
-    var result = [];
-    for (var i1 of a) {
-        for (var i2 of b) {
-            result.push([i1, i2]);
-        }
-    }
+function cartesian(a, b, ...c) {
+    const f = (d, e) => [].concat(...d.map(x => e.map(y => [].concat(x, y))));
 
-    return result;
+    return b ? cartesian(f(a, b), ...c) : a;
 }
-
-function product4(values) {
-    var result = [];
-    for (var [i1, i2] of product2(values[0], values[1])) {
-        for (var [i3, i4] of product2(values[2], values[3])) {
-            result.push([i1, i2, i3, i4]);
-        }
-    }
-
-    return result;
-}
-
 
 function getIntervals(tds) {
     var result = [];
@@ -61,14 +44,15 @@ function getIntervals(tds) {
 function getMomentInfo(schedule, duration, workingHours) {
     var bankTimetable = getBankTimetable(workingHours);
     var bankOffset = bankTimetable[0].fromTs.offset;
-    var tables = Object.keys(schedule).map(x => getIntervals(schedule[x].map(Timedelta.fromObj)));
+    var tables = Object.values(schedule).map(x => getIntervals(x.map(Timedelta.fromObj)));
     tables.push(bankTimetable);
+    tables.push(bankTimetable); // bypass cartesian product of one element
     var available = [];
-    for (var tds of product4(tables)) {
+    for (var tds of cartesian(...tables)) {
         var intersection = tds.reduce((acc, x) => x.intersect(acc), Timedelta.max());
         var length = intersection.totalMinutes();
         if (length >= duration) {
-            available.push([intersection, (length - duration) / 30]);
+            available.push([intersection, Math.trunc((length - duration) / 30)]);
         }
     }
 
@@ -132,6 +116,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             if (i >= available.length) {
                 i--;
+                j = repeat;
 
                 return false;
             }
