@@ -181,13 +181,6 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
 
             return item;
         }
-        if (acc.to > item.to) {
-            if (acc.from < item.from) {
-                item.from = acc.from;
-            }
-
-            return item;
-        }
 
         return item;
     }, { from: bankTo, to: bankTo });
