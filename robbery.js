@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -19,7 +19,7 @@ var WEEK_DAYS = ['ПН', 'ВТ', 'СР'];
 var MINUTES_IN_HOUR = 60;
 var HOUR_IN_DAY = 24;
 var TOTAL_TIME_LINE = WEEK_DAYS.length * HOUR_IN_DAY * MINUTES_IN_HOUR;
-var TRY_LATER_MINUTES = 30;
+// var TRY_LATER_MINUTES = 30;
 var DURATION = 0;
 
 
@@ -64,27 +64,27 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template.replace('%DD', day)
                 .replace('%HH', (hours < 10 ? '0' : '') + hours)
                 .replace('%MM', (minutes < 10 ? '0' : '') + minutes);
-        },
-
-        /**
-         * Попробовать найти часы для ограбления позже [*]
-         * @star
-         * @returns {Boolean}
-         */
-        tryLater: function () {
-            var newTimeStart = timeToGang[currentGang][0] + TRY_LATER_MINUTES;
-            if ((timeToGang[currentGang][1] - newTimeStart) < duration) {
-                if (!timeToGang[currentGang + 1]) {
-                    return false;
-                }
-                currentGang++;
-
-                return true;
-            }
-            timeToGang[currentGang][0] += 30;
-
-            return true;
         }
+
+    //     /**
+    //      * Попробовать найти часы для ограбления позже [*]
+    //      * @star
+    //      * @returns {Boolean}
+    //      */
+    //     tryLater: function () {
+    //         var newTimeStart = timeToGang[currentGang][0] + TRY_LATER_MINUTES;
+    //         if ((timeToGang[currentGang][1] - newTimeStart) < duration) {
+    //             if (!timeToGang[currentGang + 1]) {
+    //                 return false;
+    //             }
+    //             currentGang++;
+    //
+    //             return true;
+    //         }
+    //         timeToGang[currentGang][0] += TRY_LATER_MINUTES;
+    //
+    //         return true;
+    //     }
     };
 };
 
