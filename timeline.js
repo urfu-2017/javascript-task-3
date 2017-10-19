@@ -43,4 +43,4 @@ class Timeline {
 }
 
 Timeline.DAYS = DAYS;
-exports.default = Timeline;
+module.exports = Timeline;

@@ -1,6 +1,6 @@
 'use strict';
 
-const Timeline = require('./timeline').default;
+const Timeline = require('./timeline');
 
 const MIN_AS_MILLIS = 60 * 1000;
 const HOUR_AS_MILLIS = 60 * MIN_AS_MILLIS;
