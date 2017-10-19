@@ -113,11 +113,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
             var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
             var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
-            if (from < bankFrom) {
+            if (from <= bankFrom) {
                 schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
                     workingHours.from;
             }
-            if (to > bankTo) {
+            if (to >= bankTo) {
                 schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) +
                     workingHours.to;
             }
