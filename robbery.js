@@ -59,7 +59,7 @@ function getMax(maxFrom, current) {
     return maxFrom > current ? convertToHours(maxFrom).match(/\d{1,2}/g)
         .join('')
         : convertToHours(current).match(/\d{1,2}/g)
-        .join('');
+            .join('');
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
