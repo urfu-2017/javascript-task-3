@@ -104,7 +104,7 @@ function minsFromMonToDay(mins, bankZone) {
     if (h.length < 2) {
         h = '0' + h;
     }
-    switch(d) {
+    switch (d) {
         case 0:
             return ['ПН', h + ':' + m];
         case 1:
@@ -192,13 +192,17 @@ function helper2(out, bank, duration) {
     for (var a = 0; a < times.length; a++) {
         if (times[a] >= duration) {
             time = cleanRes[a];
+
             return time;
         }
     }
 
     return time;
 }
-function  helper3(danny, rusty, linus, bank, duration) {
+function helper3(guys, bank, duration) {
+    var danny = guys[0];
+    var rusty = guys[1];
+    var linus = guys[2];
     var out = [];
     for (var z = 0; z < danny.length; z++) {
         for (var j = 0; j < rusty.length; j++) {
@@ -223,7 +227,8 @@ function getRightTime(schedule, duration, workingHours) {
     danny = getFreeTimeIntervals(danny);
     rusty = getFreeTimeIntervals(rusty);
     linus = getFreeTimeIntervals(linus);
-    var time = helper3(danny, rusty, linus, bank, duration);
+    var guys = [danny, rusty, linus];
+    var time = helper3(guys, bank, duration);
 
     return time;
 }
