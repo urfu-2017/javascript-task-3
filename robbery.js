@@ -167,19 +167,24 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
             return Number(a.to) - Number(b.to);
         });
     sortedDay.reduceRight(function (acc, item, index) {
-        if (acc.from >= item.to) {
-            if (acc.from < item.to) {
-                acc.from = item.from;
-            }
+        if (acc.from > item.to) {
+            robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
+        }
+        if (acc.from < item.from) {
+            item.from = acc.from;
         }
         if (acc.from === item.from && acc.to === item.to) {
             return item;
         }
-        if (acc.from > item.to) {
-            robbersFree.push({ day: localDayOfWeek, from: item.to, to: acc.from });
-        }
         if (index === 0 && item.from > bankFrom) {
             robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: item.from });
+
+            return item;
+        }
+        if (acc.to > item.to) {
+            if (acc.from < item.from) {
+                item.from = acc.from;
+            }
 
             return item;
         }
