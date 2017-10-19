@@ -6,6 +6,15 @@
  */
 exports.isStar = true;
 
+const MIN_IN_HOUR = 60;
+const HOUR_IN_DAY = 24;
+const MIN_IN_DAY = MIN_IN_HOUR * HOUR_IN_DAY;
+const DAYS = {
+    'ПН': MIN_IN_DAY,
+    'ВТ': MIN_IN_DAY * 2,
+    'СР': MIN_IN_DAY * 3
+};
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -17,6 +26,230 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
 
+    function getTimeZone (time) {
+        return parseInt((time.slice(6)));
+    }
+
+    function getMinutes (time) {
+        return parseInt(time.slice(3,5));
+    }
+
+    function getHours (time) {
+        return parseInt(time.slice(0,2));
+    }
+
+    var workingZone = getTimeZone(workingHours.from);
+
+    function convertToMinutes (time) {
+        let minutes = 0;
+        minutes += getHours(time) * MIN_IN_HOUR;
+        minutes += getMinutes(time);
+        minutes += (workingZone - getTimeZone(time)) * MIN_IN_HOUR;
+
+        return minutes;
+    }
+
+    function getTimeInterval (record) {
+        let interval = [];
+        let startTime = (record.from).split(' ');
+        let endTime = (record.to).split(' ');
+        let start = convertToMinutes(startTime[1]);
+        let end = convertToMinutes(endTime[1]);
+        if (startTime[0] === 'ВТ') {
+            start += DAYS.ПН;
+        }
+        if (endTime[0] === 'ВТ') {
+            end += DAYS.ПН;
+        }
+        if (startTime[0] === 'СР') {
+            start += DAYS.ВТ;
+        }
+        if (endTime[0] === 'СР') {
+            end += DAYS.ВТ;
+        }
+        interval.push(start);
+        interval.push(end);
+
+        return interval;
+    }
+
+    function compareElements(a, b) {
+        return a[0] - b[0];
+    }
+
+    function getSchedule () {
+        let reversedSchedule = [];
+        for (let man of Object.keys(schedule)) {
+            for (let record of schedule[man] ) {
+                reversedSchedule.push(getTimeInterval(record));
+            }
+        }
+
+        return reversedSchedule.sort(compareElements);
+    }
+
+    function getMax(a, b) {
+        if (a > b){
+            return a;
+        }
+
+        return b;
+    }
+
+    function getWorkingSchedule () {
+        let oldSchedule = getSchedule();
+        let resultSchedule = [];
+        if (oldSchedule[0][0] >= 0) {
+            resultSchedule.push([0, oldSchedule[0][0]]);
+        }
+        let currentMax = oldSchedule[0][1];
+        for (let i=1; i<oldSchedule.length; i++) {
+            if (oldSchedule[i][0] + 1 <= currentMax){
+                currentMax = getMax(currentMax, oldSchedule[i][1]);
+            }
+            else {
+                resultSchedule.push([currentMax, oldSchedule[i][0]])
+                currentMax = oldSchedule[i][1];
+            }
+        }
+        if (currentMax < DAYS.СР){
+            resultSchedule.push([currentMax, DAYS.СР]);
+        }
+
+        return resultSchedule;
+
+    }
+
+    var startBank = convertToMinutes(workingHours.from);
+    var endBank = convertToMinutes(workingHours.to);
+
+    var bankSchedule = [
+        [startBank, endBank],
+        [startBank + DAYS.ПН, endBank + DAYS.ПН],
+        [startBank + DAYS.ВТ, endBank + DAYS.ВТ]
+    ];
+
+    function getMin (a, b){
+        if (a < b) {
+            return a;
+        }
+
+        return b;
+    }
+
+    function checkInterval (gang, bank, min) {
+        let result = []
+        if ((gang[0] <= bank[0]) && (gang[1] > bank[0])) {
+            if(((gang[1] < bank[1]) && (gang[1] - bank[0] >= min)) ||
+            ((gang[1] >= bank[1]) && (bank[1] - bank[0] >= min))) {
+
+                result.push(bank[0]);
+                result.push(getMin(bank[1], gang[1]));
+            }
+        }
+        if ((bank[0] <= gang[0]) && (bank[1] > gang[0])) {
+            if(((gang[1] < bank[1]) && (gang[1] - gang[0] >= min)) ||
+            ((gang[1] >= bank[1]) && (bank[1] - gang[0] >= min))) {
+
+                result.push(gang[0]);
+                result.push(getMin(bank[1], gang[1]));
+            }
+        }
+       
+        return result;
+    }
+
+    function tryToGetTime () {
+        gangSchedule = getWorkingSchedule();
+        var startCrime =[];
+        for (let i = 0; i < gangSchedule.length; i++) {
+            for(let j = 0; j < bankSchedule.length; j++) {
+                if (checkInterval(gangSchedule[i], bankSchedule[j], duration).length !== 0) {
+                    startCrime.push(checkInterval(
+                        gangSchedule[i], bankSchedule[j], duration));
+                }
+            }
+        }
+ 
+        return startCrime;
+    }
+
+    function changeFormate (number){
+        let time = [];
+        let oldTime = number;
+        if (oldTime > DAYS.ВТ && oldTime <= DAYS.СР){
+            time.push('СР');
+            oldTime-= DAYS.ВТ;
+        }
+        if (oldTime > DAYS.ПН && oldTime <= DAYS.ВТ){
+            time.push('ВТ');
+            oldTime-= DAYS.ПН;
+        }
+        else {
+            time.push('ПН');
+        }
+        hours = (oldTime - (oldTime % MIN_IN_HOUR)) / MIN_IN_HOUR;
+        minutes = oldTime % MIN_IN_HOUR
+        if (hours < 10) {
+            time.push('0'+ hours);
+        }
+        else {
+            time.push(hours);
+        }
+        if (minutes < 10) {
+            time.push('0'+ minutes);
+        }
+        else {
+            time.push(minutes);
+        }
+
+        return time;
+    }
+
+    function check() {
+        if (tryToGetTime().length !== 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function createTimeList () {
+        let timelist = [];
+        if(check()){
+            let timeInterval = tryToGetTime();
+            let n;
+            for (let i = 0; i<timeInterval.length; i++){
+                n = (timeInterval[i][0]);
+                while ((n < timeInterval[i][1]) &&
+                (timeInterval[i][1] - n >= duration)){
+                    timelist.push(n);
+                    n += 30;
+                    n += duration;
+                }
+            }
+        }
+
+        return timelist;
+    }
+
+    var topList = createTimeList();
+    const lastChance = parseInt(topList.slice(-1));
+
+    function changeTemplate (template) {
+        if (topList.length === 0) {
+            time = changeFormate(lastChance);
+        }
+        else {
+            time = changeFormate(topList[0]);
+            topList.splice(0,1);
+        }
+        return template
+        .replace('%HH', time[1])
+        .replace('%MM', time[2])
+        .replace('%DD', time[0]);
+    }
+    
     return {
 
         /**
@@ -24,7 +257,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return check();
         },
 
         /**
@@ -35,7 +268,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (check()){
+                return(changeTemplate(template));
+            }
+            
+            return '';
         },
 
         /**
@@ -44,7 +281,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            return (topList.length === 0);
         }
     };
 };
