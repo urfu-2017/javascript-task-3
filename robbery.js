@@ -188,6 +188,9 @@ function commonScheduleByDays(commonSchedule, dayOfWeek, workingHours) {
     if (sortedDay.length === 0) {
         robbersFree.push({ day: localDayOfWeek, from: bankFrom, to: bankTo });
     }
+    if (parseInt(bankFrom) > parseInt(bankTo)) {
+        return [];
+    }
 
     return robbersFree.sort(function (a, b) {
         return Number(a.from) - Number(b.from);
