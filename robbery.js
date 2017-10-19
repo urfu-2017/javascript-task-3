@@ -212,8 +212,12 @@ function timeToArray(time) {
     var plusDay = 0;
     for (var i = 0; i < 3; i++) {
         plusDay = i * 1440;
-        workHours.push([toMinuets(time.from) + plusDay,
-            toMinuets(time.to) + plusDay]);
+        if (toMinuets(time.to) + plusDay > 1439 * (i + 1)) {
+            workHours.push([toMinuets(time.from) + plusDay, 1439 * (i + 1)]);
+        } else {
+            workHours.push([toMinuets(time.from) + plusDay,
+                toMinuets(time.to) + plusDay]);
+        }
     }
 
     return workHours;
