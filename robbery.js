@@ -78,9 +78,7 @@ function getFreeTime(personalShedule, bankUTCZone) {
                 timeInMinutes: START_TIME,
                 UTCZone: bankUTCZone
             },
-            to: {
-                timeInMinutes: personalShedule[1].from
-            }
+            to: personalShedule[0].from
         });
     }
     for (let i = 1; i < personalShedule.length; i++) {
