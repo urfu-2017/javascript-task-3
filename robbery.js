@@ -14,7 +14,7 @@ var t1 = [0];
 var t2 = [day * 3];
 var gTime;
 var counter = 0;
-var boolControl = true;
+// var boolControl = true;
 
 function transform(time, template) {
     var days = ['ПН', 'ВТ', 'СР'];
@@ -39,8 +39,10 @@ function excluder(duration) {
     var q = 0;
     while (q < t1.length) {
         if (t2[q] - t1[q] < duration) {
+            // console.info ('BEFORE', t1, t2, q, duration);
             delete t1.splice(q, 1);
             delete t2.splice(q, 1);
+            // console.info ('THEN', t1, t2, q, duration);
         } else {
             q++;
         }
@@ -96,6 +98,7 @@ function typeOfConfluence(k, busy1, busy2) {
 }
 
 function cutter(busy1, busy2) {
+    // console.info(busy1, busy2);
     if (busy1 > 0 && busy2 > 0) {
         for (var k = 0; k < t1.length; k++) {
             typeOfConfluence(k, busy1, busy2);
@@ -119,7 +122,8 @@ function parseBusyTime(time) {
         default:
             x = -1000;
     }
-    if (arr[0] > 60 || arr[1] > 24) {
+    // console.info(arr[1], arr[2], time);
+    if (arr[1] > 24 || arr[2] > 60) {
         x = -1000;
     }
     var busy = arr[1] * 60 + Number(arr[2]) + x * day + 60 * (basetimezone - arr[3]);
@@ -188,10 +192,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (!boolControl) {
-                return false;
-            }
-
+            // if (!boolControl) {
+            //     return false;
+            // }
             return t1.length !== 0;
         },
 
