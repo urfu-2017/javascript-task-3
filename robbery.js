@@ -122,7 +122,7 @@ function parseBusyTime(time) {
             x = -1000;
     }
     if (arr[0] > 60 || arr[1] > 24) {
-        return 0;
+        boolControl = false;
     }
     var busy = arr[1] * 60 + Number(arr[2]) + x * day + 60 * (basetimezone - arr[3]);
 
