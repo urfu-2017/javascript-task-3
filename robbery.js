@@ -114,6 +114,10 @@ function parseBusyTime(time) {
             x = 2;
             break;
         default:
+            return 0;
+    }
+    if (arr[0] > 60 || arr[1] > 24) {
+        return 0;
     }
     var busy = arr[1] * 60 + Number(arr[2]) + x * day + 60 * (basetimezone - arr[3]);
 
@@ -164,8 +168,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             cutter(busy1, busy2);
         }
     }
-    t1.sort();
-    t2.sort();
+    t1.sort(function (a, b) {
+        return a - b;
+    });
+    t2.sort(function (a, b) {
+        return a - b;
+    });
     excluder(duration);
     counter = 0;
     // minuteToHours(t1, t2);

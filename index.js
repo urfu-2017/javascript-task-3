@@ -4,7 +4,7 @@ var robbery = require('./robbery');
 
 var gangSchedule = {
     Danny: [
-        { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
+        { from: 'ПН 12:70+5', to: 'ПН 17:00+5' },
         { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
     ],
     Rusty: [
