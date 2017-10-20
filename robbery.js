@@ -9,22 +9,24 @@ exports.isStar = true;
 exports.converter = function () {
     const MIN_IN_HOUR = 60;
     const MIN_IN_DAY = 60 * 24;
-    const DAYS_TO_NUM = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6};
-    const NUM_TO_DAYS = { 0: 'ПН', 1: 'ВТ', 2: 'СР', 3: 'ЧТ', 4: 'ПТ', 5: 'СБ', 6: 'ВС'};
+    const DAYS_TO_NUM = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+    const NUM_TO_DAYS = { 0: 'ПН', 1: 'ВТ', 2: 'СР', 3: 'ЧТ', 4: 'ПТ', 5: 'СБ', 6: 'ВС' };
 
     return {
-        fullDate: function(day, time) {
+
+        fullDate: function (day, time) {
             return day + ' ' + time;
         },
-        getOffset: function(date) {
+
+        getOffset: function (date) {
             return parseInt(date.split('+')[1]);
         },
 
-        dayToNum: function(day) {
+        dayToNum: function (day) {
             return DAYS_TO_NUM[day];
         },
 
-        NumToDay: function(num) {
+        numToDay: function (num) {
             return NUM_TO_DAYS[num];
         },
 
@@ -35,7 +37,12 @@ exports.converter = function () {
             var min = parseInt(parseDate[2]);
             var offset = parseInt(parseDate[3]);
 
-            return {day: day, hour:hour, min:min, offset:offset};
+            return {
+                day: day,
+                hour: hour,
+                min: min,
+                offset: offset
+            };
 
         },
 
@@ -79,9 +86,9 @@ exports.converter = function () {
             }
 
             return template.replace('%DD', day)
-                           .replace('%HH', hour)
-                           .replace('%MM', min)
-                           .replace('%OO', offset);
+                .replace('%HH', hour)
+                .replace('%MM', min)
+                .replace('%OO', offset);
         },
 
         toNumberInterval: function (interval) {
@@ -130,11 +137,11 @@ exports.isGoodTimeForBank = function (timeInterval, workingHours, bankFirstDay, 
     var currentInterval = converter.toNumberInterval(timeInterval);
     var firstDay = converter.dayToNum(bankFirstDay);
     var lastDay = converter.dayToNum(bankLastDay);
-    for (var i = firstDay; i <=  lastDay; ++i) {
+    for (var i = firstDay; i <= lastDay; ++i) {
         var workInterval = converter.toNumberInterval(
             {
-                from: converter.fullDate(converter.NumToDay(i), workingHours.from),
-                to: converter.fullDate(converter.NumToDay(i), workingHours.to)
+                from: converter.fullDate(converter.numToDay(i), workingHours.from),
+                to: converter.fullDate(converter.numToDay(i), workingHours.to)
             }
         );
         var cmp = exports.intervalComparator(currentInterval, workInterval);
@@ -232,7 +239,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (answer === undefined) {
                 return false;
             }
-            result = exports.findGoodTime(answer+NEXT_TRY_OFFSET, globalEnd, info);
+            result = exports.findGoodTime(answer + NEXT_TRY_OFFSET, globalEnd, info);
             if (result.exist) {
                 answer = result.answer;
             }
