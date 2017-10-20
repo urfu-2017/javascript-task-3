@@ -63,33 +63,45 @@ function excluder(duration) {
 
 function cutout(typeConf, k, busy1, busy2) {
     if (typeConf !== 0) {
+        console.info('case', typeConf, busy1, busy2, '\n', t1, '\n', t2);
         switch (typeConf) {
             case 1:
+                // console.info('case 1    ', busy1, busy2, t1, t2);
                 t1[k] = busy2;
+                // console.info('case 1    ', busy1, busy2, t1, t2);
                 break;
             case 2:
+                // console.info('case 2    ', busy1, busy2, t1, t2);
                 t2[k] = busy1;
+                // console.info('case 2    ', busy1, busy2, t1, t2);
                 break;
             case 3:
+                // console.info('case 3    ', busy1, busy2, t1, t2);
                 t2.push(t2[k]);
                 t2[k] = busy1;
                 t1.push(busy2);
+                // console.info('case 3    ', busy1, busy2, t1, t2);
                 break;
             default:
         }
+        console.info('стало', '\n', t1, '\n', t2);
     }
 }
 
 function typeOfConfluence(k, busy1, busy2) {
     var typeConf = 0;
-    if ((busy1 > t2[k]) || (busy2 < t1[k])) {
+    if ((busy1 >= t2[k]) || (busy2 <= t1[k])) {
         typeConf = 0;
+        console.info(busy1, busy2, t1[k], t2[k], typeConf);
     } else if ((busy1 > t1[k]) && (busy2 < t2[k])) {
         typeConf = 3;
+        console.info(busy1, busy2, t1[k], t2[k], typeConf);
     } else if (busy1 > t1[k]) {
         typeConf = 2;
+        console.info(busy1, busy2, t1[k], t2[k], typeConf);
     } else if (busy2 < t2[k]) {
         typeConf = 1;
+        console.info(busy1, busy2, t1[k], t2[k], typeConf);
     } else {
         t1.splice(k, 1);
         t2.splice(k, 1);
