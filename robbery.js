@@ -40,11 +40,11 @@ function applyTimeZoneToTimeObj(UTCZone, timeObj) {
     };
 }
 
-function getEmptyScheduleObj(schedule) {
-    let generalShadule = {};
+/* function getEmptyScheduleObj(schedule) {
+    let generalSchedule = {};
     Object.keys(schedule).forEach(function (name) {
-        if (!generalShadule.hasOwnProperty(name)) {
-            Object.defineProperty(generalShadule, name, {
+        if (!generalSchedule.hasOwnProperty(name)) {
+            Object.defineProperty(generalSchedule, name, {
                 value: [],
                 writable: true,
                 enumerable: true
@@ -52,25 +52,30 @@ function getEmptyScheduleObj(schedule) {
         }
     });
 
-    return generalShadule;
-}
+    return generalSchedule;
+}*/
 
 function getSchedule(schedule, bankUTCZone) {
-    let generalShadule = getEmptyScheduleObj(schedule);
+    // let generalSchedule = getEmptyScheduleObj(schedule);
+    let generalSchedule = {
+        Danny: [],
+        Rusty: [],
+        Linus: []
+    };
     Object.keys(schedule).forEach(function (name) {
         schedule[name].forEach(function (personalSchedule) {
             let from = parseToTimeObj(personalSchedule.from);
             let to = parseToTimeObj(personalSchedule.to);
             from = applyTimeZoneToTimeObj(bankUTCZone, from);
             to = applyTimeZoneToTimeObj(bankUTCZone, to);
-            generalShadule[name].push({
+            generalSchedule[name].push({
                 from: from,
                 to: to
             });
         });
     });
 
-    return generalShadule;
+    return generalSchedule;
 }
 
 function getFreeTime(personalSchedule, bankUTCZone) {
