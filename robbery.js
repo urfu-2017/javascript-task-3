@@ -281,7 +281,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             intervals.sort(customSort);
             if (workingHours.from !== workingHours.to && intervals.length === 0 &&
                 convertToMinutes(workingHours.to.split('+')[0]) -
-                convertToMinutes(workingHours.from.split('+')[0]) > duration) {
+                convertToMinutes(workingHours.from.split('+')[0]) >= duration) {
                 result.push({
                     day: DAYS_OF_WEEK[i],
                     from: workingHours.from.split('+')[0],
