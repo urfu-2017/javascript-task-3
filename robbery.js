@@ -279,7 +279,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
             createScheduleWhenBusy(i, intervals);
             intervals.sort(customSort);
-            if (workingHours.from !== workingHours.to && intervals.length === 0) {
+            if (workingHours.from !== workingHours.to && intervals.length === 0 &&
+                convertToMinutes(workingHours.to.split('+')[0]) -
+                convertToMinutes(workingHours.from.split('+')[0]) > duration) {
                 result.push({
                     day: DAYS_OF_WEEK[i],
                     from: workingHours.from.split('+')[0],
