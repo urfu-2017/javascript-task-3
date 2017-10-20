@@ -15,17 +15,15 @@ exports.isStar = false;
  * @returns {Object}
  */
 const DAY_IN_WEEK = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+const QUANTITY_DAY_IN_WEEK = 7;
 const HOURS_IN_DAY = 24;
 const MINUTES_IN_HOUR = 60;
 const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
 
 function parseToTimeObj(dateSrt) {
-    let dateArr = dateSrt.split(' ');
-    let day = dateArr[0];
-    let [timeStr, UTCZone] = dateArr[1].split('+');
-    let timeArr = timeStr.split(':');
-    let hours = parseInt(timeArr[0], 10);
-    let minutes = parseInt(timeArr[1], 10);
+    const [day, timeAndZne] = dateSrt.split(' ');
+    const [timeStr, UTCZone] = timeAndZne.split('+');
+    let [hours, minutes] = timeStr.split(':').map(x => parseInt(x, 10));
 
     return {
         timeInMinutes: minutes + hours * MINUTES_IN_HOUR + DAY_IN_WEEK[day] * MINUTES_IN_DAY,
@@ -42,55 +40,62 @@ function applyTimeZoneToTimeObj(UTCZone, timeObj) {
     };
 }
 
-function getShedule(schedule, bankUTCZone) {
-    let generalShadule = {
-        Danny: [],
-        Rusty: [],
-        Linus: []
-    };
-    Object.keys(schedule).map(function (name) {
-        schedule[name].map(function (personalShedule) {
-            let from = parseToTimeObj(personalShedule.from);
-            let to = parseToTimeObj(personalShedule.to);
+function getEmptyShceduleObj(shcedule) {
+    let generalShadule = {};
+    Object.keys(shcedule).forEach(function (name) {
+        if (!generalShadule.hasOwnProperty(name)) {
+            Object.defineProperty(generalShadule, name, {
+                value: [],
+                writable: true,
+                enumerable: true
+            });
+        }
+    });
+
+    return generalShadule;
+}
+
+function getShcedule(schedule, bankUTCZone) {
+    let generalShadule = getEmptyShceduleObj(schedule);
+    Object.keys(schedule).forEach(function (name) {
+        schedule[name].forEach(function (personalShcedule) {
+            let from = parseToTimeObj(personalShcedule.from);
+            let to = parseToTimeObj(personalShcedule.to);
             from = applyTimeZoneToTimeObj(bankUTCZone, from);
             to = applyTimeZoneToTimeObj(bankUTCZone, to);
             generalShadule[name].push({
                 from: from,
                 to: to
             });
-
-            return 1;
         });
-
-        return 1;
     });
 
     return generalShadule;
 }
 
-function getFreeTime(personalShedule, bankUTCZone) {
+function getFreeTime(personalShcedule, bankUTCZone) {
     const START_TIME = 0;
     const FINISH_TIME = 3 * MINUTES_IN_DAY;
-    let freeTimeShedule = [];
-    if (personalShedule[0].from.timeInMinutes > 0) {
-        freeTimeShedule.push({
+    let freeTimeShcedule = [];
+    if (personalShcedule[0].from.timeInMinutes > 0) {
+        freeTimeShcedule.push({
             from: {
                 timeInMinutes: START_TIME,
                 UTCZone: bankUTCZone
             },
-            to: personalShedule[0].from
+            to: personalShcedule[0].from
         });
     }
-    for (let i = 1; i < personalShedule.length; i++) {
-        freeTimeShedule.push({
-            from: personalShedule[i - 1].to,
-            to: personalShedule[i].from
+    for (let i = 1; i < personalShcedule.length; i++) {
+        freeTimeShcedule.push({
+            from: personalShcedule[i - 1].to,
+            to: personalShcedule[i].from
         });
     }
 
-    if (personalShedule[personalShedule.length - 1].to.timeInMinutes < FINISH_TIME) {
-        freeTimeShedule.push({
-            from: personalShedule[personalShedule.length - 1].to,
+    if (personalShcedule[personalShcedule.length - 1].to.timeInMinutes < FINISH_TIME) {
+        freeTimeShcedule.push({
+            from: personalShcedule[personalShcedule.length - 1].to,
             to: {
                 timeInMinutes: FINISH_TIME,
                 UTCZone: bankUTCZone
@@ -98,7 +103,7 @@ function getFreeTime(personalShedule, bankUTCZone) {
         });
     }
 
-    return freeTimeShedule;
+    return freeTimeShcedule;
 }
 
 function getSegmentsInter(first, second, bankUTCZone) {
@@ -120,26 +125,24 @@ function getSegmentsInter(first, second, bankUTCZone) {
     return -1;
 }
 
-function getIntersectionScedule(firstShedule, secondShedule, bankUTCZone) {
-    let resultShedule = [];
-    firstShedule.forEach(function (firstTimeSegment) {
-        secondShedule.forEach(function (secondTimeSegment) {
+function getIntersectionScedule(firstShcedule, secondShcedule, bankUTCZone) {
+    let resultShcedule = [];
+    firstShcedule.forEach(function (firstTimeSegment) {
+        secondShcedule.forEach(function (secondTimeSegment) {
             let segmmentsIntersection =
                 getSegmentsInter (firstTimeSegment, secondTimeSegment, bankUTCZone);
             if (segmmentsIntersection !== -1) {
-                resultShedule.push(segmmentsIntersection);
+                resultShcedule.push(segmmentsIntersection);
             }
         });
     });
 
-    return resultShedule;
+    return resultShcedule;
 }
 
 function parseBankTimeToTimeObj(bankTimeStr) {
     let [timeStr, UTCZone] = bankTimeStr.split('+');
-    let timeArr = timeStr.split(':');
-    let hours = parseInt(timeArr[0], 10);
-    let minutes = parseInt(timeArr[1], 10);
+    let [hours, minutes] = timeStr.split(':').map(x => parseInt(x, 10));
 
     return {
         timeInMinutes: minutes + hours * MINUTES_IN_HOUR,
@@ -147,12 +150,12 @@ function parseBankTimeToTimeObj(bankTimeStr) {
     };
 }
 
-function getBankShedule(workingHours) {
-    let bankShedule = [];
+function getBankShcedule(workingHours) {
+    let bankShcedule = [];
     let bankFrom = parseBankTimeToTimeObj(workingHours.from);
     let bankTo = parseBankTimeToTimeObj(workingHours.to);
-    for (let i = 0; i < 7; i++) {
-        bankShedule.push({
+    for (let i = 0; i < QUANTITY_DAY_IN_WEEK; i++) {
+        bankShcedule.push({
             from: {
                 timeInMinutes: bankFrom.timeInMinutes + i * MINUTES_IN_DAY,
                 UTCZone: bankFrom.UTCZone
@@ -164,19 +167,20 @@ function getBankShedule(workingHours) {
         });
     }
 
-    return bankShedule;
+    return bankShcedule;
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    const bankShedule = getBankShedule(workingHours);
-    const bankUTCZone = bankShedule[0].from.UTCZone;
-    const generalShedule = getShedule(schedule, bankUTCZone);
-    const DannyFreeTime = getFreeTime(generalShedule.Danny, bankUTCZone);
-    const LinusFreeTime = getFreeTime(generalShedule.Linus, bankUTCZone);
-    const RastyFreeTime = getFreeTime(generalShedule.Rusty, bankUTCZone);
-    let intersectionScedule = getIntersectionScedule(DannyFreeTime, LinusFreeTime, bankUTCZone);
-    intersectionScedule = getIntersectionScedule(intersectionScedule, RastyFreeTime, bankUTCZone);
-    intersectionScedule = getIntersectionScedule(intersectionScedule, bankShedule, bankUTCZone);
+    const bankShcedule = getBankShcedule(workingHours);
+    const bankUTCZone = bankShcedule[0].from.UTCZone;
+    const generalShcedule = getShcedule(schedule, bankUTCZone);
+    let freeTimeGeneralShcedule = [];
+    Object.keys(generalShcedule).forEach(function (name) {
+        freeTimeGeneralShcedule.push(getFreeTime(generalShcedule[name], bankUTCZone));
+    });
+    freeTimeGeneralShcedule.push(bankShcedule);
+    let intersectionScedule = freeTimeGeneralShcedule.reduce((prev, curr) =>
+        getIntersectionScedule(prev, curr, bankUTCZone));
     const appropriateMoment = intersectionScedule.filter(function (value) {
         return (value.to.timeInMinutes - value.from.timeInMinutes) >= duration;
     });
@@ -207,8 +211,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             const day = DAYS[Math.floor(minutes / MINUTES_IN_DAY)];
             minutes = minutes % MINUTES_IN_DAY;
             let hours = Math.floor(minutes / MINUTES_IN_HOUR);
-            hours = hours < 10 ? '0' + hours : hours;
             minutes = minutes % MINUTES_IN_HOUR;
+            hours = hours < 10 ? '0' + hours : hours;
             minutes = minutes < 10 ? '0' + minutes : minutes;
 
             return template
