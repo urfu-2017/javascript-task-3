@@ -1,9 +1,8 @@
 'use strict';
 
-/**
- * Сделано задание на звездочку
- * Реализовано оба метода и tryLater
- */
+const MINUTES_IN_DAY = 1440;
+const MINUETS_IN_HOUR = 60;
+
 exports.isStar = false;
 
 /**
@@ -23,14 +22,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * Найдено ли время
          * @returns {Boolean}
          */
+
         exists: function () {
-            var check = result(schedule, duration, workingHours);
-            if (check !== '') {
-                return true;
-            }
+            var stringDayToRob = searchTimeResult(schedule, duration, workingHours);
 
-            return false;
-
+            return Boolean(stringDayToRob);
         },
 
         /**
@@ -41,11 +37,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            var check = result(schedule, duration, workingHours);
+            var stringDayToRob = searchTimeResult(schedule, duration, workingHours);
             if (this.exists()) {
-                var timeDay = check[0].substring(0, 2);
-                var timeHours = check[0].substring(3, 5);
-                var timeMin = check[0].substring(6, 8);
+                var timeDay = stringDayToRob.substring(0, 2);
+                var timeHours = stringDayToRob.substring(3, 5);
+                var timeMin = stringDayToRob.substring(6, 8);
 
                 return template
                     .replace(/%DD/, timeDay)
@@ -54,7 +50,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
 
             return '';
-
         },
 
 
@@ -70,55 +65,55 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 function toOneArray(schedule, time) {
     var newSchedule = testToFreeDays(schedule);
-    var res = [];
+    var res = {};
     var keys = Object.keys(newSchedule);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
         var value = newSchedule[key];
         if (i === 0) {
-            res.Denny = toEachDay(value, time);
+            res.Denny = toFreeTimeInNumbers(value, time);
         }
         if (i === 1) {
-            res.Rusty = toEachDay(value, time);
+            res.Rusty = toFreeTimeInNumbers(value, time);
         }
         if (i === 2) {
-            res.Linus = toEachDay(value, time);
+            res.Linus = toFreeTimeInNumbers(value, time);
         }
     }
 
     return res;
 }
-function toEachDay(oneArray, time) {
+function toFreeTimeInNumbers(oneArray, time) {
     var weekFree = [];
     var openTime = [0];
     for (var i = 0; i < oneArray.length; i++) {
-        var oT = openTime.concat(toMinuetsWhDay(oneArray[i].from, time));
-        weekFree.push(oT);
-        openTime = [toMinuetsWhDay(oneArray[i].to, time)];
+        var sergmentFreeTime = openTime.concat(toMinuetsFromDate(oneArray[i].from, time));
+        weekFree.push(sergmentFreeTime);
+        openTime = [toMinuetsFromDate(oneArray[i].to, time)];
         if (i === oneArray.length - 1) {
-            var cT = [toMinuetsWhDay(oneArray[i].to, time)].concat(4319);
-            weekFree.push(cT);
+            var lastSegmentTime = [toMinuetsFromDate(oneArray[i].to, time)].concat(4319);
+            weekFree.push(lastSegmentTime);
         }
     }
 
     return weekFree;
-
 }
 
 function toMinuets(str) {
     if (str.length === 7) {
-        var timeWithDay = 60 * Number(str.substring(0, 2)) + Number(str.substring(3, 5)) -
-        60 * Number(str.substring(6, 7));
+        var timeWithDay = MINUETS_IN_HOUR * Number(str.substring(0, 2)) +
+        Number(str.substring(3, 5)) -
+        MINUETS_IN_HOUR * Number(str.substring(6, 7));
 
         return timeWithDay;
     }
-    var time = 60 * Number(str.substring(0, 1)) + Number(str.substring(2, 4)) -
-    60 * Number(str.substring(5, 6));
+    var time = MINUETS_IN_HOUR * Number(str.substring(0, 1)) + Number(str.substring(2, 4)) -
+    MINUETS_IN_HOUR * Number(str.substring(5, 6));
 
     return time;
 }
 
-function hours(h) {
+function addZero(h) {
     if (h < 10) {
         var hr = '0' + h;
 
@@ -128,39 +123,43 @@ function hours(h) {
     return h;
 }
 
-function toHours(numb) {
+function workTimeToDays(numb) {
     var str = '';
-    if (numb < 4320 && numb >= 2880) { // ноль! 09 
-        str = 'СР ' + hours(Math.floor((numb - 2880) / 60)) + ':' + hours((numb - 2880) % 60);
+    if (numb < MINUTES_IN_DAY * 3 && numb >= MINUTES_IN_DAY * 2) { // ноль! 09 
+        str = 'СР ' + addZero(Math.floor((numb - MINUTES_IN_DAY * 2) / MINUETS_IN_HOUR)) + ':' +
+         addZero((numb - MINUTES_IN_DAY * 2) % MINUETS_IN_HOUR);
     }
-    if (numb < 2880 && numb >= 1440) {
-        str = 'ВТ ' + hours(Math.floor((numb - 1440) / 60)) + ':' + hours((numb - 1440) % 60);
+    if (numb < MINUTES_IN_DAY * 2 && numb >= MINUTES_IN_DAY) {
+        str = 'ВТ ' + addZero(Math.floor((numb - MINUTES_IN_DAY) / MINUETS_IN_HOUR)) + ':' +
+        addZero((numb - MINUTES_IN_DAY) % MINUETS_IN_HOUR);
     }
-    if (numb < 1440) {
-        str = 'ПН ' + hours(Math.floor(numb / 60)) + ':' + hours(numb % 60);
+    if (numb < MINUTES_IN_DAY) {
+        str = 'ПН ' + addZero(Math.floor(numb / MINUETS_IN_HOUR)) + ':' +
+        addZero(numb % MINUETS_IN_HOUR);
     }
 
     return str;
 }
 
-function toMinuetsWhDay(day, time) {
-    var Ar = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-    var i = Ar.indexOf(day.substring(0, 2));
-    var timeM = 60 * Number(day.substring(3, 5)) + Number(day.substring(6, 8)) -
-    60 * Number(day.substring(9, 10)) + 60 * 24 * i + 60 * Number(time.from.substring(6));
+function toMinuetsFromDate(day, timeBank) {
+    var dateArray = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+    var i = dateArray.indexOf(day.substring(0, 2));
+    var timeInMinutes = MINUETS_IN_HOUR * Number(day.substring(3, 5)) +
+    Number(day.substring(6, 8)) - MINUETS_IN_HOUR * Number(day.substring(9, 10)) +
+    MINUETS_IN_HOUR * 24 * i + MINUETS_IN_HOUR * Number(timeBank.from.substring(6));
 
-    return timeM;
+    return timeInMinutes;
 }
 
 function toOneFreeTime(P1, P2) {
     var answ = [];
     for (var i = 0; i < P1.length; i++) {
-        let n1 = P1[i][0];
-        let k1 = P1[i][1];
+        var n1 = P1[i][0];
+        var k1 = P1[i][1];
         for (var j = 0; j < P2.length; j++) {
-            let n2 = P2[j][0];
-            let k2 = P2[j][1];
-            answ.push(peresech(n1, k1, n2, k2));
+            var n2 = P2[j][0];
+            var k2 = P2[j][1];
+            answ.push(intersectionOfTime(n1, k1, n2, k2));
         }
     }
     var answWithoutEmpty = [];
@@ -173,57 +172,50 @@ function toOneFreeTime(P1, P2) {
     return answWithoutEmpty;
 }
 
-function result(raspisan, timeToLo, workTime) {
-    var rasp = checkRaspisan(raspisan);
+function searchTimeResult(schedule, duration, workingHours) {
+    var rasp = checkSchedule(schedule);
     var answer = [];
-    var oneAr = toOneArray(rasp, workTime);
+    var oneAr = toOneArray(rasp, workingHours);
     var timeDenny = oneAr.Denny;
-    var timeRus = oneAr.Rusty;
+    var timeRusty = oneAr.Rusty;
     var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDenny, oneAr.Linus),
-        timeRus);
-    var freeTimeWithBank = toOneFreeTime(freeTimePeople, mapp(timeToArray(workTime), workTime));
-    var lootTimeInOneLine = findTime(timeToLo, freeTimeWithBank);
+        timeRusty);
+    var freeTimeWithBank = toOneFreeTime(freeTimePeople,
+        toOneTimeZone(timeToArray(workingHours), workingHours));
+    var lootTimeInOneLine = findTime(duration, freeTimeWithBank);
     if (lootTimeInOneLine.length === 0) {
 
         return '';
     }
 
     for (var i = 0; i < lootTimeInOneLine.length; i++) {
-        var date = toHours(lootTimeInOneLine[i]);
+        var date = workTimeToDays(lootTimeInOneLine[i]);
         answer.push(date);
     }
 
-    return answer;
-
+    return answer[0];
 }
 
-function peresech(a, b, c, d) {
+function intersectionOfTime(a, b, c, d) {
     var a1 = a;
     var b1 = b;
     var c1 = c;
     var d1 = d;
-    var abcd = [a, b, c, d];
-    var peresec = [];
-    for (var i = 0; i < abcd.length; i++) {
-        if (abcd[i] < 0) {
-            abcd[i] = 0;
-        }
-    }
+    var intersection = [];
     if (c > b || d < a) {
-        return peresec;
+        return intersection;
     }
-    peresec = [Math.max(a1, c1), Math.min(b1, d1)];
+    intersection = [Math.max(a1, c1), Math.min(b1, d1)];
 
-    return peresec;
-
+    return intersection;
 }
 function timeToArray(time) {
     var workHours = [];
     var plusDay = 0;
     for (var i = 0; i < 3; i++) {
-        plusDay = i * 1440;
-        if (toMinuets(time.to) + plusDay > 1439 * (i + 1)) {
-            workHours.push([toMinuets(time.from) + plusDay, 1439 * (i + 1)]);
+        plusDay = i * MINUTES_IN_DAY;
+        if (toMinuets(time.to) + plusDay >= MINUTES_IN_DAY * (i + 1)) {
+            workHours.push([toMinuets(time.from) + plusDay, (MINUTES_IN_DAY * (i + 1) - 1)]);
         } else {
             workHours.push([toMinuets(time.from) + plusDay,
                 toMinuets(time.to) + plusDay]);
@@ -233,63 +225,61 @@ function timeToArray(time) {
     return workHours;
 }
 function findTime(number, freeAr) {
-    var answer = [];
+    var answersArray = [];
     for (var i = 0; i < freeAr.length; i++) {
         var nach = freeAr[i][0];
         var conc = freeAr[i][1];
         if ((conc - nach) >= number) {
-            answer.push(nach);
+            answersArray.push(nach);
         }
     }
 
-    return answer;
+    return answersArray;
 }
 
 
-function test(one) {
-    if (one.length === 0) {
-        one.push({ from: 'ПН 00:00+0', to: 'ПН 00:00+0' });
+function checkEmptyDay(worker) {
+    if (worker.length === 0) {
+        worker.push({ from: 'ПН 00:00+0', to: 'ПН 00:00+0' });
     }
 
-    return one;
-
+    return worker;
 }
 
-function testToFreeDays(rasp) {
+function testToFreeDays(schedule) {
     var newRasp = {};
     newRasp.Denny = [];
     newRasp.Linus = [];
     newRasp.Rusty = [];
-    newRasp.Linus = test(rasp.Linus);
-    newRasp.Rusty = test(rasp.Rusty);
-    newRasp.Denny = test(rasp.Danny);
+    newRasp.Linus = checkEmptyDay(schedule.Linus);
+    newRasp.Rusty = checkEmptyDay(schedule.Rusty);
+    newRasp.Denny = checkEmptyDay(schedule.Danny);
 
     return newRasp;
 }
 
-function checkRaspisan(rasp) {
-    if (rasp === null) {
+function checkSchedule(schedule) {
+    if (schedule === null) {
         return '';
     }
-    if (rasp.Danny === undefined && rasp !== null) {
-        rasp.Danny = [];
+    if (schedule.Danny === undefined) {
+        schedule.Danny = [];
     }
-    if (rasp.Rusty === undefined && rasp !== null) {
-        rasp.Rusty = [];
+    if (schedule.Rusty === undefined) {
+        schedule.Rusty = [];
     }
-    if (rasp.Linus === undefined && rasp !== null) {
-        rasp.Linus = [];
+    if (schedule.Linus === undefined) {
+        schedule.Linus = [];
     }
 
-    return rasp;
+    return schedule;
 }
 
-
-function mapp(ar, wt) {
+function toOneTimeZone(array, workTime) {
     var res = [];
-    for (var i = 0; i < ar.length; i++) {
-        var p = [ar[i][0] + Number((wt.from).substring(6)) * 60,
-            ar[i][1] + Number((wt.to).substring(6)) * 60];
+    for (var i = 0; i < array.length; i++) {
+        var p = [array[i][0] + Number((workTime.from).substring(6)) * MINUETS_IN_HOUR,
+            array[i][1] + Number((workTime.to).substring(6)) * MINUETS_IN_HOUR];
         res.push(p);
     }
 
