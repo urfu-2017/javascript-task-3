@@ -40,9 +40,9 @@ function applyTimeZoneToTimeObj(UTCZone, timeObj) {
     };
 }
 
-function getEmptyShceduleObj(shcedule) {
+function getEmptyScheduleObj(schedule) {
     let generalShadule = {};
-    Object.keys(shcedule).forEach(function (name) {
+    Object.keys(schedule).forEach(function (name) {
         if (!generalShadule.hasOwnProperty(name)) {
             Object.defineProperty(generalShadule, name, {
                 value: [],
@@ -55,12 +55,12 @@ function getEmptyShceduleObj(shcedule) {
     return generalShadule;
 }
 
-function getShcedule(schedule, bankUTCZone) {
-    let generalShadule = getEmptyShceduleObj(schedule);
+function getSchedule(schedule, bankUTCZone) {
+    let generalShadule = getEmptyScheduleObj(schedule);
     Object.keys(schedule).forEach(function (name) {
-        schedule[name].forEach(function (personalShcedule) {
-            let from = parseToTimeObj(personalShcedule.from);
-            let to = parseToTimeObj(personalShcedule.to);
+        schedule[name].forEach(function (personalSchedule) {
+            let from = parseToTimeObj(personalSchedule.from);
+            let to = parseToTimeObj(personalSchedule.to);
             from = applyTimeZoneToTimeObj(bankUTCZone, from);
             to = applyTimeZoneToTimeObj(bankUTCZone, to);
             generalShadule[name].push({
@@ -73,29 +73,29 @@ function getShcedule(schedule, bankUTCZone) {
     return generalShadule;
 }
 
-function getFreeTime(personalShcedule, bankUTCZone) {
+function getFreeTime(personalSchedule, bankUTCZone) {
     const START_TIME = 0;
     const FINISH_TIME = 3 * MINUTES_IN_DAY;
-    let freeTimeShcedule = [];
-    if (personalShcedule[0].from.timeInMinutes > 0) {
-        freeTimeShcedule.push({
+    let freeTimeSchedule = [];
+    if (personalSchedule[0].from.timeInMinutes > 0) {
+        freeTimeSchedule.push({
             from: {
                 timeInMinutes: START_TIME,
                 UTCZone: bankUTCZone
             },
-            to: personalShcedule[0].from
+            to: personalSchedule[0].from
         });
     }
-    for (let i = 1; i < personalShcedule.length; i++) {
-        freeTimeShcedule.push({
-            from: personalShcedule[i - 1].to,
-            to: personalShcedule[i].from
+    for (let i = 1; i < personalSchedule.length; i++) {
+        freeTimeSchedule.push({
+            from: personalSchedule[i - 1].to,
+            to: personalSchedule[i].from
         });
     }
 
-    if (personalShcedule[personalShcedule.length - 1].to.timeInMinutes < FINISH_TIME) {
-        freeTimeShcedule.push({
-            from: personalShcedule[personalShcedule.length - 1].to,
+    if (personalSchedule[personalSchedule.length - 1].to.timeInMinutes < FINISH_TIME) {
+        freeTimeSchedule.push({
+            from: personalSchedule[personalSchedule.length - 1].to,
             to: {
                 timeInMinutes: FINISH_TIME,
                 UTCZone: bankUTCZone
@@ -103,7 +103,7 @@ function getFreeTime(personalShcedule, bankUTCZone) {
         });
     }
 
-    return freeTimeShcedule;
+    return freeTimeSchedule;
 }
 
 function getSegmentsInter(first, second, bankUTCZone) {
@@ -125,19 +125,19 @@ function getSegmentsInter(first, second, bankUTCZone) {
     return -1;
 }
 
-function getIntersectionScedule(firstShcedule, secondShcedule, bankUTCZone) {
-    let resultShcedule = [];
-    firstShcedule.forEach(function (firstTimeSegment) {
-        secondShcedule.forEach(function (secondTimeSegment) {
+function getIntersectionSchedule(firstSchedule, secondSchedule, bankUTCZone) {
+    let resultSchedule = [];
+    firstSchedule.forEach(function (firstTimeSegment) {
+        secondSchedule.forEach(function (secondTimeSegment) {
             let segmmentsIntersection =
                 getSegmentsInter (firstTimeSegment, secondTimeSegment, bankUTCZone);
             if (segmmentsIntersection !== -1) {
-                resultShcedule.push(segmmentsIntersection);
+                resultSchedule.push(segmmentsIntersection);
             }
         });
     });
 
-    return resultShcedule;
+    return resultSchedule;
 }
 
 function parseBankTimeToTimeObj(bankTimeStr) {
@@ -150,12 +150,12 @@ function parseBankTimeToTimeObj(bankTimeStr) {
     };
 }
 
-function getBankShcedule(workingHours) {
-    let bankShcedule = [];
+function getBankSchedule(workingHours) {
+    let bankSchedule = [];
     let bankFrom = parseBankTimeToTimeObj(workingHours.from);
     let bankTo = parseBankTimeToTimeObj(workingHours.to);
     for (let i = 0; i < QUANTITY_DAY_IN_WEEK; i++) {
-        bankShcedule.push({
+        bankSchedule.push({
             from: {
                 timeInMinutes: bankFrom.timeInMinutes + i * MINUTES_IN_DAY,
                 UTCZone: bankFrom.UTCZone
@@ -167,21 +167,31 @@ function getBankShcedule(workingHours) {
         });
     }
 
-    return bankShcedule;
+    return bankSchedule;
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    const bankShcedule = getBankShcedule(workingHours);
-    const bankUTCZone = bankShcedule[0].from.UTCZone;
-    const generalShcedule = getShcedule(schedule, bankUTCZone);
-    let freeTimeGeneralShcedule = [];
-    Object.keys(generalShcedule).forEach(function (name) {
-        freeTimeGeneralShcedule.push(getFreeTime(generalShcedule[name], bankUTCZone));
+    /*const bankSchedule = getBankSchedule(workingHours);
+    const bankUTCZone = bankSchedule[0].from.UTCZone;
+    const generalSchedule = getSchedule(schedule, bankUTCZone);
+    let freeTimeGeneralSchedule = [];
+    Object.keys(generalSchedule).forEach(function (name) {
+        freeTimeGeneralSchedule.push(getFreeTime(generalSchedule[name], bankUTCZone));
     });
-    freeTimeGeneralShcedule.push(bankShcedule);
-    let intersectionScedule = freeTimeGeneralShcedule.reduce((prev, curr) =>
-        getIntersectionScedule(prev, curr, bankUTCZone));
-    const appropriateMoment = intersectionScedule.filter(function (value) {
+    freeTimeGeneralSchedule.push(bankSchedule);
+    let intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
+        getIntersectionSchedule(prev, curr, bankUTCZone));*/
+
+    const bankSchedule = getBankSchedule(workingHours);
+    const bankUTCZone = bankSchedule[0].from.UTCZone;
+    const generalSchedule = getSchedule(schedule, bankUTCZone);
+    const DannyFreeTime = getFreeTime(generalSchedule.Danny, bankUTCZone);
+    const LinusFreeTime = getFreeTime(generalSchedule.Linus, bankUTCZone);
+    const RastyFreeTime = getFreeTime(generalSchedule.Rusty, bankUTCZone);
+    let intersectionSchedule = getIntersectionSchedule(DannyFreeTime, LinusFreeTime, bankUTCZone);
+    intersectionSchedule = getIntersectionSchedule(intersectionSchedule, RastyFreeTime, bankUTCZone);
+    intersectionSchedule = getIntersectionSchedule(intersectionSchedule, bankSchedule, bankUTCZone);
+    const appropriateMoment = intersectionSchedule.filter(function (value) {
         return (value.to.timeInMinutes - value.from.timeInMinutes) >= duration;
     });
 
