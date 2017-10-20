@@ -14,6 +14,7 @@ var t1 = [0];
 var t2 = [day * 3];
 var gTime;
 var counter = 0;
+var boolControl = true;
 
 function transform(time, template) {
     var days = ['ПН', 'ВТ', 'СР'];
@@ -95,8 +96,12 @@ function typeOfConfluence(k, busy1, busy2) {
 }
 
 function cutter(busy1, busy2) {
-    for (var k = 0; k < t1.length; k++) {
-        typeOfConfluence(k, busy1, busy2);
+    if (busy1 > 0 && busy2 > 0) {
+        for (var k = 0; k < t1.length; k++) {
+            typeOfConfluence(k, busy1, busy2);
+        }
+    } else {
+        boolControl = false;
     }
 }
 
@@ -114,7 +119,7 @@ function parseBusyTime(time) {
             x = 2;
             break;
         default:
-            return 0;
+            x = -1000;
     }
     if (arr[0] > 60 || arr[1] > 24) {
         return 0;
@@ -137,12 +142,10 @@ function firstExpulsion(a, b) {
 }
 
 function whCoercion(workingHours) {
-    var arrwh = workingHours.from.split('+');
-    basetimezone = arrwh[1];
-    arrwh = arrwh[0].split(':');
+    var arrwh = workingHours.from.split(/:|\+/);
+    basetimezone = arrwh[2];
     wh1 = Number(arrwh[0]) * 60 + Number(arrwh[1]);
-    arrwh = workingHours.to.split('+');
-    arrwh = arrwh[0].split(':');
+    arrwh = workingHours.to.split(/:|\+/);
     wh2 = Number(arrwh[0]) * 60 + Number(arrwh[1]);
     // console.info (basetimezone, wh1, wh2);
 }
@@ -187,6 +190,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
+            if (!boolControl) {
+                return false;
+            }
+
             return t1.length !== 0;
         },
 
