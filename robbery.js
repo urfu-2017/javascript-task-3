@@ -16,7 +16,7 @@ exports.isStar = false;
  */
 
 const MIN_IN_A_DAY = 1440;
-function findIntersection(inter1, inter2) { // eslint-disable-line max-statements
+function findIntersection(inter1, inter2) { // eslint-disable-line max-statements, complexity
     if (inter1 === [] || inter2 === []) {
         return [];
     }
@@ -123,9 +123,9 @@ function getBank(bank) {
 }
 function getFreeTimeIntervals(name) {
     var day = [];
-    for (var i = 0; i < name.length; i++) {
-        var t1 = toMinsFromMonday(name[i].from);
-        var t2 = toMinsFromMonday(name[i].to);
+    for (var k = 0; k < name.length; k++) {
+        var t1 = toMinsFromMonday(name[k].from);
+        var t2 = toMinsFromMonday(name[k].to);
         day.push([t1, t2]);
     }
     var start = Number.NEGATIVE_INFINITY;
