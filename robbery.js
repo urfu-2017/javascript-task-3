@@ -220,9 +220,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             var b1 = false;
             gTime = t1[counter];
             // console.info('ROVAAA', t1, t2, gTime);
-            if (!this.exists()) {
-                // console.info(!this.exists());
-            } else if (t2[counter] - t1[counter] - 30 >= duration) {
+            if (t2[counter] - t1[counter] - 30 >= duration) {
                 // console.info('qq', t1[counter] + 30);
                 // counter--;
                 t1[counter] = t1[counter] + 30;
