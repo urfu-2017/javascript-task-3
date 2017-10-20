@@ -22,12 +22,19 @@ exports.converter = function () {
             return parseInt(date.split('+')[1]);
         },
 
-        dayToNum: function (day) {
-            return DAYS_TO_NUM[day];
-        },
-
         numToDay: function (num) {
             return NUM_TO_DAYS[num];
+        },
+
+        numberToTime: function (number, offset) {
+            number += offset * MIN_IN_HOUR;
+
+            return {
+                day: Math.floor(number / MIN_IN_DAY),
+                hour: Math.floor((number % MIN_IN_DAY) / MIN_IN_HOUR),
+                min: (number % MIN_IN_DAY) % MIN_IN_HOUR,
+                offset: offset
+            };
         },
 
         parseDate: function (date) {
@@ -38,7 +45,7 @@ exports.converter = function () {
             var offset = parseInt(parseDate[3]);
 
             return {
-                day: day,
+                day: DAYS_TO_NUM[day],
                 hour: hour,
                 min: min,
                 offset: offset
@@ -46,38 +53,17 @@ exports.converter = function () {
 
         },
 
-        timeToNumber: function (time) {
-            return DAYS_TO_NUM[time.day] * MIN_IN_DAY +
-                   time.hour * MIN_IN_HOUR + time.min -
+        timeToMin: function (time) {
+            return time.day * MIN_IN_DAY +
+                   time.hour * MIN_IN_HOUR +
+                   time.min -
                    time.offset * MIN_IN_HOUR;
 
         },
 
         timeToString: function (time, template) {
-            return template.replace('%DD', time.day)
-                .replace('%HH', time.hour)
-                .replace('%MM', time.min)
-                .replace('%OO', time.offset);
-
-        },
-
-        toNumber: function (timeString) {
-            var parseDate = timeString.split(/ |:|\+/);
-            var day = parseDate[0];
-            var hour = parseInt(parseDate[1]);
-            var min = parseInt(parseDate[2]);
-            var offset = parseInt(parseDate[3]);
-
-            return DAYS_TO_NUM[day] * MIN_IN_DAY +
-                   hour * MIN_IN_HOUR + min -
-                   offset * MIN_IN_HOUR;
-        },
-
-        toTime: function (number, offset, template) {
-            number += offset * MIN_IN_HOUR;
-            var day = NUM_TO_DAYS[Math.floor(number / MIN_IN_DAY)];
-            var hour = Math.floor((number % MIN_IN_DAY) / MIN_IN_HOUR);
-            var min = (number % MIN_IN_DAY) % MIN_IN_HOUR;
+            var hour = time.hour;
+            var min = time.min;
             if (hour < 10) {
                 hour = '0' + hour.toString();
             }
@@ -85,46 +71,70 @@ exports.converter = function () {
                 min = '0' + min.toString();
             }
 
-            return template.replace('%DD', day)
+            return template.replace('%DD', NUM_TO_DAYS[time.day])
                 .replace('%HH', hour)
                 .replace('%MM', min)
-                .replace('%OO', offset);
+                .replace('%OO', time.offset);
+
         },
 
-        toNumberInterval: function (interval) {
-            return {
-                from: this.toNumber(interval.from),
-                to: this.toNumber(interval.to)
-            };
+        getTimeBankIntervals: function (workingHours, bankFirstDay, bankLastDay) {
+            var timeBankIntervals = [];
+            for (var i = bankFirstDay; i <= bankLastDay; ++i) {
+                var workInterval =
+                {
+                    begin: this.parseDate(this.fullDate(this.numToDay(i), workingHours.from)),
+                    end: this.parseDate(this.fullDate(this.numToDay(i), workingHours.to))
+                };
+                timeBankIntervals.push(workInterval);
+            }
+
+            return timeBankIntervals;
         },
 
-        toTimeInterval: function (interval, offset) {
-            return {
-                from: this.toTime(interval.from, offset, '%DD %HH:%MM+%OO'),
-                to: this.toTime(interval.to, offset, '%DD %HH:%MM+%OO')
-            };
+        convertToTimeSchedule: function (schedule) {
+            var timeSchedule = {};
+            for (var guy in schedule) {
+                if (!schedule.hasOwnProperty(guy)) {
+                    continue;
+                }
+                timeSchedule[guy] = [];
+                for (var i = 0; i < schedule[guy].length; ++i) {
+                    var timeInterval = {
+                        begin: this.parseDate(schedule[guy][i].from),
+                        end: this.parseDate(schedule[guy][i].to)
+                    };
+                    timeSchedule[guy].push(timeInterval);
+                }
+            }
+
+            return timeSchedule;
         }
+
     };
 };
 
-exports.intervalComparator = function (interval1, interval2) {
-    return {
-        notIntersect: (interval1.to <= interval2.from || interval1.from >= interval2.to),
-        firstIn: (interval2.from <= interval1.from && interval1.to <= interval2.to)
-    };
-};
-
-exports.isGoodTimeForAllGuys = function (timeInterval, schedule) {
-    var answer = true;
+exports.timeIntervalComparator = function (firstTimeInterval, secondTimeInterval) {
     var converter = exports.converter();
-    var curInterval = converter.toNumberInterval(timeInterval);
-    for (var guy in schedule) {
-        if (!schedule.hasOwnProperty(guy)) {
+    var firstBegin = converter.timeToMin(firstTimeInterval.begin);
+    var firstEnd = converter.timeToMin(firstTimeInterval.end);
+    var secondBegin = converter.timeToMin(secondTimeInterval.begin);
+    var secondEnd = converter.timeToMin(secondTimeInterval.end);
+
+    return {
+        notIntersect: (firstEnd <= secondBegin || firstBegin >= secondEnd),
+        firstIn: (secondBegin <= firstBegin && firstEnd <= secondEnd)
+    };
+};
+
+exports.isGoodTimeForAllGuys = function (timeInterval, timeSchedule) {
+    var answer = true;
+    for (var guy in timeSchedule) {
+        if (!timeSchedule.hasOwnProperty(guy)) {
             continue;
         }
-        for (var i = 0; i < schedule[guy].length; ++i) {
-            var guyInterval = converter.toNumberInterval(schedule[guy][i]);
-            var cmp = exports.intervalComparator(curInterval, guyInterval);
+        for (var i = 0; i < timeSchedule[guy].length; ++i) {
+            var cmp = exports.timeIntervalComparator(timeInterval, timeSchedule[guy][i]);
             answer = answer && cmp.notIntersect;
         }
     }
@@ -132,19 +142,12 @@ exports.isGoodTimeForAllGuys = function (timeInterval, schedule) {
     return answer;
 };
 
-exports.isGoodTimeForBank = function (timeInterval, workingHours, bankFirstDay, bankLastDay) {
-    var converter = exports.converter();
-    var currentInterval = converter.toNumberInterval(timeInterval);
-    var firstDay = converter.dayToNum(bankFirstDay);
-    var lastDay = converter.dayToNum(bankLastDay);
-    for (var i = firstDay; i <= lastDay; ++i) {
-        var workInterval = converter.toNumberInterval(
-            {
-                from: converter.fullDate(converter.numToDay(i), workingHours.from),
-                to: converter.fullDate(converter.numToDay(i), workingHours.to)
-            }
-        );
-        var cmp = exports.intervalComparator(currentInterval, workInterval);
+exports.isGoodTimeForBank = function (timeInterval, timeBankIntervals) {
+    for (var bankInterval in timeBankIntervals) {
+        if (!timeBankIntervals.hasOwnProperty(bankInterval)) {
+            continue;
+        }
+        var cmp = exports.timeIntervalComparator(timeInterval, timeBankIntervals[bankInterval]);
         if (cmp.firstIn) {
             return true;
         }
@@ -153,22 +156,21 @@ exports.isGoodTimeForBank = function (timeInterval, workingHours, bankFirstDay, 
     return false;
 };
 
-exports.findGoodTime = function (start, end, info) {
+exports.findGoodTime = function (startTime, endTime, info) {
     var converter = exports.converter();
+    var start = converter.timeToMin(startTime);
+    var end = converter.timeToMin(endTime);
     for (var timeNum = start; timeNum <= end; ++timeNum) {
-        var timeInterval = converter.toTimeInterval(
-            {
-                from: timeNum,
-                to: timeNum + info.duration
-            },
-            info.bankOffset
-        );
-        if (exports.isGoodTimeForAllGuys(timeInterval, info.schedule) &&
-            exports.isGoodTimeForBank(timeInterval,
-                info.workingHours, info.bankFirstDay, info.bankLastDay)) {
+        var timeInterval =
+        {
+            begin: converter.numberToTime(timeNum, info.bankOffset),
+            end: converter.numberToTime(timeNum + info.duration, info.bankOffset)
+        };
+        if (exports.isGoodTimeForAllGuys(timeInterval, info.timeSchedule) &&
+            exports.isGoodTimeForBank(timeInterval, info.timeBankIntervals)) {
             return {
                 exist: true,
-                answer: timeNum
+                answer: converter.numberToTime(timeNum, info.bankOffset)
             };
         }
     }
@@ -185,24 +187,22 @@ exports.findGoodTime = function (start, end, info) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    const BANK_FIRST_DAY = 'ПН';
-    const BANK_LAST_DAY = 'СР';
+    const BANK_FIRST_DAY = 0;
+    const BANK_LAST_DAY = 2;
     console.info(schedule, duration, workingHours);
     var converter = exports.converter();
-    var bankOffset = converter.getOffset(workingHours.from);
     var info = {
-        schedule: schedule,
-        workingHours: workingHours,
+        timeSchedule: converter.convertToTimeSchedule(schedule),
+        timeBankIntervals: converter.getTimeBankIntervals(workingHours,
+            BANK_FIRST_DAY, BANK_LAST_DAY),
         duration: duration,
-        bankOffset: bankOffset,
-        bankFirstDay: BANK_FIRST_DAY,
-        bankLastDay: BANK_LAST_DAY
+        bankOffset: converter.getOffset(workingHours.from)
     };
-    var globalStart = converter.toNumber(converter.fullDate(BANK_FIRST_DAY, workingHours.from));
-    var globalEnd = converter.toNumber(converter.fullDate(BANK_LAST_DAY, workingHours.to));
-    var result = exports.findGoodTime(globalStart, globalEnd, info);
-    var exist = result.exist;
-    var answer = result.answer;
+    var globalStartTime = info.timeBankIntervals[0].begin;
+    var globalEndTime = info.timeBankIntervals[info.timeBankIntervals.length - 1].end;
+    var result = exports.findGoodTime(globalStartTime, globalEndTime, info);
+    var existRobberyTime = result.exist;
+    var robberyTime = result.answer;
 
     return {
 
@@ -211,7 +211,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return exist;
+            return existRobberyTime;
         },
 
         /**
@@ -222,11 +222,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (answer === undefined) {
+            if (robberyTime === undefined) {
                 return '';
             }
 
-            return converter.toTime(answer, bankOffset, template);
+            return converter.timeToString(robberyTime, template);
         },
 
         /**
@@ -236,12 +236,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             const NEXT_TRY_OFFSET = 30;
-            if (answer === undefined) {
+            if (robberyTime === undefined) {
                 return false;
             }
-            result = exports.findGoodTime(answer + NEXT_TRY_OFFSET, globalEnd, info);
+            var newStartTime = converter.numberToTime(
+                converter.timeToMin(robberyTime) + NEXT_TRY_OFFSET, info.bankOffset);
+            result = exports.findGoodTime(newStartTime, globalEndTime, info);
             if (result.exist) {
-                answer = result.answer;
+                robberyTime = result.answer;
             }
 
             return result.exist;
