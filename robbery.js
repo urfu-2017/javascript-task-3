@@ -171,26 +171,13 @@ function getBankSchedule(workingHours) {
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-
-    /*
+    const bankSchedule = getBankSchedule(workingHours);
+    const bankUTCZone = bankSchedule[0].from.UTCZone;
+    const generalSchedule = getSchedule(schedule, bankUTCZone);
     let freeTimeGeneralSchedule = [];
     Object.keys(generalSchedule).forEach(function (name) {
         freeTimeGeneralSchedule.push(getFreeTime(generalSchedule[name], bankUTCZone));
     });
-    freeTimeGeneralSchedule.push(bankSchedule);
-    let intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
-        getIntersectionSchedule(prev, curr, bankUTCZone));*/
-
-    const bankSchedule = getBankSchedule(workingHours);
-    const bankUTCZone = bankSchedule[0].from.UTCZone;
-    const generalSchedule = getSchedule(schedule, bankUTCZone);
-    const DannyFreeTime = getFreeTime(generalSchedule.Danny, bankUTCZone);
-    const LinusFreeTime = getFreeTime(generalSchedule.Linus, bankUTCZone);
-    const RastyFreeTime = getFreeTime(generalSchedule.Rusty, bankUTCZone);
-    let freeTimeGeneralSchedule = [];
-    freeTimeGeneralSchedule.push(DannyFreeTime);
-    freeTimeGeneralSchedule.push(LinusFreeTime);
-    freeTimeGeneralSchedule.push(RastyFreeTime);
     freeTimeGeneralSchedule.push(bankSchedule);
     let intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
         getIntersectionSchedule(prev, curr, bankUTCZone));
