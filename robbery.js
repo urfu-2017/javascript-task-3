@@ -296,7 +296,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function getRobberySchedule() {
-        if (duration <= 0) {
+        if (duration <= 0 || duration > 1439) {
             return [];
         }
         setScheduleCorrectForm();
