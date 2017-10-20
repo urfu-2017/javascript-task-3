@@ -100,8 +100,6 @@ function cutter(busy1, busy2) {
         for (var k = 0; k < t1.length; k++) {
             typeOfConfluence(k, busy1, busy2);
         }
-    } else {
-        boolControl = false;
     }
 }
 
@@ -122,7 +120,7 @@ function parseBusyTime(time) {
             x = -1000;
     }
     if (arr[0] > 60 || arr[1] > 24) {
-        boolControl = false;
+        x = -1000;
     }
     var busy = arr[1] * 60 + Number(arr[2]) + x * day + 60 * (basetimezone - arr[3]);
 
