@@ -6,7 +6,8 @@
  */
 exports.isStar = true;
 
-let daysOfWeek = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+let DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+let ROBBERY_INTERVAL = 30;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -33,7 +34,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return availableRobberyDates.length > currentRobberyIndex;
+            return currentRobberyIndex < availableRobberyDates.length;
         },
 
         /**
@@ -73,7 +74,7 @@ function getRobberyTimesFromFreeSegment(segment, robberyDuration) {
     let currentTime = segment.from;
     while (currentTime + robberyDuration <= segment.to) {
         times.push(currentTime);
-        currentTime += 30;
+        currentTime += ROBBERY_INTERVAL;
     }
 
     return times;
@@ -99,27 +100,17 @@ function searchFreeSegments(timePoints) {
 }
 
 function compareTimes(time1, time2) {
-    if (time1.minutes < time2.minutes) {
-        return -1;
-    }
-    if (time1.minutes > time2.minutes) {
-        return 1;
-    }
-
-    return 0;
+    return time1.minutes - time2.minutes;
 }
 
 function searchFreeDates(timePoints, duration) {
     timePoints.sort(compareTimes);
     let freeSegments = searchFreeSegments(timePoints);
-    let robberyTimes = [];
-    for (let segment of freeSegments) {
-        robberyTimes = robberyTimes.concat(getRobberyTimesFromFreeSegment(segment, duration));
-    }
-    let freeDates = [];
-    for (let time of robberyTimes) {
-        freeDates.push(convertMinutesToDate(time));
-    }
+    let robberyTimes = freeSegments.reduce(
+        (prev, segment) => prev.concat(getRobberyTimesFromFreeSegment(segment, duration)),
+        []
+    );
+    let freeDates = robberyTimes.map(convertMinutesToDate);
 
     return freeDates;
 }
@@ -151,11 +142,11 @@ function parseDate(date) {
 }
 
 function getTimezoneFromString(time) {
-    return Number(/\+(\d*?)$/.exec(time)[1]);
+    return Number(/\+(\d+)$/.exec(time)[1]);
 }
 
 function parseTime(time) {
-    let parsed = /^(\d\d):(\d\d)\+(.*?)$/.exec(time);
+    let parsed = /^(\d\d):(\d\d)\+(\d+)$/.exec(time);
 
     return {
         hours: Number(parsed[1]),
@@ -173,7 +164,7 @@ function normalizeTime(time, defaultTimezone) {
 
 function convertToMinutes(time) {
     let hours = time.hours;
-    let indexOfDayInWeek = daysOfWeek.indexOf(time.day);
+    let indexOfDayInWeek = DAYS_OF_WEEK.indexOf(time.day);
     if (indexOfDayInWeek !== -1) {
         hours += indexOfDayInWeek * 24;
     }
@@ -200,27 +191,19 @@ function convertScheduleToSegments(schedule, bankTimezone) {
 }
 
 function convertBankTimeToSegments(bankTime, bankTimezone) {
-    let segments = [];
-    let days = daysOfWeek.slice(0, 3);
-    for (let day of days) {
+    return DAYS_OF_WEEK.slice(0, 3).map(function (day) {
         let segment = convertToTimeSegment({
             from: `${day} ${bankTime.from}`,
             to: `${day} ${bankTime.to}`
         },
         bankTimezone);
-        segments.push({ from: segment.to, to: segment.from });
-    }
 
-    return segments;
+        return { from: segment.to, to: segment.from };
+    });
 }
 
 function convertSegmentsToTimes(segments) {
-    let times = [];
-    for (let segment of segments) {
-        times = times.concat(convertSegmentToTimes(segment));
-    }
-
-    return times;
+    return segments.reduce((times, segment) => times.concat(convertSegmentToTimes(segment)), []);
 }
 
 function convertSegmentToTimes(segment) {
@@ -237,7 +220,7 @@ function convertStringTimeToMinutes(stringTime, bankTimezone) {
 function convertMinutesToDate(minutes) {
     let hours = Math.floor(minutes / 60);
     minutes %= 60;
-    let day = daysOfWeek[Math.floor(hours / 24)];
+    let day = DAYS_OF_WEEK[Math.floor(hours / 24)];
     hours %= 24;
 
     return { day, hours, minutes };
