@@ -9,6 +9,7 @@ const MINUTES_IN_DAY = 24 * 60;
 const MINUTES_IN_HOUR = 60;
 const HOUR_IN_DAY = 24;
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const DAYSFORTHIEF = 3; // сколько дней можно грабить
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -19,7 +20,6 @@ const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
     let DannyBusy = timeWheSomeoneIsBusy(schedule.Danny);
     let RustyBusy = timeWheSomeoneIsBusy(schedule.Rusty);
     let LinusBusy = timeWheSomeoneIsBusy(schedule.Linus);
@@ -82,13 +82,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
  */
 function minutesToData(minutes, workingHours) {
     let numberOfDay = Math.floor((minutes / MINUTES_IN_HOUR +
-                      Number(workingHours.to.slice(6, 8))) / HOUR_IN_DAY);
+        Number(workingHours.to.slice(6, 8))) / HOUR_IN_DAY);
     let day = DAYS[numberOfDay];
     let hour = String(Math.floor((minutes - HOUR_IN_DAY * numberOfDay *
-               MINUTES_IN_HOUR) / MINUTES_IN_HOUR) + Number(workingHours.to.slice(6, 8)));
+        MINUTES_IN_HOUR) / MINUTES_IN_HOUR) + Number(workingHours.to.slice(6, 8)));
     let minute = String(minutes - HOUR_IN_DAY * numberOfDay * MINUTES_IN_HOUR -
-                 Math.floor((minutes - HOUR_IN_DAY * numberOfDay * MINUTES_IN_HOUR) /
-                 MINUTES_IN_HOUR) * MINUTES_IN_HOUR);
+        Math.floor((minutes - HOUR_IN_DAY * numberOfDay * MINUTES_IN_HOUR) /
+            MINUTES_IN_HOUR) * MINUTES_IN_HOUR);
 
     return [day, hour, minute];
 }
@@ -137,30 +137,17 @@ function findStartTimeForThief(workTimeline, busyTime, duration) {
  * @returns {Boolean}
  */
 function workTimelineIntersectBusyTime(workTimeline, busyTime) {
-    for (let busyTimeline of busyTime) {
-        if (intersect(workTimeline, busyTimeline)) {
+    return busyTime.some(function intersect(timeline2) {
+        if (workTimeline[0] > timeline2[0] && workTimeline[0] < timeline2[1] ||
+            workTimeline[1] < timeline2[1] && workTimeline[1] > timeline2[0] ||
+            workTimeline[0] < timeline2[0] && workTimeline[1] > timeline2[0] ||
+            workTimeline[1] > timeline2[1] && workTimeline[0] < timeline2[1] ||
+            workTimeline[1] === timeline2[1] && workTimeline[0] === timeline2[0]) {
             return true;
         }
-    }
 
-    return false;
-}
-
-/**
- * @param {Array} timeline1 – Первый отрезок времени
- * @param {Array} timeline2 – Второй отрезок времени
- * @returns {Boolean}
- */
-function intersect(timeline1, timeline2) {
-    if (timeline1[0] > timeline2[0] && timeline1[0] < timeline2[1] ||
-        timeline1[1] < timeline2[1] && timeline1[1] > timeline2[0] ||
-        timeline1[0] < timeline2[0] && timeline1[1] > timeline2[0] ||
-        timeline1[1] > timeline2[1] && timeline1[0] < timeline2[1] ||
-        timeline1[1] === timeline2[1] && timeline1[0] === timeline2[0]) {
-        return true;
-    }
-
-    return false;
+        return false;
+    });
 }
 
 /**
@@ -170,45 +157,56 @@ function intersect(timeline1, timeline2) {
 function workingHoursToTimelines(workingHours) {
     let from = partWorkingHoursToTimelines(workingHours.from);
     let to = partWorkingHoursToTimelines(workingHours.to);
+    let workTime = [];
+    for (let i = 0; i < DAYSFORTHIEF; i++) {
+        workTime.push([from + HOUR_IN_DAY * i * MINUTES_IN_HOUR,
+            to + HOUR_IN_DAY * i * MINUTES_IN_HOUR]);
+    }
 
-    return [[from, to], [from + 24 * 60, to + 24 * 60], [from + 48 * 60, to + 48 * 60]];
+    return workTime;
 }
+
+/**
+ * @param {String} part – Начало или конец отрезка времени в который работает банк
+ * @returns {Number}
+ */
 
 function partWorkingHoursToTimelines(part) {
     let hours = Number(part.slice(0, 2));
     let minutes = Number(part.slice(3, 5));
     let timezone = Number(part.slice(6, 8));
 
-    return hours * 60 + minutes - timezone * 60;
+    return hours * MINUTES_IN_HOUR + minutes - timezone * MINUTES_IN_HOUR;
 }
 
+/**
+ * @param {Array} manSchedule – Расписание занятости одного из грабителей
+ * @returns {Array}
+ */
 function timeWheSomeoneIsBusy(manSchedule) {
-    let timelines = [];
-    for (let note of manSchedule) {
-        timelines.push(noteToMinutes(note));
-    }
+    let timelines = manSchedule.map(function noteToMinutes(note) {
+        return [partOfNoteToMinutes(note.from), partOfNoteToMinutes(note.to)];
+    });
 
     return timelines;
 }
 
-function noteToMinutes(note) {
-    return [partOfNoteToMinutes(note.from), partOfNoteToMinutes(note.to)];
-}
-
+/**
+ * @param {Object} part – Начало или конец отрезка времени, в который грабитель занят
+ * @returns {Number}
+ */
 function partOfNoteToMinutes(part) {
     let day = part.slice(0, 2);
-    let hours = Number(part.slice(3, 5));
-    let minutes = Number(part.slice(6, 8));
-    let timezone = Number(part.slice(9, 11));
-    if (day === 'ВТ') {
-        hours += 24;
-    }
-    if (day === 'СР') {
-        hours += 48;
-    }
-    if (day !== 'ПН' && day !== 'ВТ' && day !== 'СР') {
-        hours += 72;
+    let mas = part.match(/\d{1,2}/g);
+    let hours = Number(mas[0]);
+    let minutes = Number(mas[1]);
+    let timezone = Number(mas[2]);
+    for (let i = 0; i < DAYS.length - 1; i++) {
+        if (DAYS[i] === day) {
+            hours += i * HOUR_IN_DAY;
+            break;
+        }
     }
 
-    return hours * 60 + minutes - timezone * 60;
+    return hours * MINUTES_IN_HOUR + minutes - timezone * MINUTES_IN_HOUR;
 }
