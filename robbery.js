@@ -132,25 +132,18 @@ function zfill(number, maxLen) {
     return currentNumber;
 }
 
-function parseDate(date) {
-    let splited = date.split(' ');
-    let time = parseTime(splited[splited.length - 1]);
-    time.day = splited[0];
-
-    return time;
-}
-
 function getTimezoneFromString(time) {
     return Number(/\+(\d+)$/.exec(time)[1]);
 }
 
-function parseTime(time) {
-    let parsed = /^(\d\d):(\d\d)\+(\d+)$/.exec(time);
+function parseDate(time) {
+    let parsed = /^(.*?) (\d\d):(\d\d)\+(\d+)$/.exec(time);
 
     return {
-        hours: Number(parsed[1]),
-        minutes: Number(parsed[2]),
-        timezone: Number(parsed[3])
+        day: parsed[1],
+        hours: Number(parsed[2]),
+        minutes: Number(parsed[3]),
+        timezone: Number(parsed[4])
     };
 }
 
@@ -179,9 +172,7 @@ function getNthNextDayOfWeek(currentDay, n) {
 function convertToMinutes(time) {
     let hours = time.hours;
     let indexOfDayInWeek = DAYS_OF_WEEK.indexOf(time.day);
-    if (indexOfDayInWeek !== -1) {
-        hours += indexOfDayInWeek * 24;
-    }
+    hours += indexOfDayInWeek * 24;
 
     return hours * 60 + time.minutes;
 }
