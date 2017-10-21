@@ -10,17 +10,16 @@ var days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 var daysForRob = days.slice(0, 3);
 
 function getBankTimeTable(workingHours) {
-    let timeTable = [];
-    daysForRob.forEach(function (day) {
+
+    return daysForRob.map(function (day) {
         let dateTimeFrom = parseDateString(day + ' ' + workingHours.from);
         let dateTimeTo = parseDateString(day + ' ' + workingHours.to);
-        timeTable.push({
+
+        return {
             from: dateTimeFrom,
             to: dateTimeTo
-        });
+        };
     });
-
-    return timeTable;
 }
 
 function parseDateString(dateString) {
@@ -35,22 +34,21 @@ function parseDateString(dateString) {
 }
 
 function performIntersectIntervals(schedule) {
+    let performedSchedule = [];
     schedule.sort(function (first, second) {
-
         return first.from.getTime() - second.from.getTime();
     });
-    let performedSchedule = [schedule[0]];
-    schedule = schedule.slice(1);
+    performedSchedule.push(schedule.shift());
     while (schedule.length !== 0) {
         let curInter = schedule[0];
-        let isIntersect = false;
-        performedSchedule.forEach(function (perfomInter) {
-            if (curInter.from <= perfomInter.to && curInter.to >= perfomInter.from) {
-                perfomInter.to = perfomInter.to >= curInter.to ? perfomInter.to : curInter.to;
-                isIntersect = true;
-            }
-        });
-        if (!isIntersect) {
+        let toIntersect;
+        if (performedSchedule.some(function (perfomInter) {
+            toIntersect = perfomInter;
+
+            return curInter.from <= perfomInter.to && curInter.to >= perfomInter.from;
+        })) {
+            toIntersect.to = toIntersect.to >= curInter.to ? toIntersect.to : curInter.to;
+        } else {
             performedSchedule.push(curInter);
         }
         schedule = schedule.slice(1);
@@ -80,7 +78,7 @@ function inverseIntervals(schedule, bankTimezone) {
     let from = parseDateString('ПН 00:00+' + String(bankTimezone));
     let to = parseDateString('СР 23:59+' + String(bankTimezone));
     let inversed = [{ from, to: schedule[0].from }];
-    for (let i = 0; i <= schedule.length - 2; i++) {
+    for (let i = 0; i < schedule.length - 1; i++) {
         inversed.push({ from: schedule[i].to, to: schedule[i + 1].from });
     }
     inversed.push({ from: schedule[schedule.length - 1].to, to });
@@ -158,10 +156,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let minutes = time.getMinutes();
 
             if (String(hours).length === 1) {
-                hours = '0'.concat(String(hours));
+                hours = '0' + hours;
             }
             if (String(minutes).length === 1) {
-                minutes = '0'.concat(String(minutes));
+                minutes = '0' + minutes;
             }
 
             return template.replace('%DD', day)
