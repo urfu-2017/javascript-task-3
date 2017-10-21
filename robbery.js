@@ -135,9 +135,7 @@ function zfill(number, maxLen) {
 function parseDate(date) {
     let splited = date.split(' ');
     let time = parseTime(splited[splited.length - 1]);
-    if (splited.length === 2) {
-        time.day = splited[0];
-    }
+    time.day = splited[0];
 
     return time;
 }
