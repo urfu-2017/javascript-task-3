@@ -96,7 +96,6 @@ function searchFreeSegments(timePoints) {
         }
         currentStartTime = timePoint.minutes;
     }
-    console.info(freeSegments);
 
     return freeSegments;
 }
@@ -155,33 +154,11 @@ function parseTime(time) {
     };
 }
 
-function normalizeTime(time, defaultTimezone) {
-    let timezoneOffset = defaultTimezone - time.timezone;
-    time.hours += timezoneOffset;
-    if (time.hours >= 24) {
-        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24));
-        time.hours %= 24;
-    }
-    if (time.hours < 0) {
-        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24) - 1);
-        time.hours = 24 - (Math.abs(time.hours) % 24);
-    }
+function normalizeMinutes(minutes, currentTimeZone, defaultTimezone) {
+    let timezoneOffset = defaultTimezone - currentTimeZone;
+    minutes += timezoneOffset * 60;
 
-    return time;
-}
-
-// function getNextDayOfWeek(currentDay) {
-//     return getNthNextDayOfWeek(currentDay, 1);
-// }
-
-// function getPrevDayOfWeek(currentDay) {
-//     return getNthNextDayOfWeek(currentDay, -1);
-// }
-
-function getNthNextDayOfWeek(currentDay, n) {
-    let nextDayIndex = DAYS_OF_WEEK.indexOf(currentDay) + n;
-
-    return DAYS_OF_WEEK[(DAYS_OF_WEEK.length + nextDayIndex) % DAYS_OF_WEEK.length];
+    return minutes;
 }
 
 function convertToMinutes(time) {
@@ -248,9 +225,9 @@ function convertSegmentToTimes(segment) {
 
 function convertStringTimeToMinutes(stringTime, bankTimezone) {
     let parsedTime = parseDate(stringTime);
-    let normalizedTime = normalizeTime(parsedTime, bankTimezone);
+    let minutes = convertToMinutes(parsedTime);
 
-    return convertToMinutes(normalizedTime);
+    return normalizeMinutes(minutes, parsedTime.timezone, bankTimezone);
 }
 
 function convertMinutesToDate(minutes) {
