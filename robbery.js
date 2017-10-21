@@ -7,16 +7,7 @@
 exports.isStar = true;
 
 const timeRE = new RegExp('^(.{2})\\s(\\d{2}):(\\d{2})\\+(\\d)$');
-// noinspection NonAsciiCharacters
-const dayNumberByName = {
-    'ПН': 0,
-    'ВТ': 1,
-    'СР': 2,
-    'ЧТ': 3,
-    'ПТ': 4,
-    'СБ': 5,
-    'ВС': 6
-};
+const dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 const minutesInDay = 1440;
 const minutesInHour = 60;
@@ -26,37 +17,38 @@ let timeBeforeStart;
 let timeAfterEnd;
 
 function getMinutesFromWeekStart(timeString) {
-    let parsed = timeRE.exec(timeString);
+    const parsed = timeRE.exec(timeString);
+    const days = dayNames.indexOf(parsed[1]);
+    const hours = parseInt(parsed[2]) - parseInt(parsed[4]);
+    const minutes = parseInt(parsed[3]);
 
-    return (dayNumberByName[parsed[1]] * minutesInDay +
-        (parseInt(parsed[2]) - parseInt(parsed[4])) * minutesInHour + parseInt(parsed[3]));
+    return days * minutesInDay + hours * minutesInHour + minutes;
 }
 
 function getEvents(schedule) {
-    let events = [];
-    for (let timePeriod of schedule) {
+    return schedule.reduce((events, timePeriod) => {
         events.push({ time: getMinutesFromWeekStart(timePeriod.from), type: open });
         events.push({ time: getMinutesFromWeekStart(timePeriod.to), type: close });
-    }
 
-    return events;
+        return events;
+    }, []);
 }
 
 function getEventsFromRobberSchedule(robberSchedule) {
-    let events = [];
-    events.push({ time: timeBeforeStart, type: open });
-    for (let timePeriod of robberSchedule) {
+    let result = robberSchedule.reduce((events, timePeriod) => {
         events.push({ time: getMinutesFromWeekStart(timePeriod.from), type: close });
         events.push({ time: getMinutesFromWeekStart(timePeriod.to), type: open });
-    }
-    events.push({ time: timeAfterEnd, type: close });
 
-    return events;
+        return events;
+    }, [{ time: timeBeforeStart, type: open }]);
+    result.push({ time: timeAfterEnd, type: close });
+
+    return result;
 }
 
 function getEventsFromBankWorkingHours(bankWorkingHours) {
-    let bankWorkingHoursByDays = Object.keys(dayNumberByName).slice(0, 3)
-        .map(function (day) {
+    let bankWorkingHoursByDays = dayNames.slice(0, 3)
+        .map(day => {
             return {
                 from: day + ' ' + bankWorkingHours.from,
                 to: day + ' ' + bankWorkingHours.to
@@ -68,7 +60,7 @@ function getEventsFromBankWorkingHours(bankWorkingHours) {
 
 // Use ScanLine algorithm
 function getCommonMomentRanges(events, enoughOpenedForRobbery) {
-    events.sort(function (first, second) {
+    events.sort((first, second) => {
         let result = first.time - second.time;
         if (result !== 0) {
             return result;
@@ -77,9 +69,9 @@ function getCommonMomentRanges(events, enoughOpenedForRobbery) {
         return first.type - second.type;
     });
     let openedCount = 0;
-    let notStarted = timeBeforeStart - 1;
+    const notStarted = timeBeforeStart - 1;
     let rangeStarted = notStarted;
-    let ranges = [];
+    const ranges = [];
     for (let event of events) {
         if (event.type === open) {
             openedCount++;
@@ -99,12 +91,9 @@ function getCommonMomentRanges(events, enoughOpenedForRobbery) {
 }
 
 function getDay(timeInMinutes) {
-    let dayNumber = Math.floor(timeInMinutes / minutesInDay);
-    for (let name of Object.keys(dayNumberByName)) {
-        if (dayNumberByName[name] === dayNumber) {
-            return name;
-        }
-    }
+    const dayNumber = Math.floor(timeInMinutes / minutesInDay);
+
+    return dayNames[dayNumber];
 }
 
 function formatNumber(number) {
@@ -113,14 +102,14 @@ function formatNumber(number) {
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    let bankTimeZone = parseInt(workingHours.from[workingHours.from.length - 1]);
+    const bankTimeZone = parseInt(workingHours.from[workingHours.from.length - 1]);
     timeBeforeStart = getMinutesFromWeekStart('ПН 00:00+' + bankTimeZone);
     timeAfterEnd = getMinutesFromWeekStart('ВС 23:59+' + bankTimeZone);
     let bankEvents = getEventsFromBankWorkingHours(workingHours);
     for (let key of Object.keys(schedule)) {
         bankEvents = bankEvents.concat(getEventsFromRobberSchedule(schedule[key]));
     }
-    let commonMomentRanges = getCommonMomentRanges(bankEvents, Object.keys(schedule).length + 1);
+    const commonMomentRanges = getCommonMomentRanges(bankEvents, Object.keys(schedule).length + 1);
     let robberyRanges = [];
     for (let range of commonMomentRanges) {
         if (range.to - range.from >= duration) {
@@ -136,10 +125,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (robberyRanges.length === 0) {
                 return '';
             }
-            let timeInBankTimezone = robberyRanges[0].from + bankTimeZone * minutesInHour;
-            let day = getDay(timeInBankTimezone);
-            let hour = formatNumber(Math.floor(timeInBankTimezone / 60) % 24);
-            let minute = formatNumber(timeInBankTimezone % 60);
+            const timeInBankTimezone = robberyRanges[0].from + bankTimeZone * minutesInHour;
+            const day = getDay(timeInBankTimezone);
+            const hour = formatNumber(Math.floor(timeInBankTimezone / 60) % 24);
+            const minute = formatNumber(timeInBankTimezone % 60);
             template = template.replace('%DD', day);
             template = template.replace('%HH', hour);
             template = template.replace('%MM', minute);
@@ -150,7 +139,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (robberyRanges.length === 0) {
                 return false;
             }
-            let minimalTime = robberyRanges[0].from + 30;
+
+            const minimalTime = robberyRanges[0].from + 30;
+
             for (let i = 0; i < robberyRanges.length; ++i) {
                 if (robberyRanges[i].to >= minimalTime) {
                     robberyRanges = robberyRanges.slice(i);
