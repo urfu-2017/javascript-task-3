@@ -178,7 +178,9 @@ function getPrevDayOfWeek(currentDay) {
 }
 
 function getNthNextDayOfWeek(currentDay, n) {
-    return DAYS_OF_WEEK[n + (DAYS_OF_WEEK.indexOf(currentDay) + n) % 7];
+    let nextDayIndex = DAYS_OF_WEEK.indexOf(currentDay) + n;
+
+    return DAYS_OF_WEEK[(DAYS_OF_WEEK.length + nextDayIndex) % DAYS_OF_WEEK.length];
 }
 
 function convertToMinutes(time) {
