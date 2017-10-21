@@ -84,9 +84,9 @@ function getRobberyTimesFromFreeSegment(segment, robberyDuration) {
 function searchFreeSegments(timePoints) {
     let currentNesting = 0;
     let freeSegments = [];
-    let currentStartTime;
+    let currentStartTime = 0;
     for (let timePoint of timePoints) {
-        if (currentNesting === 0 && currentStartTime) {
+        if (currentNesting === 0) {
             freeSegments.push({ from: currentStartTime, to: timePoint.minutes });
         }
         if (timePoint.isStart) {
