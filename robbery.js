@@ -8,6 +8,7 @@ exports.isStar = true;
 
 let DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 let ROBBERY_INTERVAL = 30;
+let MINUTES_IN_DAY = 24 * 60;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -81,7 +82,7 @@ function getRobberyTimesFromFreeSegment(segment, robberyDuration) {
 }
 
 function searchFreeSegments(timePoints) {
-    let currentNesting = 1;
+    let currentNesting = 0;
     let freeSegments = [];
     let currentStartTime = 0;
     for (let timePoint of timePoints) {
@@ -191,15 +192,29 @@ function convertScheduleToSegments(schedule, bankTimezone) {
 }
 
 function convertBankTimeToSegments(bankTime, bankTimezone) {
-    return DAYS_OF_WEEK.slice(0, 3).map(function (day) {
+    let days = DAYS_OF_WEEK.slice(0, 3);
+    let segments = [];
+    for (let day of days) {
         let segment = convertToTimeSegment({
             from: `${day} ${bankTime.from}`,
             to: `${day} ${bankTime.to}`
         },
         bankTimezone);
 
-        return { from: segment.to, to: segment.from };
-    });
+        // временные отрезки, когда банк "занят" (его нельзя ограбить)
+        segments.push({ from: getMinutesOfDayOfWeekStart(day), to: segment.from });
+        segments.push({ from: segment.to, to: getMinutesOfDayOfWeekEnd(day) });
+    }
+
+    return segments;
+}
+
+function getMinutesOfDayOfWeekStart(dayOfWeek) {
+    return DAYS_OF_WEEK.indexOf(dayOfWeek) * MINUTES_IN_DAY;
+}
+
+function getMinutesOfDayOfWeekEnd(daysOfWeek) {
+    return getMinutesOfDayOfWeekStart(daysOfWeek) + MINUTES_IN_DAY - 1;
 }
 
 function convertSegmentsToTimes(segments) {
