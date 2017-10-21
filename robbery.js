@@ -96,6 +96,7 @@ function searchFreeSegments(timePoints) {
         }
         currentStartTime = timePoint.minutes;
     }
+    console.info(freeSegments);
 
     return freeSegments;
 }
@@ -158,24 +159,24 @@ function normalizeTime(time, defaultTimezone) {
     let timezoneOffset = defaultTimezone - time.timezone;
     time.hours += timezoneOffset;
     if (time.hours >= 24) {
-        time.day = getNextDayOfWeek(time.day);
-        time.hours = time.hours - 24;
+        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24));
+        time.hours %= 24;
     }
     if (time.hours < 0) {
-        time.day = getPrevDayOfWeek(time.day);
-        time.hours = 24 + time.hours;
+        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24) - 1);
+        time.hours = 24 - (Math.abs(time.hours) % 24);
     }
 
     return time;
 }
 
-function getNextDayOfWeek(currentDay) {
-    return getNthNextDayOfWeek(currentDay, 1);
-}
+// function getNextDayOfWeek(currentDay) {
+//     return getNthNextDayOfWeek(currentDay, 1);
+// }
 
-function getPrevDayOfWeek(currentDay) {
-    return getNthNextDayOfWeek(currentDay, -1);
-}
+// function getPrevDayOfWeek(currentDay) {
+//     return getNthNextDayOfWeek(currentDay, -1);
+// }
 
 function getNthNextDayOfWeek(currentDay, n) {
     let nextDayIndex = DAYS_OF_WEEK.indexOf(currentDay) + n;
