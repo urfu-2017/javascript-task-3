@@ -6,37 +6,7 @@
  */
 exports.isStar = true;
 
-const RUSSIAN_WEEK = {
-    ПН: {
-        next: 'ВТ',
-        previous: 'ВС'
-    },
-    ВТ: {
-        next: 'СР',
-        previous: 'ПН'
-    },
-    СР: {
-        next: 'ЧТ',
-        previous: 'ВТ'
-    },
-    ЧТ: {
-        next: 'ПТ',
-        previous: 'СР'
-    },
-    ПТ: {
-        next: 'СБ',
-        previous: 'ЧТ'
-    },
-    СБ: {
-        next: 'ВС',
-        previous: 'ПТ'
-    },
-    ВС: {
-        next: 'ПН',
-        previous: 'СБ'
-    }
-};
-
+const WEEK_DAYS = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
 
 
@@ -49,16 +19,14 @@ const ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
-
-    let robberyDaysSchedule = fillActionDays(normalizeSchedule(schedule, workingHours),
+    const scheduleForEachDay = fillActionDays(normalizeSchedule(schedule, workingHours),
         ROBBERY_DAYS);
-    let availableTime = {};
+    const availableTime = {};
     ROBBERY_DAYS.forEach(day => {
-        availableTime[day] = [...findRobberyTime(robberyDaysSchedule[day], duration, workingHours)];
+        availableTime[day] = [...findRobberyTime(scheduleForEachDay[day], duration, workingHours)];
     });
-    let startTimesGenerator = startTimeGenerator(getStartTimes(availableTime, ROBBERY_DAYS));
-    let timeExist = startTimesGenerator.next();
+    const startTimesGenerator = startTimeGenerator(getStartTimes(availableTime, ROBBERY_DAYS));
+    const timeExist = startTimesGenerator.next();
     let startTime = timeExist.value;
 
     return {
@@ -122,20 +90,19 @@ function* startTimeGenerator(startTimes) {
 
 
 function getStartTimes(availableTime, robberyDays) {
-    let startTimes = [];
-    robberyDays.forEach(day => {
+    return robberyDays.reduce((acc, day) => {
         if (availableTime.hasOwnProperty(day)) {
             availableTime[day].forEach(time => {
-                startTimes.push({
+                acc.push({
                     day: day,
                     startHours: String(time.from.getHours()),
                     startMinutes: String(time.from.getMinutes())
                 });
             });
         }
-    });
 
-    return startTimes;
+        return acc;
+    }, []);
 }
 
 function findRobberyTime(scheduleOfDay, duration, workingHours) {
@@ -153,7 +120,7 @@ function findRobberyTime(scheduleOfDay, duration, workingHours) {
         };
     }).forEach(busyTime => {
         availableTime = availableTime.reduce((acc, time) => {
-            return [...acc, ...mergeAvailableAndBusyTime(time, busyTime)];
+            return [...acc, ...intersectAvailableAndBusyTime(time, busyTime)];
         }, []);
     });
 
@@ -180,7 +147,7 @@ function findLater(time, duration) {
     return laterTimes;
 }
 
-function mergeAvailableAndBusyTime(availableTime, busyTime) {
+function intersectAvailableAndBusyTime(availableTime, busyTime) {
     let separatedAvailableTime = [];
     if (Math.min(availableTime.to.getTime(), busyTime.to.getTime()) -
         Math.max(availableTime.from.getTime(), busyTime.from.getTime()) < 0) {
@@ -231,10 +198,10 @@ function fillActionDays(schedule, actionDays) {
 }
 
 function normalizeSchedule(schedule, workingHours) {
-    let newSchedule = JSON.parse(JSON.stringify(schedule));
-    Object.keys(newSchedule).forEach(name => {
-        if (newSchedule.hasOwnProperty(name)) {
-            newSchedule[name] = equalizeShifts(newSchedule[name], getShift(workingHours));
+    let newSchedule = {};
+    Object.keys(schedule).forEach(name => {
+        if (schedule.hasOwnProperty(name)) {
+            newSchedule[name] = equalizeShifts(schedule[name], getShift(workingHours));
             newSchedule[name] = newSchedule[name].reduce(separateSegments, []);
         }
     });
@@ -244,28 +211,21 @@ function normalizeSchedule(schedule, workingHours) {
 
 function equalizeShifts(scheduleBlock, mainShift) {
     return scheduleBlock.map(segment => {
-        let difference = Number(getShift(segment)) - Number(mainShift);
+        let offset = Number(getShift(segment)) - Number(mainShift);
 
         return {
-            from: shiftDate(difference, segment.from),
-            to: shiftDate(difference, segment.to)
+            from: calculateNewDate(offset, segment.from),
+            to: calculateNewDate(offset, segment.to)
         };
     });
 }
 
-function shiftDate(difference, date) {
-    let time = new Date();
-    time.setHours(Number(getHours(date)) - difference);
-    let newDate = date.replace(/\d\d:/,
-        time.getHours() + ':').replace(/\+\d$/, '');
-    if (Number(time.getHours()) - Number(getHours(date)) < 0 && difference < 0) {
-        newDate = newDate.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(date)].next);
-    }
-    if (Number(getHours(date)) - Number(time.getHours()) < 0 && difference > 0) {
-        newDate = newDate.replace(/[А-Я]{2}/, RUSSIAN_WEEK[getDay(date)].previous);
-    }
+function calculateNewDate(offset, date) {
+    const dayNotation = { ВС: 0, ПН: 1, ВТ: 2, СР: 3, ЧТ: 4, ПТ: 5, СБ: 6 };
+    let time = new Date(0, 0, dayNotation[getDay(date)], getHours(date), getMinutes(date));
+    let newTime = new Date(time.getTime() - offset * 3600000);
 
-    return newDate;
+    return `${WEEK_DAYS[newTime.getDay()]} ${newTime.getHours()}:${newTime.getMinutes()}`;
 }
 
 function separateSegment(segment) {
@@ -276,22 +236,32 @@ function separateSegment(segment) {
         to: getDay(tempSegment.from) + ' 23:59'
     });
     while (getDay(tempSegment.from) !== getDay(segment.to)) {
-        let nextDay = RUSSIAN_WEEK[getDay(tempSegment.from)].next;
-        if (nextDay === getDay(segment.to)) {
-            tempSegment = {
-                from: nextDay + ' 00:00',
-                to: segment.to.replace(/\+\d/, '')
-            };
-        } else {
-            tempSegment = {
-                from: nextDay + ' 00:00',
-                to: nextDay + ' 23:59'
-            };
-        }
+        let nextDay = getAdjacentDays(getDay(tempSegment.from)).next;
+        tempSegment = nextDay === getDay(segment.to) ? {
+            from: nextDay + ' 00:00',
+            to: segment.to.replace(/\+\d/, '')
+        } : {
+            from: nextDay + ' 00:00',
+            to: nextDay + ' 23:59'
+        };
         separatedSegments.push(tempSegment);
     }
 
     return separatedSegments;
+}
+
+function getAdjacentDays(givenDay) {
+    return WEEK_DAYS.reduce((acc, day, index) => {
+        if (day === givenDay) {
+
+            return {
+                previous: WEEK_DAYS[index === 0 ? 6 : index - 1],
+                next: WEEK_DAYS[index === 6 ? 0 : index + 1]
+            };
+        }
+
+        return acc;
+    }, {});
 }
 
 function separateSegments(acc, segment) {
@@ -319,5 +289,5 @@ function getMinutes(time) {
 }
 
 function getShift(time) {
-    return /\d$/.exec(time.to)[0];
+    return time.to.slice(-1);
 }
