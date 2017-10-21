@@ -109,9 +109,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             });
 
         });
-    }
-    );
-
+    });
 
     let out = performIntersectIntervals(parsedSchedule);
 
