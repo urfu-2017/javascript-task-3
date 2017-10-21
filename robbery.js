@@ -154,11 +154,26 @@ function parseTime(time) {
     };
 }
 
-function normalizeMinutes(minutes, currentTimeZone, defaultTimezone) {
-    let timezoneOffset = defaultTimezone - currentTimeZone;
-    minutes += timezoneOffset * 60;
+function normalizeTime(time, defaultTimezone) {
+    let timezoneOffset = defaultTimezone - time.timezone;
+    time.hours += timezoneOffset;
+    if (time.hours >= 24) {
+        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24));
+        time.hours %= 24;
+    }
+    if (time.hours < 0) {
+        time.day = getNthNextDayOfWeek(time.day, Math.floor(time.hours / 24) - 1);
+        time.hours = 24 - (Math.abs(time.hours) % 24);
+    }
 
-    return minutes;
+    return time;
+}
+
+function getNthNextDayOfWeek(currentDay, n) {
+    let nextDayIndex = DAYS_OF_WEEK.indexOf(currentDay) + n;
+    let daysInWeekCount = DAYS_OF_WEEK.length;
+
+    return DAYS_OF_WEEK[(daysInWeekCount + nextDayIndex) % daysInWeekCount];
 }
 
 function convertToMinutes(time) {
@@ -225,9 +240,9 @@ function convertSegmentToTimes(segment) {
 
 function convertStringTimeToMinutes(stringTime, bankTimezone) {
     let parsedTime = parseDate(stringTime);
-    let minutes = convertToMinutes(parsedTime);
+    let normalizedTime = normalizeTime(parsedTime, bankTimezone);
 
-    return normalizeMinutes(minutes, parsedTime.timezone, bankTimezone);
+    return convertToMinutes(normalizedTime);
 }
 
 function convertMinutesToDate(minutes) {
