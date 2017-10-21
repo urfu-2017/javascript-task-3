@@ -100,12 +100,12 @@ function searchFreeSegments(timePoints) {
     return freeSegments;
 }
 
-function compareTimes(time1, time2) {
+function compareTimePoints(time1, time2) {
     return time1.minutes - time2.minutes;
 }
 
 function searchFreeDates(timePoints, duration) {
-    timePoints.sort(compareTimes);
+    timePoints.sort(compareTimePoints);
     let freeSegments = searchFreeSegments(timePoints);
     let robberyTimes = freeSegments.reduce(
         (prev, segment) => prev.concat(getRobberyTimesFromFreeSegment(segment, duration)),
