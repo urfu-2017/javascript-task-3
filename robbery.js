@@ -157,8 +157,16 @@ function parseTime(time) {
 function normalizeTime(time, defaultTimezone) {
     let timezoneOffset = defaultTimezone - time.timezone;
     time.hours += timezoneOffset;
+    if (time.hours >= 24) {
+        time.day = getNthNextDayOfWeek(time.day, time.hours / 24);
+        time.hours %= 24;
+    }
 
     return time;
+}
+
+function getNthNextDayOfWeek(currentDay, n) {
+    return DAYS_OF_WEEK[(DAYS_OF_WEEK.indexOf(currentDay) + n) % 7];
 }
 
 function convertToMinutes(time) {
