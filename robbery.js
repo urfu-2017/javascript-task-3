@@ -20,10 +20,12 @@ const DAYSFORTHIEF = 3; // сколько дней можно грабить
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let DannyBusy = timeWheSomeoneIsBusy(schedule.Danny);
-    let RustyBusy = timeWheSomeoneIsBusy(schedule.Rusty);
-    let LinusBusy = timeWheSomeoneIsBusy(schedule.Linus);
-    let busyTime = DannyBusy.concat(RustyBusy.concat(LinusBusy));
+    let busyTime = [];
+    for (let name in schedule) {
+        if (name) {
+            busyTime = busyTime.concat(timeWheSomeoneIsBusy(schedule[name]));
+        }
+    }
     let workTimelines = workingHoursToTimelines(workingHours);
     let start = -1;
     if (typeof duration === 'number' && duration > 0 && duration < MINUTES_IN_DAY) {
@@ -138,15 +140,11 @@ function findStartTimeForThief(workTimeline, busyTime, duration) {
  */
 function workTimelineIntersectBusyTime(workTimeline, busyTime) {
     return busyTime.some(function intersect(timeline2) {
-        if (workTimeline[0] > timeline2[0] && workTimeline[0] < timeline2[1] ||
+        return workTimeline[0] > timeline2[0] && workTimeline[0] < timeline2[1] ||
             workTimeline[1] < timeline2[1] && workTimeline[1] > timeline2[0] ||
             workTimeline[0] < timeline2[0] && workTimeline[1] > timeline2[0] ||
             workTimeline[1] > timeline2[1] && workTimeline[0] < timeline2[1] ||
-            workTimeline[1] === timeline2[1] && workTimeline[0] === timeline2[0]) {
-            return true;
-        }
-
-        return false;
+            workTimeline[1] === timeline2[1] && workTimeline[0] === timeline2[0];
     });
 }
 
