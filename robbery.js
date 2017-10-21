@@ -163,7 +163,7 @@ function normalizeTime(time, defaultTimezone) {
     }
     if (time.hours < 0) {
         time.day = getPrevDayOfWeek(time.day);
-        time.hours = 24 - time.hours;
+        time.hours = 24 + time.hours;
     }
 
     return time;
