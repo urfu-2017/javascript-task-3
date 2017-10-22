@@ -8,11 +8,11 @@ exports.createDate = function createDate(day, hours, minutes, utcOffset = 0) {
     return new Date(1970, 5, day, hours - utcOffset, minutes);
 };
 
-function addMinutesToDate(date, minutes) {
-    return new Date(date.getTime() + minutesToMilliseconds(minutes));
-}
+exports.formatTime = time => String(time).padStart(2, '0');
 
-exports.addMinutesToDate = addMinutesToDate;
+exports.addMinutesToDate = (date, minutes) => {
+    return new Date(date.getTime() + minutesToMilliseconds(minutes));
+};
 
 function minutesToMilliseconds(minutes) {
     return minutes * MILLISECONDS_IN_MINUTE;
@@ -20,20 +20,6 @@ function minutesToMilliseconds(minutes) {
 
 exports.minutesToMilliseconds = minutesToMilliseconds;
 
-function hoursToMinutes(hours) {
-    return hours * MINUTES_IN_HOUR;
-}
+exports.hoursToMinutes = hours => hours * MINUTES_IN_HOUR;
 
-exports.hoursToMinutes = hoursToMinutes;
-
-function hoursToMilliseconds(hours) {
-    return hours * MINUTES_IN_HOUR * MILLISECONDS_IN_MINUTE;
-}
-
-exports.hoursToMilliseconds = hoursToMilliseconds;
-
-function formatTime(time) {
-    return String(time).padStart(2, '0');
-}
-
-exports.formatTime = formatTime;
+exports.hoursToMilliseconds = hours => hours * MINUTES_IN_HOUR * MILLISECONDS_IN_MINUTE;
