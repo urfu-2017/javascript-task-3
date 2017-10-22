@@ -1,6 +1,6 @@
 'use strict';
 
-exports.isStar = true;
+exports.isStar = false;
 const DAYS_WEEK = {
     'ПН': 0,
     'ВТ': 1440,
