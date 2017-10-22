@@ -17,17 +17,9 @@ const LATER_OFFSET = 30 * MILLIS_IN_MIN;
  */
 class TimeInterval {
     constructor(start, end) {
-        this._parse(start, end);
-    }
-
-    /**
-     * Инициализирует значения концов интервала
-     * @param {Date} start - начало
-     * @param {Date} end - конец
-     */
-    _init(start, end) {
-        this.start = start;
-        this.end = end;
+        if (start !== undefined && end !== undefined) {
+            this._parse(start, end);
+        }
     }
 
     _convertToDate(dayStart, hours, minutes, timezone) {
@@ -50,13 +42,17 @@ class TimeInterval {
         this.dayStart = dayStart;
         this.dayEnd = dayEnd;
 
-        this.setRange(
+        this._setRange(
             this._convertToDate(this.dayStart, hoursStart, minutesStart, this.timezone),
             this._convertToDate(this.dayEnd, hoursEnd, minutesEnd, this.timezone)
         );
     }
 
-    setRange(start, end) {
+    cloneWithRange(start, end) {
+        return Object.assign(new TimeInterval(), this)._setRange(start, end);
+    }
+
+    _setRange(start, end) {
         this.start = start;
         this.end = end;
 
@@ -79,7 +75,7 @@ class TimeInterval {
      */
     combine(interval) {
         return new TimeInterval(interval.unparsedStart, interval.unparsedEnd)
-            .setRange(Math.min(this.start, interval.start), Math.max(this.end, interval.end));
+            ._setRange(Math.min(this.start, interval.start), Math.max(this.end, interval.end));
     }
 
     /**
@@ -89,10 +85,10 @@ class TimeInterval {
      */
     intersects(interval) {
         return this.includes(interval) || interval.includes(this) ||
-            this.before(interval) || interval.before(this);
+            this.leftIntersects(interval) || interval.leftIntersects(this);
     }
 
-    before(interval) {
+    leftIntersects(interval) {
         return (this.start < interval.start && this.end > interval.start);
     }
 }
@@ -144,8 +140,9 @@ class Response {
      * @returns {Boolean}
      */
     tryLater() {
-        let result = this.intervals.find(interval =>
-            interval.start >= LATER_OFFSET + this.currentInterval.start);
+        let result = this.intervals.find(interval => {
+            return interval.start >= LATER_OFFSET + this.currentInterval.start;
+        });
 
         if (result !== undefined) {
             this.currentInterval = result;
@@ -160,7 +157,7 @@ class Response {
  * @param {Array} array – массив временных интервалов
  * @returns {Array}
  */
-const approximate = array => {
+const optimizeIntervals = array => {
     let data = array.reduce((result, current) => {
         let index = result.findIndex(interval => interval.intersects(current));
         if (index !== -1) {
@@ -172,20 +169,13 @@ const approximate = array => {
         return result.concat(current);
     }, []);
 
-    let processIsComlete = data.length === array.length;
-    if (processIsComlete) {
-        return data;
-    }
-
-    return approximate(data);
+    return (data.length === array.length) ? data : optimizeIntervals(data);
 };
 
-const getRobberyIntervals = (employment, works, duration) => works.reduce((result, interval) => {
+const workIntervals = (employment, works, duration) => works.reduce((result, interval) => {
     const durationOffset = (duration * MILLIS_IN_MIN);
     for (let i = interval.start; i <= interval.end - durationOffset; i += MILLIS_IN_MIN) {
-        let robberyInterval = new TimeInterval(interval.unparsedStart, interval.unparsedEnd);
-
-        robberyInterval.setRange(i, i + durationOffset);
+        let robberyInterval = interval.cloneWithRange(i, i + durationOffset);
 
         if (employment.every((segment) => !segment.intersects(robberyInterval))) {
             result.push(robberyInterval);
@@ -205,13 +195,13 @@ const getRobberyIntervals = (employment, works, duration) => works.reduce((resul
  */
 exports.getAppropriateMoment = (schedule, duration, workingHours) => {
     const worksIntervals = ['ПН ', 'ВТ ', 'СР ']
-        .map(value => new TimeInterval(value + workingHours.from, value + workingHours.to));
+        .map(day => new TimeInterval(day + workingHours.from, day + workingHours.to));
 
     let employmentIntervals = Object.values(schedule)
         .reduce((result, current) => result.concat(current), [])
         .map(interval => new TimeInterval(interval.from, interval.to));
 
-    let optimizedIntervals = approximate(employmentIntervals);
+    let optimizedIntervals = optimizeIntervals(employmentIntervals);
 
-    return new Response(getRobberyIntervals(optimizedIntervals, worksIntervals, duration));
+    return new Response(workIntervals(optimizedIntervals, worksIntervals, duration));
 };
