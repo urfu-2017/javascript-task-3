@@ -109,18 +109,33 @@ function parseTime(time, timeZoneforBank) {
     let hours = Number(regTime[1]);
     let minutes = Number(regTime[2]);
     let timeZone = Number(regTime[3]);
-    hours = hours - timeZone + timeZoneforBank;
+    hours -= timeZone;
+
+    return getCorrectByTimeZone(day, hours, minutes, timeZoneforBank);
+}
+
+function getCorrectByTimeZone(day, hours, minutes, timeZoneforBank) {
+    hours += timeZoneforBank;
     if (hours < 0) {
         hours = 24 + hours;
-        day = DAYS[(DAYS.indexOf(day) - 1 + 7) % 7];
+        if (day === 'ПН') {
+            hours = 0;
+            minutes = 0;
+        } else {
+            day = DAYS[DAYS.indexOf(day) - 1];
+        }
     }
     if (hours >= 24) {
         hours -= 24;
-        day = DAYS[(DAYS.indexOf(day) - 1 + 7) % 7];
+        if (day === 'ВС') {
+            hours = 0;
+            minutes = 0;
+        } else {
+            day = DAYS[DAYS.indexOf(day) + 1];
+        }
     }
 
     return [day, hours, minutes];
-
 }
 
 function getDatePoint(day, hours, minutes, type) {
