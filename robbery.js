@@ -1,151 +1,97 @@
 'use strict';
 
-exports.isStar = false;
-
+exports.isStar = true;
+const DAYS_WEEK = {
+    'ПН': 0,
+    'ВТ': 1440,
+    'СР': 2880
+};
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let profit = [];
-    let frends = {};
-    let lastInterval = {};
-    let isTryLater = false;
-    Object.keys(schedule).forEach(key => {
-
-        let startFree = 0;
-        frends[key] = [];
-        schedule[key].forEach(el => {
-            frends[key].push({
-                from: startFree,
-                to: timeConverter(el.from),
-                name: key
-            });
-            startFree = timeConverter(el.to);
-        });
-
-        frends[key].push({
-            from: startFree,
-            to: 4320,
-            name: key
-        });
-
-        return frends;
-    });
-
+    let timeLine = returnInterval([], [{
+        from: 0,
+        to: 4320
+    }], 0);
+    let friends = getFriendsIntervals();
     let bankIntervals = mathIntervalsBank(workingHours);
 
-    for (let i = 0; i < bankIntervals.length; i++) { // Перебираем банковские дни
-        let frendsInterval = {
-            Danny: [],
-            Rusty: [],
-            Linus: []
-        };
-
-        Object.keys(frends).forEach(frend => {
-            frends[frend].forEach(interval => {
-                let bankFrom = bankIntervals[i].from;
-                let bankTo = bankIntervals[i].to;
-                if ((Math.min(bankFrom, bankTo) < Math.max(interval.from, interval.to)) &&
-                ((Math.min(interval.from, interval.to) <
-            Math.max(bankFrom, bankTo)))) {
-                    frendsInterval[interval.name].push({
-                        from: Math.max(bankFrom, interval.from),
-                        to: Math.min(bankTo, interval.to),
-                        name: interval.name
-                    });
-                }
-
-            });
-
-        });
-
-        let maxFrom;
-        let minTo;
-        frendsInterval.Danny.forEach(iD => {
-
-            maxFrom = Math.max(maxFrom, iD.from);
-            minTo = Math.min(minTo, iD.to);
-
-            frendsInterval.Rusty.forEach(iR => {
-
-                maxFrom = Math.max(iD.from, iR.from);
-                minTo = Math.min(iD.to, iR.to);
-
-                frendsInterval.Linus.forEach(iL => {
-                    maxFrom = Math.max(maxFrom, iL.from);
-                    minTo = Math.min(minTo, iL.to);
-
-                    if ((maxFrom < minTo) && (minTo - maxFrom) >= duration) {
-
-                        profit.push({
-                            from: maxFrom + 300,
-                            to: minTo + 300,
-                            day: i + 1
-                        });
-                    }
-
-                });
-
-            });
-        });
-    }
+    timeLine = returnInterval(timeLine, bankIntervals, 1);
+    timeLine = returnInterval(timeLine, friends, 0);
+    let lastStart = getProfitInterval(0);
 
     return {
         exists() {
-            if (profit.length > 0) {
-
+            if (getProfitInterval(lastStart) > 0) {
                 return true;
             }
 
             return false;
         },
         format(template) {
-            let resObj;
-            if (profit.length === 0 && !isTryLater) {
+            let timeStart = getProfitInterval(lastStart);
+            if (!timeStart) {
                 return '';
-            } else if (profit.length > 0) {
-                resObj = intervalToString(profit[0].from);
-            } else {
-                resObj = intervalToString(lastInterval.from);
             }
+            let tmp = intervalToString(timeStart);
 
-            return template.replace('%DD', resObj.DD).replace('%HH', resObj.HH)
-                .replace('%MM', resObj.MM);
-
+            return template
+                .replace('%DD', tmp.DD)
+                .replace('%HH', tmp.HH)
+                .replace('%MM', tmp.MM);
         },
 
-        tryLater: function () {
-            isTryLater = true;
-            if (profit.length > 0) {
-                return calcNextMoment(profit[0]);
+        tryLater() {
+            let nextInterval = getProfitInterval(lastStart + 30);
+            if (nextInterval > 0) {
+                lastStart = nextInterval;
 
+                return true;
             }
 
             return false;
         }
     };
 
-    function calcNextMoment() {
-        lastInterval = JSON.parse(JSON.stringify(profit[0]));
-        profit[0].from = profit[0].from + 30;
-        if (profit[0].to - profit[0].from < duration) {
-            profit.splice(0, 1);
-        }
-        if (profit.length > 0) {
+    function getFriendsIntervals() {
+        let arr = [];
+        Object.keys(schedule).forEach(key => {
+            schedule[key].forEach(el => {
+                arr.push({
+                    from: timeConverter(el.from),
+                    to: timeConverter(el.to)
+                });
 
-            return true;
-        }
+            });
 
-        return false;
+        });
+
+        return arr;
     }
+
+    function getProfitInterval(from) {
+        let starts = [];
+        let start = timeLine.indexOf(1, from);
+        let stop = timeLine.indexOf(0, start);
+        while ((start !== -1)) {
+            if (stop - start >= duration) {
+                starts.push(start);
+            }
+            start = timeLine.indexOf(1, stop);
+            stop = timeLine.indexOf(0, start);
+
+        }
+        if (starts.length === 0) {
+            return false;
+        }
+
+        return starts[0];
+    }
+
 };
 
 function timeConverter(T) {
-    const DAYS = {
-        'ПН': 0,
-        'ВТ': 1440,
-        'СР': 2880
-    };
     let timeArr = T.replace(/[+:]/ig, ' ').split(' ');
 
-    return Number(DAYS[timeArr[0]]) + Number(timeArr[1]) * 60 -
+    return Number(DAYS_WEEK[timeArr[0]]) + Number(timeArr[1]) * 60 -
 Number(timeArr[3]) * 60 + Number(timeArr[2]);
 }
 
@@ -159,31 +105,31 @@ function mathIntervalsBank(obj) {
     }, {
         from: timeConverter('СР ' + obj.from),
         to: timeConverter('СР ' + obj.to)
-    }
-    ];
+    }];
+
 }
 
 function intervalToString(go) {
-    let resObj = {};
+    go = go + 300;
+    let objTime = {};
     let mins;
     let time = String(go / 1440).split('.')[0];
-
     if (time === '0') {
-        resObj.DD = 'ПН';
+        objTime.DD = 'ПН';
         mins = go;
     } else if (time === '1') {
-        resObj.DD = 'ВТ';
+        objTime.DD = 'ВТ';
         mins = go - 1440;
     } else if (time === '2') {
-        resObj.DD = 'СР';
+        objTime.DD = 'СР';
         mins = go - 2880;
     }
 
-    let hoursArr = (mins / 60).toFixed(1).split('.');
-    resObj.HH = twoSign(hoursArr[0]);
-    resObj.MM = twoSign(hoursArr[1] * 6);
+    let [hour, min] = (mins / 60).toFixed(1).split('.');
+    objTime.HH = twoSign(hour);
+    objTime.MM = twoSign(min * 6);
 
-    return resObj;
+    return objTime;
 }
 
 function twoSign(num) {
@@ -192,5 +138,14 @@ function twoSign(num) {
     }
 
     return '0' + num;
+}
 
+function returnInterval(arr, obj, val) {
+    obj.forEach(el => {
+        for (var i = el.from; i < el.to; i++) {
+            arr[i] = val;
+        }
+    });
+
+    return arr;
 }
