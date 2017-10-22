@@ -3,12 +3,10 @@
 const MILLISECONDS_IN_MINUTE = 60 * 1000;
 const MINUTES_IN_HOUR = 60;
 
-function createDate(day, hours, minutes, utcOffset = 0) {
+exports.createDate = function createDate(day, hours, minutes, utcOffset = 0) {
     //  June, 1970 starts with Monday
     return new Date(1970, 5, day, hours - utcOffset, minutes);
-}
-
-exports.createDate = createDate;
+};
 
 function addMinutesToDate(date, minutes) {
     return new Date(date.getTime() + minutesToMilliseconds(minutes));

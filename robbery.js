@@ -120,7 +120,7 @@ function parseDate(date) {
 function mergeSchedule(schedule) {
     const sortedIntervals = schedule
         .reduce((result, personalSchedule) => result.concat(personalSchedule))
-        .sort((one, other) => one.from - other.from);
+        .sort((a, b) => a.from - b.from);
 
     const result = [];
     let previous = sortedIntervals.shift();
@@ -137,11 +137,11 @@ function mergeSchedule(schedule) {
     return result;
 }
 
-function getGangFreeTime({ from, to }, mergedSchedule) {
+function getGangFreeTime({ from, to }, schedule) {
     const result = [];
     let interval = { from };
 
-    for (const current of mergedSchedule) {
+    for (const current of schedule) {
         interval.to = current.from;
         result.push(interval);
         interval = { from: current.to };
@@ -162,9 +162,8 @@ function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
                 return;
             }
 
-            if (isTimeInInterval(
-                utils.addMinutesToDate(intersection.from, duration), intersection
-            )) {
+            const laterDate = utils.addMinutesToDate(intersection.from, duration);
+            if (isTimeInInterval(laterDate, intersection)) {
                 result.push(intersection);
             }
         });
@@ -173,14 +172,14 @@ function getRobberyTimes(gangFreeTime, bankSchedule, duration) {
     return result;
 }
 
-function getIntersection(one, other) {
-    if (!areIntervalsIntersected(one, other)) {
+function getIntersection(first, second) {
+    if (!areIntervalsIntersected(first, second)) {
         return;
     }
 
     return {
-        from: new Date(Math.max(one.from, other.from)),
-        to: new Date(Math.min(one.to, other.to))
+        from: new Date(Math.max(first.from, second.from)),
+        to: new Date(Math.min(first.to, second.to))
     };
 }
 
