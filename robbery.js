@@ -35,9 +35,6 @@ class TimeInterval {
         const [, dayStart, hoursStart, minutesStart] = TIME_FORMAT.exec(start);
         const [, dayEnd, hoursEnd, minutesEnd, timezone] = TIME_FORMAT.exec(end);
 
-        this.unparsedStart = start;
-        this.unparsedEnd = end;
-
         this.timezone = parseInt(timezone, 10);
         this.dayStart = dayStart;
         this.dayEnd = dayEnd;
@@ -74,8 +71,10 @@ class TimeInterval {
      * @returns {TimeInterval} - интервал, включающий в себя оба интервала
      */
     combine(interval) {
-        return new TimeInterval(interval.unparsedStart, interval.unparsedEnd)
-            ._setRange(Math.min(this.start, interval.start), Math.max(this.end, interval.end));
+        return interval.cloneWithRange(
+            Math.min(this.start, interval.start),
+            Math.max(this.end, interval.end)
+        );
     }
 
     /**
