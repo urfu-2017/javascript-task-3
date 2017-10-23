@@ -63,22 +63,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         }
     };
 };
-function toOneArray(schedule, time) {
-    var newSchedule = testToFreeDays(schedule);
+function scheduleToData(schedule, time) {
+    var newSchedule = addTask(schedule);
     var res = {};
     var keys = Object.keys(newSchedule);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
         var value = newSchedule[key];
-        if (i === 0) {
-            res.Denny = toFreeTimeInNumbers(value, time);
-        }
-        if (i === 1) {
-            res.Rusty = toFreeTimeInNumbers(value, time);
-        }
-        if (i === 2) {
-            res.Linus = toFreeTimeInNumbers(value, time);
-        }
+        res[key] = toFreeTimeInNumbers(value, time);
     }
 
     return res;
@@ -142,8 +134,8 @@ function workTimeToDays(numb) {
 }
 
 function toMinuetsFromDate(day, timeBank) {
-    var dateArray = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-    var i = dateArray.indexOf(day.substring(0, 2));
+    var days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+    var i = days.indexOf(day.substring(0, 2));
     var timeInMinutes = MINUETS_IN_HOUR * Number(day.substring(3, 5)) +
     Number(day.substring(6, 8)) - MINUETS_IN_HOUR * Number(day.substring(9, 10)) +
     MINUETS_IN_HOUR * 24 * i + MINUETS_IN_HOUR * Number(timeBank.from.substring(6));
@@ -173,15 +165,15 @@ function toOneFreeTime(P1, P2) {
 }
 
 function searchTimeResult(schedule, duration, workingHours) {
-    var rasp = checkSchedule(schedule);
+    var newSchedule = addWorkersToSchedule(schedule);
     var answer = [];
-    var oneAr = toOneArray(rasp, workingHours);
-    var timeDenny = oneAr.Denny;
-    var timeRusty = oneAr.Rusty;
-    var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDenny, oneAr.Linus),
+    var data = scheduleToData(newSchedule, workingHours);
+    var timeDenny = data.Denny;
+    var timeRusty = data.Rusty;
+    var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDenny, data.Linus),
         timeRusty);
     var freeTimeWithBank = toOneFreeTime(freeTimePeople,
-        toOneTimeZone(timeToArray(workingHours), workingHours));
+        toOneTimeZone(timeToData(workingHours), workingHours));
     var lootTimeInOneLine = findTime(duration, freeTimeWithBank);
     if (lootTimeInOneLine.length === 0) {
 
@@ -209,7 +201,7 @@ function intersectionOfTime(a, b, c, d) {
 
     return intersection;
 }
-function timeToArray(time) {
+function timeToData(time) {
     var workHours = [];
     var plusDay = 0;
     for (var i = 0; i < 3; i++) {
@@ -225,20 +217,20 @@ function timeToArray(time) {
     return workHours;
 }
 function findTime(number, freeAr) {
-    var answersArray = [];
+    var answers = [];
     for (var i = 0; i < freeAr.length; i++) {
-        var nach = freeAr[i][0];
-        var conc = freeAr[i][1];
-        if ((conc - nach) >= number) {
-            answersArray.push(nach);
+        var start = freeAr[i][0];
+        var end = freeAr[i][1];
+        if ((end - start) >= number) {
+            answers.push(start);
         }
     }
 
-    return answersArray;
+    return answers;
 }
 
 
-function checkEmptyDay(worker) {
+function addTaskHelp(worker) {
     if (worker.length === 0) {
         worker.push({ from: 'ПН 00:00+0', to: 'ПН 00:00+0' });
     }
@@ -246,22 +238,19 @@ function checkEmptyDay(worker) {
     return worker;
 }
 
-function testToFreeDays(schedule) {
-    var newRasp = {};
-    newRasp.Denny = [];
-    newRasp.Linus = [];
-    newRasp.Rusty = [];
-    newRasp.Linus = checkEmptyDay(schedule.Linus);
-    newRasp.Rusty = checkEmptyDay(schedule.Rusty);
-    newRasp.Denny = checkEmptyDay(schedule.Danny);
+function addTask(schedule) {
+    var newSchedule = {};
+    newSchedule.Denny = [];
+    newSchedule.Linus = [];
+    newSchedule.Rusty = [];
+    newSchedule.Linus = addTaskHelp(schedule.Linus);
+    newSchedule.Rusty = addTaskHelp(schedule.Rusty);
+    newSchedule.Denny = addTaskHelp(schedule.Danny);
 
-    return newRasp;
+    return newSchedule;
 }
 
-function checkSchedule(schedule) {
-    if (schedule === null) {
-        return '';
-    }
+function addWorkersToSchedule(schedule) {
     if (schedule.Danny === undefined) {
         schedule.Danny = [];
     }
@@ -275,13 +264,13 @@ function checkSchedule(schedule) {
     return schedule;
 }
 
-function toOneTimeZone(array, workTime) {
-    var res = [];
-    for (var i = 0; i < array.length; i++) {
-        var p = [array[i][0] + Number((workTime.from).substring(6)) * MINUETS_IN_HOUR,
-            array[i][1] + Number((workTime.to).substring(6)) * MINUETS_IN_HOUR];
-        res.push(p);
+function toOneTimeZone(timeAr, workTime) {
+    var result = [];
+    for (var i = 0; i < timeAr.length; i++) {
+        var p = [timeAr[i][0] + Number((workTime.from).substring(6)) * MINUETS_IN_HOUR,
+            timeAr[i][1] + Number((workTime.to).substring(6)) * MINUETS_IN_HOUR];
+        result.push(p);
     }
 
-    return res;
+    return result;
 }
