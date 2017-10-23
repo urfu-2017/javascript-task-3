@@ -42,11 +42,14 @@ function performIntersectIntervals(schedule) {
     while (schedule.length !== 0) {
         let curInter = schedule[0];
         let toIntersect;
-        if (performedSchedule.some(function (perfomInter) {
+
+        let isIntersect = performedSchedule.some(function (perfomInter) {
             toIntersect = perfomInter;
 
             return curInter.from <= perfomInter.to && curInter.to >= perfomInter.from;
-        })) {
+        });
+
+        if (isIntersect) {
             toIntersect.to = toIntersect.to >= curInter.to ? toIntersect.to : curInter.to;
         } else {
             performedSchedule.push(curInter);
