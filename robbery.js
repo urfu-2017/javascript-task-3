@@ -134,7 +134,7 @@ function findRobberyTime(scheduleOfDay, duration, workingHours) {
 
 function findLater(time, duration) {
     let laterTime = new Date(time.from.getTime() + 30 * 60000);
-    let laterTimes = [];
+    const laterTimes = [];
     laterTimes.push(time);
     while (new Date(laterTime.getTime() + duration * 60000).getTime() <= time.to.getTime()) {
         laterTimes.push({
@@ -148,7 +148,7 @@ function findLater(time, duration) {
 }
 
 function intersectAvailableAndBusyTime(availableTime, busyTime) {
-    let separatedAvailableTime = [];
+    const separatedAvailableTime = [];
     if (Math.min(availableTime.to.getTime(), busyTime.to.getTime()) -
         Math.max(availableTime.from.getTime(), busyTime.from.getTime()) < 0) {
         separatedAvailableTime.push(availableTime);
@@ -179,7 +179,7 @@ function intersectAvailableAndBusyTime(availableTime, busyTime) {
 
 
 function fillActionDays(schedule, actionDays) {
-    let filledDays = {};
+    const filledDays = {};
     actionDays.forEach(day => {
         filledDays[day] = [];
     });
@@ -198,20 +198,21 @@ function fillActionDays(schedule, actionDays) {
 }
 
 function normalizeSchedule(schedule, workingHours) {
-    let newSchedule = {};
-    Object.keys(schedule).forEach(name => {
+    return Object.keys(schedule).reduce((acc, name) => {
         if (schedule.hasOwnProperty(name)) {
-            newSchedule[name] = equalizeShifts(schedule[name], getShift(workingHours));
-            newSchedule[name] = newSchedule[name].reduce(separateSegments, []);
-        }
-    });
+            acc[name] = equalizeShifts(schedule[name], getOffset(workingHours));
+            acc[name] = acc[name].reduce(separateSegments, []);
 
-    return newSchedule;
+            return acc;
+        }
+
+        return acc;
+    }, {});
 }
 
-function equalizeShifts(scheduleBlock, mainShift) {
+function equalizeShifts(scheduleBlock, mainOffset) {
     return scheduleBlock.map(segment => {
-        let offset = Number(getShift(segment)) - Number(mainShift);
+        const offset = Number(getOffset(segment)) - Number(mainOffset);
 
         return {
             from: calculateNewDate(offset, segment.from),
@@ -221,18 +222,17 @@ function equalizeShifts(scheduleBlock, mainShift) {
 }
 
 function calculateNewDate(offset, date) {
-    const dayNotation = { ВС: 0, ПН: 1, ВТ: 2, СР: 3, ЧТ: 4, ПТ: 5, СБ: 6 };
-    let time = new Date(0, 0, dayNotation[getDay(date)], getHours(date), getMinutes(date));
-    let newTime = new Date(time.getTime() - offset * 3600000);
+    const time = new Date(0, 0, WEEK_DAYS.indexOf(getDay(date)), getHours(date), getMinutes(date));
+    const newTime = new Date(time.getTime() - offset * 3600000);
 
     return `${WEEK_DAYS[newTime.getDay()]} ${newTime.getHours()}:${newTime.getMinutes()}`;
 }
 
 function separateSegment(segment) {
-    let separatedSegments = [];
+    const separatedSegments = [];
     let tempSegment = segment;
     separatedSegments.push({
-        from: tempSegment.from.replace(/\+\d/, ''),
+        from: tempSegment.from.replace(/\+\d?\d/, ''),
         to: getDay(tempSegment.from) + ' 23:59'
     });
     while (getDay(tempSegment.from) !== getDay(segment.to)) {
@@ -288,6 +288,6 @@ function getMinutes(time) {
     return getTime(time).split(':')[1];
 }
 
-function getShift(time) {
-    return time.to.slice(-1);
+function getOffset(time) {
+    return /\d?\d$/.exec(time.to);
 }
