@@ -1,6 +1,6 @@
 'use strict';
 
-exports.isStar = false;
+exports.isStar = true;
 const DAYS_WEEK = {
     'ПН': 0,
     'ВТ': 1440,
@@ -11,27 +11,27 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         from: 0,
         to: 4320
     }], 0);
+
     let friends = getFriendsIntervals();
+
     let bankIntervals = mathIntervalsBank(workingHours);
 
     timeLine = returnInterval(timeLine, bankIntervals, 1);
+
     timeLine = returnInterval(timeLine, friends, 0);
-    let lastStart = getProfitInterval(0);
+
+    let currentTime = getProfitInterval(0);
 
     return {
         exists() {
-            if (getProfitInterval(lastStart) > 0) {
-                return true;
-            }
-
-            return false;
+            return currentTime;
         },
         format(template) {
-            let timeStart = getProfitInterval(lastStart);
-            if (!timeStart) {
+            if (!currentTime) {
                 return '';
             }
-            let tmp = intervalToString(timeStart);
+
+            let tmp = intervalToString(getProfitInterval(currentTime));
 
             return template
                 .replace('%DD', tmp.DD)
@@ -40,9 +40,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         },
 
         tryLater() {
-            let nextInterval = getProfitInterval(lastStart + 30);
+            let nextInterval = getProfitInterval(currentTime + 30);
             if (nextInterval > 0) {
-                lastStart = nextInterval;
+                currentTime = nextInterval;
 
                 return true;
             }
@@ -59,9 +59,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                     from: timeConverter(el.from),
                     to: timeConverter(el.to)
                 });
-
             });
-
         });
 
         return arr;
@@ -79,11 +77,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             stop = timeLine.indexOf(0, start);
 
         }
-        if (starts.length === 0) {
-            return false;
-        }
 
-        return starts[0];
+        return starts.length === 0 ? false : starts[0];
     }
 
 };
