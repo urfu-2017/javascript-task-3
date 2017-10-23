@@ -9,7 +9,7 @@ exports.isStar = true;
 const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 var deadline = 3 * 60 * 24;
 
-function stringToMinuts(str, bankTimeZone) {
+function stringToMinutes(str, bankTimeZone) {
     var [, day, hour, minute, timeZone] = str.match(/([А-Я]{2}) (\d{2}):(\d{2})\+(\d+)/);
     var result = (days.indexOf(day) * 24 + Number(hour) - Number(timeZone)) * 60 + Number(minute);
     if (bankTimeZone) {
@@ -19,65 +19,8 @@ function stringToMinuts(str, bankTimeZone) {
     return result;
 }
 
-/**
- * @param {Array} scheduleToMerge – массив интервалов { start, end }, которые могут пересекаться
- * @returns {Array} - массив интервалов { start, end }, без повторений и пересечений
- */
-function mergeSchedule(scheduleToMerge) {
-    function uniteIntervals(firstInterval, secondInterval) {
-        if (!firstInterval) {
-            return secondInterval;
-        }
-        if (!secondInterval) {
-            return firstInterval;
-        }
-        if (firstInterval.end < secondInterval.start || firstInterval.start > secondInterval.end) {
-            return null;
-        }
-
-        return { start: Math.min(firstInterval.start, secondInterval.start),
-            end: Math.max(firstInterval.end, secondInterval.end) };
-    }
-
-    /**
-     * @param {Array} schedule
-     * @returns {Array}
-     * объединяет в исходном расписании каждый интервал с нулевым, если они пересекаются
-     * хотя бы по границе. После чего удаляет из него нулевой интервал, если он был
-     * объединен с каким то еще (теперь он входит туда), в противном же случае
-     * кладет его в конец списка интервалов.
-     */
-    function mergeFirst(schedule) {
-        var wasIntersected = 0;
-        var result = schedule.reduce(function (unitedWithFirst, interval) {
-            var union = uniteIntervals(schedule[0], interval);
-            if (union) {
-                wasIntersected++;
-                unitedWithFirst.push(union);
-            } else {
-                unitedWithFirst.push(interval);
-            }
-
-            return unitedWithFirst;
-        }, []);
-        if (wasIntersected === 1) {
-            result.push(result[0]);
-        }
-        result.splice(0, 1);
-
-        return result;
-    }
-    var scheduleHadIntervals = scheduleToMerge.length;
-    var i = 0;
-    while (i < scheduleHadIntervals) {
-        scheduleToMerge = mergeFirst(scheduleToMerge);
-        i++;
-    }
-
-    return scheduleToMerge;
-}
-
 function intersectSchedules(firstSchedule, secondSchedule) {
+
     function intersectIntervals(firstInterval, secondInterval) {
         if (!firstInterval || !secondInterval || firstInterval.start >= secondInterval.end ||
             firstInterval.end <= secondInterval.start) {
@@ -87,21 +30,18 @@ function intersectSchedules(firstSchedule, secondSchedule) {
         return { start: Math.max(firstInterval.start, secondInterval.start),
             end: Math.min(firstInterval.end, secondInterval.end) };
     }
-    var result = firstSchedule.reduce(function (intesectionScheduleSchedule,
-        intervalFromFirstSchedule) {
-        return secondSchedule.reduce(function (intersectionElementSchedule,
-            intervalFromSecondSchedule) {
-            var intersection = intersectIntervals(intervalFromFirstSchedule,
-                intervalFromSecondSchedule);
-            if (intersection) {
-                intersectionElementSchedule.push(intersection);
-            }
 
-            return intersectionElementSchedule;
-        }, []).concat(intesectionScheduleSchedule);
-    }, []);
+    function intersectIntervalWithSchedule(schedule, interval) {
+        return schedule
+            .map(arg => intersectIntervals(arg, interval))
+            .filter(Boolean);
+    }
 
-    return mergeSchedule(result);
+    var result = firstSchedule
+        .reduce((acc, interval) =>
+            acc.concat(intersectIntervalWithSchedule(secondSchedule, interval)), []);
+
+    return result;
 }
 
 function minutesToDate(arg) {
@@ -125,8 +65,8 @@ function findPropriateTime(schedule, workingHours, duration, bankTimeZone) {
     function scheduleToIntervals(sch) {
         var result = [{ start: 0, end: deadline }];
         sch.forEach(function (item) {
-            var from = stringToMinuts(item.from, bankTimeZone);
-            var to = stringToMinuts(item.to, bankTimeZone);
+            var from = stringToMinutes(item.from, bankTimeZone);
+            var to = stringToMinutes(item.to, bankTimeZone);
             result = intersectSchedules(result,
                 [{ start: 0, end: from }, { start: to, end: deadline }]);
         });
@@ -135,8 +75,8 @@ function findPropriateTime(schedule, workingHours, duration, bankTimeZone) {
     }
     function workingHoursToSchedule(workingTime) {
         return days.slice(0, 3).map(function (day) {
-            return { start: stringToMinuts(day + ' ' + workingTime.from, bankTimeZone),
-                end: stringToMinuts(day + ' ' + workingTime.to, bankTimeZone) };
+            return { start: stringToMinutes(day + ' ' + workingTime.from, bankTimeZone),
+                end: stringToMinutes(day + ' ' + workingTime.to, bankTimeZone) };
         });
     }
     var result = ['Danny', 'Rusty', 'Linus']
@@ -160,11 +100,8 @@ function findPropriateTime(schedule, workingHours, duration, bankTimeZone) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    function getTimeZone(bankWorkingHours) {
-        return Number(bankWorkingHours.from.split('+')[1]);
-    }
     console.info(schedule, duration, workingHours);
-    var bankTimeZone = getTimeZone(workingHours);
+    var bankTimeZone = Number(workingHours.from.split('+')[1]);
     var propriateTime = findPropriateTime(schedule, workingHours, duration, bankTimeZone);
     propriateTime.sort(function (a, b) {
         return a.start - b.start;
@@ -179,7 +116,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return Boolean(propriateTime.length);
+            return propriateTime.length > 0;
         },
 
         /**
@@ -196,7 +133,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (propriateTime.length) {
                 var time = minutesToDate(propriateTime[0].start);
 
-                return template.replace('%HH', padLeft(time.hours))
+                return template
+                    .replace('%HH', padLeft(time.hours))
                     .replace('%MM', padLeft(time.minutes))
                     .replace('%DD', time.day);
             }
