@@ -71,8 +71,8 @@ function getMomentInfo(schedule, duration, workingHours) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let [bankOffset, available] = getMomentInfo(schedule, duration, workingHours);
-    let i = 0;
-    let j = 0;
+    let currentInterval = 0;
+    let currentTry = 0;
 
     return {
 
@@ -81,7 +81,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return i < available.length;
+            return currentInterval < available.length;
         },
 
         /**
@@ -92,15 +92,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (i >= available.length) {
+            if (currentInterval >= available.length) {
                 return '';
             }
-            let intersection = available[i][0];
+            let intersection = available[currentInterval][0];
             let offset = bankOffset - intersection.fromTs.offset;
 
             return intersection.fromTs
                 .addMinutes(offset * 60)
-                .addMinutes(j * 30)
+                .addMinutes(currentTry * 30)
                 .format(template);
         },
 
@@ -110,17 +110,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (i >= available.length) {
+            if (currentInterval >= available.length) {
                 return false;
             }
-            let [, repeat] = available[i];
-            if (++j > repeat) {
-                j = 0;
-                i++;
+            let [, repeat] = available[currentInterval];
+            if (++currentTry > repeat) {
+                currentTry = 0;
+                currentInterval++;
             }
-            if (i >= available.length) {
-                i--;
-                j = repeat;
+            if (currentInterval >= available.length) {
+                currentInterval--;
+                currentTry = repeat;
 
                 return false;
             }
