@@ -1,5 +1,5 @@
 'use strict';
-const { time, Timedelta, Timestamp, days } = require('./time');
+const { Timedelta, Timestamp, days } = require('./time');
 
 
 /**
@@ -19,10 +19,15 @@ function getBankTimetable(workingHours) {
     return result;
 }
 
-function cartesian(a, b, ...c) {
-    const f = (d, e) => [].concat(...d.map(x => e.map(y => [].concat(x, y))));
+function product2(list1, list2) {
+    return [].concat(...list1.map(x => list2.map(y => [].concat(x, y))));
+}
 
-    return b ? cartesian(f(a, b), ...c) : a;
+function cartesian(list1, list2, ...lists) {
+    // based on https://stackoverflow.com/a/43053803
+    return list2
+        ? cartesian(product2(list1, list2), ...lists)
+        : product2(list1, [[]]);
 }
 
 function getIntervals(tds) {
@@ -41,10 +46,9 @@ function getIntervals(tds) {
 function getMomentInfo(schedule, duration, workingHours) {
     let bankTimetable = getBankTimetable(workingHours);
     let bankOffset = bankTimetable[0].fromTs.offset;
+    let available = [];
     let tables = Object.values(schedule).map(x => getIntervals(x.map(Timedelta.fromObj)));
     tables.push(bankTimetable);
-    tables.push(bankTimetable); // bypass cartesian product of one element
-    let available = [];
     for (let tds of cartesian(...tables)) {
         let intersection = tds.reduce((acc, x) => x.intersect(acc), Timedelta.max());
         let length = intersection.totalMinutes();
