@@ -7,13 +7,14 @@
 exports.isStar = true;
 
 const GANG_TIME_PATTERN = /([А-Я]{2}) (\d\d?):(\d\d?)\+(\d+)/;
+const BANK_TIME_PATTERN = /(\d\d):(\d\d)\+(\d+)/;
 const DAYS_INDICES = { 'ВС': 0, 'ПН': 1, 'ВТ': 2, 'СР': 3, 'ЧТ': 4, 'ПТ': 5, 'СБ': 6 };
-let GANG_SCHEDULE = [[], [], [], [], []];
+let GANG_SCHEDULE = [];
 
 
-function transformBankTime(bankTime, pattern) {
-    let [fromMatch, hoursFrom, minutesFrom] = pattern.exec(bankTime.from);
-    let [toMatch, hoursTo, minutesTo] = pattern.exec(bankTime.to);
+function transformBankTime(bankTime) {
+    let [fromMatch, hoursFrom, minutesFrom] = BANK_TIME_PATTERN.exec(bankTime.from);
+    let [toMatch, hoursTo, minutesTo] = BANK_TIME_PATTERN.exec(bankTime.to);
     if (!fromMatch || !toMatch) {
         throw new TypeError('Working 5hours in wrong format');
     }
@@ -30,7 +31,7 @@ function transformBankTime(bankTime, pattern) {
     };
 }
 
-function correctTimeZone(currentHours, currentZone, bankZone) {
+function getHoursInBankZone(currentHours, currentZone, bankZone) {
     let result = Number(currentHours);
     currentZone = Number(currentZone);
     bankZone = Number(bankZone);
@@ -42,54 +43,56 @@ function correctTimeZone(currentHours, currentZone, bankZone) {
     return result;
 }
 
-function extractTime(string, bankTimeShift) {
-    let [match, day, ...values] = GANG_TIME_PATTERN.exec(string);
+function getProcessedTime(timeString, bankTimeShift) {
+    let [match, day, ...values] = GANG_TIME_PATTERN.exec(timeString);
     if (!match) {
         return;
     }
     let [hours, minutes, zone] = values.map(Number);
     let index = DAYS_INDICES[day];
-    let correctedHours = correctTimeZone(hours, zone, bankTimeShift);
-    if (correctedHours >= 24) {
-        correctedHours %= 24;
+    let bankZoneHours = getHoursInBankZone(hours, zone, bankTimeShift);
+    if (bankZoneHours >= 24) {
+        bankZoneHours %= 24;
         index++;
-    } else if (correctedHours < 0) {
-        correctedHours += 24;
+    } else if (bankZoneHours < 0) {
+        bankZoneHours += 24;
         index--;
     }
 
-    return { day: index, hours: correctedHours, minutes };
+    return { day: index, hours: bankZoneHours, minutes };
+}
+
+function pushToSchedule(index, item) {
+    if (GANG_SCHEDULE[index] === undefined) {
+        GANG_SCHEDULE[index] = [];
+    }
+    GANG_SCHEDULE[index].push(item);
 }
 
 function processActivity(activity, bankTimeShift) {
-    let from = extractTime(activity.from, bankTimeShift);
-    let to = extractTime(activity.to, bankTimeShift);
+    let from = getProcessedTime(activity.from, bankTimeShift);
+    let to = getProcessedTime(activity.to, bankTimeShift);
     if (from.day !== to.day) {
         if (from.day >= 1 && from.day < GANG_SCHEDULE.length - 1) {
-            let firstDay = { from, to: { day: from.day, hours: 23, minutes: 59 } };
-            GANG_SCHEDULE[from.day].push(firstDay);
+            let firstDay = getEventTillDayEnd(from);
+            pushToSchedule(from.day, firstDay);
         }
-
-        let secondDay = { from: { day: to.day, hours: 0, minutes: 0 }, to };
+        let secondDay = getEventFromDayBegin(to);
         let startDay = from.day + 1;
         while (startDay !== to.day) {
-            GANG_SCHEDULE[startDay].push({
-                from: { day: startDay, hours: 0, minutes: 0 },
-                to: { day: startDay, hours: 23, minutes: 59 }
-            });
+            pushToSchedule(startDay, getFullDayEvent(startDay));
             startDay++;
         }
-        if (to.day >= 1 && to.day < GANG_SCHEDULE.length - 1) {
-            GANG_SCHEDULE[to.day].push(secondDay);
+        if (to.day >= 1 && to.day < 4) {
+            pushToSchedule(to.day, secondDay);
         }
     } else {
-        GANG_SCHEDULE[from.day].push({ from, to });
+        pushToSchedule(from.day, { from, to });
     }
 }
 
 function transformSchedule(schedule, bankHours) {
-    const bankTimePattern = /(\d\d:\d\d)\+(\d+)/;
-    const bankTimeShift = bankTimePattern.exec(bankHours.from)[2];
+    const bankTimeShift = BANK_TIME_PATTERN.exec(bankHours.from)[3];
     for (let name of Object.keys(schedule)) {
         for (let activity of schedule[name]) {
             processActivity(activity, bankTimeShift);
@@ -110,7 +113,7 @@ function isEarlier(first, second) {
         return first.minutes <= second.minutes;
     }
 
-    return first.hours <= second.hours;
+    return first.hours < second.hours;
 }
 
 function eventsAreEqual(first, second) {
@@ -133,7 +136,7 @@ function getMax(first, second) {
     return first;
 }
 
-function uniteActivities(activities) {
+function getUnitedActivities(activities) {
     let counter = 0;
     while (counter < activities.length - 1) {
         let current = activities[counter];
@@ -150,37 +153,48 @@ function uniteActivities(activities) {
     return activities;
 }
 
-function negateActivities(activities, day) {
+function getFullDayEvent(day) {
+    return {
+        from: {
+            day: day,
+            hours: 0,
+            minutes: 0
+        },
+        to: {
+            day: day,
+            hours: 23,
+            minutes: 59
+        }
+    };
+}
+
+function getEventFromDayBegin(timeObject) {
+    return {
+        from: { day: timeObject.day, hours: 0, minutes: 0 },
+        to: timeObject
+    };
+}
+
+function getEventTillDayEnd(timeObject) {
+    return {
+        from: timeObject,
+        to: { day: timeObject.day, hours: 23, minutes: 59 }
+    };
+}
+
+function getFreeTime(activities, day) {
     let result = [];
     if (activities.length === 0) {
-        return [{
-            from: {
-                day: day,
-                hours: 0,
-                minutes: 0
-            },
-            to: {
-                day: day,
-                hours: 23,
-                minutes: 59
-            }
-        }];
+        return [getFullDayEvent(day)];
     }
 
-    result.push({
-        from: {
-            day: activities[0].from.day, hours: 0, minutes: 0
-        }, to: activities[0].from
-    });
+    result.push(getEventFromDayBegin(activities[0].from));
+
     for (let i = 0; i < activities.length - 1; i++) {
         result.push({ from: activities[i].to, to: activities[i + 1].from });
     }
-    result.push({
-        from: activities[activities.length - 1].to,
-        to: {
-            day: activities[activities.length - 1].to.day, hours: 23, minutes: 59
-        }
-    });
+
+    result.push(getEventTillDayEnd(activities[activities.length - 1].to));
     result = result.filter(time => !eventsAreEqual(time.from, time.to));
 
     return result;
@@ -197,7 +211,7 @@ function intersectTimes(activities, time) {
 }
 
 function getEventLength(event) {
-    if (event === undefined) {
+    if (!event) {
         return 0;
     }
 
@@ -224,30 +238,32 @@ function shiftLater(event, hours, minutes) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    GANG_SCHEDULE = [[], [], [], [], []];
-    const bankTimePattern = /(\d\d?):(\d\d?)/;
+    GANG_SCHEDULE = [];
     transformSchedule(schedule, workingHours);
-    let freeTime = GANG_SCHEDULE.slice(1, 4).map(day => day.sort(sortEventsByEnd))
-        .map(uniteActivities)
-        .map(negateActivities);
-    let transformedWorkingHours = transformBankTime(workingHours, bankTimePattern);
-    let robberyTimesByDays = freeTime
-        .map(day => intersectTimes(day, transformedWorkingHours)
-            .filter(event => getEventLength(event) >= duration));
-    let robberyTimes = [].concat(...robberyTimesByDays);
+    let freeTime = GANG_SCHEDULE
+        .filter(events => events[0].from.day > 0 && events[0].from.day < 4)
+        .map(day => day.sort(sortEventsByEnd))
+        .map(getUnitedActivities)
+        .map(getFreeTime);
+    let transformedWorkingHours = transformBankTime(workingHours);
+    let freeTimeWhileBankWorks = freeTime
+        .map(day => intersectTimes(day, transformedWorkingHours));
+    let freeTimesLongEnough = freeTimeWhileBankWorks
+        .map(day => day.filter(event => getEventLength(event) >= duration));
+    let robberyTimes = [].concat(...freeTimesLongEnough);
 
     return {
-        robberyTimes: robberyTimes.slice(),
+        _robberyTimes: robberyTimes.slice(),
 
         /**
          * Найдено ли время
          * @returns {Boolean}
          */
         exists: function () {
-            return robberyTimes.length !== 0 || this._currentTime !== undefined;
+            return Boolean(robberyTimes.length) || Boolean(this._currentTime);
         },
 
-        getFirstTime: function () {
+        _getFirstTime: function () {
             return robberyTimes[0];
         },
 
@@ -262,18 +278,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             let time = this._currentTime;
-            if (!this.exists() || time === undefined || time === null) {
+            if (!this.exists()) {
                 return '';
             }
-            let hours = time.from.hours.toLocaleString(undefined, { minimumIntegerDigits: 2 });
-            let minutes = time.from.minutes.toLocaleString(undefined, { minimumIntegerDigits: 2 });
+            let hours = time.from.hours.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
+            let minutes = time.from.minutes.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
             let day = Object.keys(DAYS_INDICES)
                 .filter(dayString => DAYS_INDICES[dayString] === time.day)[0];
-            template = template.replace('%HH', hours)
+
+            return template.replace('%HH', hours)
                 .replace('%MM', minutes)
                 .replace('%DD', day);
-
-            return template;
         },
 
         /**
@@ -288,8 +303,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return true;
             }
             robberyTimes.splice(0, 1);
-            let nextTime = this.getFirstTime();
-            if (nextTime === undefined) {
+            let nextTime = this._getFirstTime();
+            if (!nextTime) {
                 return false;
             }
             this._currentTime = nextTime;
