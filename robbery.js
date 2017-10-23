@@ -75,15 +75,15 @@ function scheduleToData(schedule, time) {
 
     return res;
 }
-function toFreeTimeInNumbers(oneArray, time) {
+function toFreeTimeInNumbers(oneWorkerShedule, time) {
     var weekFree = [];
     var openTime = [0];
-    for (var i = 0; i < oneArray.length; i++) {
-        var sergmentFreeTime = openTime.concat(toMinuetsFromDate(oneArray[i].from, time));
+    for (var i = 0; i < oneWorkerShedule.length; i++) {
+        var sergmentFreeTime = openTime.concat(toMinuetsFromDate(oneWorkerShedule[i].from, time));
         weekFree.push(sergmentFreeTime);
-        openTime = [toMinuetsFromDate(oneArray[i].to, time)];
-        if (i === oneArray.length - 1) {
-            var lastSegmentTime = [toMinuetsFromDate(oneArray[i].to, time)].concat(4319);
+        openTime = [toMinuetsFromDate(oneWorkerShedule[i].to, time)];
+        if (i === oneWorkerShedule.length - 1) {
+            var lastSegmentTime = [toMinuetsFromDate(oneWorkerShedule[i].to, time)].concat(4319);
             weekFree.push(lastSegmentTime);
         }
     }
@@ -143,61 +143,55 @@ function toMinuetsFromDate(day, timeBank) {
     return timeInMinutes;
 }
 
-function toOneFreeTime(P1, P2) {
-    var answ = [];
-    for (var i = 0; i < P1.length; i++) {
-        var n1 = P1[i][0];
-        var k1 = P1[i][1];
-        for (var j = 0; j < P2.length; j++) {
-            var n2 = P2[j][0];
-            var k2 = P2[j][1];
-            answ.push(intersectionOfTime(n1, k1, n2, k2));
+function toOneFreeTime(worker1, worker2) {
+    var answers = [];
+    for (var i = 0; i < worker1.length; i++) {
+        var start1 = worker1[i][0];
+        var end1 = worker1[i][1];
+        for (var j = 0; j < worker2.length; j++) {
+            var start2 = worker2[j][0];
+            var end2 = worker2[j][1];
+            answers.push(intersectionOfTime(start1, end1, start2, end2));
         }
     }
-    var answWithoutEmpty = [];
-    for (var k = 0; k < answ.length; k++) {
-        if (answ[k].length !== 0) {
-            answWithoutEmpty.push(answ[k]);
+    var answersWithoutEmpty = [];
+    for (var k = 0; k < answers.length; k++) {
+        if (answers[k].length !== 0) {
+            answersWithoutEmpty.push(answers[k]);
         }
     }
 
-    return answWithoutEmpty;
+    return answersWithoutEmpty;
 }
 
 function searchTimeResult(schedule, duration, workingHours) {
     var newSchedule = addWorkersToSchedule(schedule);
-    var answer = [];
+    var answers = [];
     var data = scheduleToData(newSchedule, workingHours);
-    var timeDenny = data.Denny;
+    var timeDanny = data.Danny;
     var timeRusty = data.Rusty;
-    var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDenny, data.Linus),
+    var freeTimePeople = toOneFreeTime(toOneFreeTime(timeDanny, data.Linus),
         timeRusty);
     var freeTimeWithBank = toOneFreeTime(freeTimePeople,
         toOneTimeZone(timeToData(workingHours), workingHours));
     var lootTimeInOneLine = findTime(duration, freeTimeWithBank);
     if (lootTimeInOneLine.length === 0) {
-
         return '';
     }
-
     for (var i = 0; i < lootTimeInOneLine.length; i++) {
         var date = workTimeToDays(lootTimeInOneLine[i]);
-        answer.push(date);
+        answers.push(date);
     }
 
-    return answer[0];
+    return answers[0];
 }
 
 function intersectionOfTime(a, b, c, d) {
-    var a1 = a;
-    var b1 = b;
-    var c1 = c;
-    var d1 = d;
     var intersection = [];
     if (c > b || d < a) {
         return intersection;
     }
-    intersection = [Math.max(a1, c1), Math.min(b1, d1)];
+    intersection = [Math.max(a, c), Math.min(b, d)];
 
     return intersection;
 }
@@ -240,12 +234,11 @@ function addTaskHelp(worker) {
 
 function addTask(schedule) {
     var newSchedule = {};
-    newSchedule.Denny = [];
-    newSchedule.Linus = [];
-    newSchedule.Rusty = [];
-    newSchedule.Linus = addTaskHelp(schedule.Linus);
-    newSchedule.Rusty = addTaskHelp(schedule.Rusty);
-    newSchedule.Denny = addTaskHelp(schedule.Danny);
+    var keys = Object.keys(schedule);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        newSchedule[key] = addTaskHelp(schedule[key]) || [];
+    }
 
     return newSchedule;
 }
