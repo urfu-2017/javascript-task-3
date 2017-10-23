@@ -239,7 +239,7 @@ function separateSegment(segment) {
         let nextDay = getAdjacentDays(getDay(tempSegment.from)).next;
         tempSegment = nextDay === getDay(segment.to) ? {
             from: nextDay + ' 00:00',
-            to: segment.to.replace(/\+\d/, '')
+            to: segment.to.replace(/\+\d?\d/, '')
         } : {
             from: nextDay + ' 00:00',
             to: nextDay + ' 23:59'
