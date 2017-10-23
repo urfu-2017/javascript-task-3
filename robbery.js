@@ -25,16 +25,12 @@ const DAYS = {
 };
 const TIME_REGEX = /([А-Я]{2}) (\d\d):(\d\d)\+(\d+)/;
 const BANK_REGEX = /(\d\d):(\d\d)\+(\d+)/;
-const NAME_BUDDY = ['Danny', 'Rusty', 'Linus'];
+const NAMES_BUDDY = ['Danny', 'Rusty', 'Linus'];
 const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
 const MS_IN_MINUTE = 60000;
+const DELAY = 30;
 
-function createDate([day, hour, minute]) {
-    if (hour > 23 || hour < 0) {
-        let sign = hour > 23 ? 1 : -1;
-        hour -= 24 * sign;
-        day += sign;
-    }
+function createDate(day, hour, minute) {
 
     return Date.parse(new Date(YEAR, MONTH, day, hour, minute, 0));
 }
@@ -42,18 +38,25 @@ function createDate([day, hour, minute]) {
 function parseInterval(time) {
     let elements = TIME_REGEX.exec(time);
 
-    return [DAYS[elements[1]] || 0, elements[2], elements[3], elements[4]];
+    return {
+        numberDay: DAYS[elements[1]] || 0,
+        hours: parseInt(elements[2]),
+        minutes: parseInt(elements[3]),
+        timeZone: parseInt(elements[4])
+    };
 }
 
-function getNumberString(number) {
+function get2DigitNumber(number) {
     return number < 10 ? '0' + number : number;
 }
 
 function getDate(time, bankUTC) {
     let parsedTime = parseInterval(time);
-    parsedTime[1] -= parsedTime[3] - bankUTC;
+    let numberDay = parsedTime.numberDay;
+    let hours = parsedTime.hours - parsedTime.timeZone + bankUTC;
+    let minutes = parsedTime.minutes;
 
-    return createDate(parsedTime);
+    return createDate(numberDay, hours, minutes);
 }
 
 function getInterval(interval, bankUTC) {
@@ -63,8 +66,8 @@ function getInterval(interval, bankUTC) {
     };
 }
 
-function getBusyTime(schedule, bankUTC) {
-    return schedule.map(function (interval) {
+function getBusyIntervals(schedule, bankUTC) {
+    return schedule.map(interval => {
         return getInterval(interval, bankUTC);
     });
 }
@@ -73,101 +76,119 @@ function parseBankInterval(time) {
     let matches = BANK_REGEX.exec(time);
 
     return {
-        hour: matches[1],
-        minute: matches[2],
-        UTC: matches[3]
+        hours: parseInt(matches[1]),
+        minutes: parseInt(matches[2]),
+        timeZone: parseInt(matches[3])
     };
 }
 
-function getClosedBank(workingHours) {
+function getClosedIntervals(workingHours) {
     let intervals = [];
     let startBankInterval = parseBankInterval(workingHours.from);
     let endBankInterval = parseBankInterval(workingHours.to);
-    Object.keys(DAYS).forEach(function (day) {
+
+    Object.keys(DAYS).forEach(day => {
         day = DAYS[day];
-        intervals.push (
+        intervals.push(
             {
-                from: createDate([day, 0, 0]),
-                to: createDate([day, startBankInterval.hour, startBankInterval.minute])
+                from: createDate(day, 0, 0),
+                to: createDate(day, startBankInterval.hours, startBankInterval.minutes)
             },
             {
-                from: createDate([day, endBankInterval.hour, endBankInterval.minute]),
-                to: createDate([day, 24, 0])
+                from: createDate(day, endBankInterval.hours, endBankInterval.minutes),
+                to: createDate(day, 24, 0)
             });
     });
 
     return intervals;
 }
 
-function getMomentsForAttack(busy, duration) {
-    let tempSchedule = [];
-    for (var i = 0; i < busy.length - 1; i++) {
-        if (busy[i].to + (duration * MS_IN_MINUTE) <= busy[i + 1].from) {
-            tempSchedule.push({ from: busy[i].to, to: busy[i + 1].from });
+function getAttackIntervals(busyIntervals, duration) {
+    let attackIntervals = [];
+
+    for (let i = 0; i < busyIntervals.length - 1; i++) {
+        if (busyIntervals[i].to + (duration * MS_IN_MINUTE) <= busyIntervals[i + 1].from) {
+            attackIntervals.push({ from: busyIntervals[i].to, to: busyIntervals[i + 1].from });
         }
     }
 
-    return tempSchedule;
+    return attackIntervals;
 }
 
-function mergePersons(prev, cur) {
-    let tempSchedule = prev;
-    for (var i = 0; i < cur.length; i++) {
-        let fromMin = findMin(prev, cur[i].from);
-        let toMax = findMax(prev, cur[i].to);
-        if (fromMin[1] === cur.length) {
-            tempSchedule.push({ from: fromMin[0], to: toMax[0] });
+function mergeSchedules(acc, schedule) {
+    for (let i = 0; i < schedule.length; i++) {
+        let fromMin = findMin(acc, schedule[i].from);
+        let toMax = findMax(acc, schedule[i].to);
+
+        if (fromMin[1] === schedule.length) {
+            acc.push({ from: fromMin[0], to: toMax[0] });
         } else if (toMax[1] === -1) {
-            tempSchedule.unshift({ from: fromMin[0], to: toMax[0] });
+            acc.unshift({ from: fromMin[0], to: toMax[0] });
         } else {
-            tempSchedule.splice(fromMin[1], toMax[1] - fromMin[1] + 1,
+            acc.splice(fromMin[1], toMax[1] - fromMin[1] + 1,
                 { from: fromMin[0], to: toMax[0] });
         }
     }
 
-    return tempSchedule;
+    return acc;
 }
 
-function findMin(arr, from) {
-    for (var i = 0; i < arr.length; i++) {
-        if (from <= arr[i].from) {
-            return [from, i];
-        } else if (from <= arr[i].to) {
-            return [arr[i].from, i];
+function findMin(intervals, timeStart) {
+    for (var i = 0; i < intervals.length; i++) {
+        if (timeStart <= intervals[i].from) {
+            return [timeStart, i];
+        } else if (timeStart <= intervals[i].to) {
+            return [intervals[i].from, i];
         }
     }
 
-    return [from, arr.length];
+    return [timeStart, intervals.length];
 }
 
-function findMax(arr, to) {
-    for (var i = arr.length - 1; i >= 0; i--) {
-        if (to >= arr[i].to) {
-            return [to, i];
-        } else if (to >= arr[i].from) {
-            return [arr[i].to, i];
+function findMax(intervals, timeEnd) {
+    for (var i = intervals.length - 1; i >= 0; i--) {
+        if (timeEnd >= intervals[i].to) {
+            return [timeEnd, i];
+        } else if (timeEnd >= intervals[i].from) {
+            return [intervals[i].to, i];
         }
     }
 
-    return [to, -1];
+    return [timeEnd, -1];
+}
+
+function checkOtherIntervals(schedule, duration) {
+    let startTime = schedule[0].from + DELAY * MS_IN_MINUTE;
+
+    for (let i = 1; i < schedule.length; i++) {
+        if (schedule[i].to > startTime &&
+            schedule[i].to - duration * MS_IN_MINUTE >= schedule[i].from &&
+            schedule[i].to - schedule[0].from >= (DELAY + duration) * MS_IN_MINUTE) {
+            schedule.splice(0, i);
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    const bankUTC = parseBankInterval(workingHours.from).UTC;
-    let busy = [];
-    NAME_BUDDY.forEach(function (name) {
-        busy.push((getBusyTime(schedule[name], bankUTC)));
+    const bankUTC = parseBankInterval(workingHours.from).timeZone;
+    let busySchedules = [];
+
+    NAMES_BUDDY.forEach(name => {
+        busySchedules.push((getBusyIntervals(schedule[name], bankUTC)));
     });
-    busy.push(getClosedBank(workingHours));
-    busy.forEach(function (obj) {
+    busySchedules.push(getClosedIntervals(workingHours));
+    busySchedules.forEach(function (obj) {
         obj.sort(function (firstInterval, secondInterval) {
             return firstInterval.from - secondInterval.from;
         });
     });
-    busy.reduce((prev, cur) => {
-        return mergePersons(prev, cur);
-    });
-    let robberyMoments = getMomentsForAttack(busy[0], duration);
+
+    let mergedBusySchedule = busySchedules.reduce(mergeSchedules);
+    let robberySchedule = getAttackIntervals(mergedBusySchedule, duration);
 
     return {
 
@@ -176,7 +197,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return Boolean(robberyMoments[0]) && duration > 0;
+            return Boolean(robberySchedule[0]) && duration > 0;
         },
 
         /**
@@ -187,16 +208,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (this.exists()) {
-                let robbery = new Date(robberyMoments[0].from);
-
-                return template
-                    .replace(/%DD/g, ACTION_DAYS[robbery.getDay() - 1])
-                    .replace(/%HH/g, getNumberString(robbery.getHours()))
-                    .replace(/%MM/g, getNumberString(robbery.getMinutes()));
+            if (!this.exists()) {
+                return '';
             }
+            let robbery = new Date(robberySchedule[0].from);
 
-            return '';
+            return template
+                .replace(/%DD/g, ACTION_DAYS[robbery.getDay() - 1])
+                .replace(/%HH/g, get2DigitNumber(robbery.getHours()))
+                .replace(/%MM/g, get2DigitNumber(robbery.getMinutes()));
         },
 
         /**
@@ -205,15 +225,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (robberyMoments.length !== 0 && this.exists) {
-                if (robberyMoments[0].from + (duration + 30) * MS_IN_MINUTE <=
-                robberyMoments[0].to) {
-                    robberyMoments[0].from += 30 * MS_IN_MINUTE;
+            if (robberySchedule.length !== 0 && this.exists()) {
+                if (robberySchedule[0].from + (duration + DELAY) * MS_IN_MINUTE <=
+                robberySchedule[0].to) {
+                    robberySchedule[0].from += DELAY * MS_IN_MINUTE;
 
                     return true;
-                } else if (robberyMoments.length > 1) {
-                    robberyMoments.shift();
-
+                } else if (robberySchedule.length > 1 &&
+                    checkOtherIntervals(robberySchedule, duration)) {
                     return true;
                 }
             }
