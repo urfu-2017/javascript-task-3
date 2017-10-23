@@ -12,26 +12,25 @@ class Timestamp {
     }
 
     totalMinutes() {
-        var hour = this.hour + 24 - this.offset;
-        var day = this.day + this.week * 7;
+        let hour = this.hour + 24 - this.offset;
+        let day = this.day + this.week * 7;
 
         return day * 24 * 60 + hour * 60 + this.min;
     }
 
     addMinutes(mins) {
+        let min, hour, day, result;
+        
         mins += this.min;
         mins += this.hour * 60;
         mins += (this.day + this.week * 7) * 24 * 60;
-        var min = mins % 60;
-        mins -= min;
-        mins /= 60;
-        var hour = mins % 24;
-        mins -= hour;
-        mins /= 24;
-        var day = mins % 7;
-        mins -= day;
-        mins /= 7;
-        var result = new Timestamp(day, hour, min, this.offset);
+        min = mins % 60;
+        mins = (mins - min) / 60;
+        hour = mins % 24;
+        mins = (mins - hour) / 24;
+        day = mins % 7;
+        mins = (mins - day) / 7;
+        result = new Timestamp(day, hour, min, this.offset);
         result.week = mins;
 
         return result;
@@ -45,21 +44,21 @@ class Timestamp {
     }
 
     static fromString(timeStr) {
-        var [, day, hour, minute, offset] = /(..) (\d\d):(\d\d)\+(\d\d?)/.exec(timeStr);
+        let [, day, hour, minute, offset] = /([А-Я]{2}) (\d{2}):(\d{2})\+(\d\d?)/.exec(timeStr);
         day = days.indexOf(day);
 
         return new Timestamp(day, Number(hour), Number(minute), Number(offset));
     }
 
     static min() {
-        var result = new Timestamp(0, 0, 0, 0);
+        let result = new Timestamp(0, 0, 0, 0);
         result.week = 0;
 
         return result;
     }
 
     static max() {
-        var ts = new Timestamp(6, 23, 59, 0);
+        let ts = new Timestamp(6, 23, 59, 0);
         ts.week = 2;
 
         return ts;
@@ -73,8 +72,8 @@ class Timedelta {
     }
 
     static fromObj(obj) {
-        var fromTs = Timestamp.fromString(obj.from);
-        var toTs = Timestamp.fromString(obj.to);
+        let fromTs = Timestamp.fromString(obj.from);
+        let toTs = Timestamp.fromString(obj.to);
 
         return new Timedelta(fromTs, toTs);
     }
@@ -84,9 +83,9 @@ class Timedelta {
     }
 
     intersect(td) {
-        var fromTs = td.fromTs.totalMinutes() > this.fromTs.totalMinutes()
+        let fromTs = td.fromTs.totalMinutes() > this.fromTs.totalMinutes()
             ? td.fromTs : this.fromTs;
-        var toTs = td.toTs.totalMinutes() > this.toTs.totalMinutes() ? this.toTs : td.toTs;
+        let toTs = td.toTs.totalMinutes() > this.toTs.totalMinutes() ? this.toTs : td.toTs;
 
         return new Timedelta(fromTs, toTs);
     }

@@ -1,8 +1,5 @@
 'use strict';
-const time = require('./time');
-var Timedelta = time.Timedelta;
-var Timestamp = time.Timestamp;
-var days = time.days;
+const { time, Timedelta, Timestamp, days } = require('./time');
 
 
 /**
@@ -12,10 +9,10 @@ var days = time.days;
 exports.isStar = true;
 
 function getBankTimetable(workingHours) {
-    var result = [];
-    for (var day of days.slice(0, 3)) {
-        var fromTs = Timestamp.fromString(day + ' ' + workingHours.from);
-        var toTs = Timestamp.fromString(day + ' ' + workingHours.to);
+    let result = [];
+    for (let day of days.slice(0, 3)) {
+        let fromTs = Timestamp.fromString(day + ' ' + workingHours.from);
+        let toTs = Timestamp.fromString(day + ' ' + workingHours.to);
         result.push(new Timedelta(fromTs, toTs));
     }
 
@@ -29,9 +26,9 @@ function cartesian(a, b, ...c) {
 }
 
 function getIntervals(tds) {
-    var result = [];
-    var lower = Timestamp.min();
-    for (var td of tds) {
+    let result = [];
+    let lower = Timestamp.min();
+    for (let td of tds) {
         result.push(new Timedelta(lower, td.fromTs));
         lower = td.toTs;
     }
@@ -42,15 +39,15 @@ function getIntervals(tds) {
 
 
 function getMomentInfo(schedule, duration, workingHours) {
-    var bankTimetable = getBankTimetable(workingHours);
-    var bankOffset = bankTimetable[0].fromTs.offset;
-    var tables = Object.values(schedule).map(x => getIntervals(x.map(Timedelta.fromObj)));
+    let bankTimetable = getBankTimetable(workingHours);
+    let bankOffset = bankTimetable[0].fromTs.offset;
+    let tables = Object.values(schedule).map(x => getIntervals(x.map(Timedelta.fromObj)));
     tables.push(bankTimetable);
     tables.push(bankTimetable); // bypass cartesian product of one element
-    var available = [];
-    for (var tds of cartesian(...tables)) {
-        var intersection = tds.reduce((acc, x) => x.intersect(acc), Timedelta.max());
-        var length = intersection.totalMinutes();
+    let available = [];
+    for (let tds of cartesian(...tables)) {
+        let intersection = tds.reduce((acc, x) => x.intersect(acc), Timedelta.max());
+        let length = intersection.totalMinutes();
         if (length >= duration) {
             available.push([intersection, Math.trunc((length - duration) / 30)]);
         }
@@ -69,9 +66,9 @@ function getMomentInfo(schedule, duration, workingHours) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    var [bankOffset, available] = getMomentInfo(schedule, duration, workingHours);
-    var i = 0;
-    var j = 0;
+    let [bankOffset, available] = getMomentInfo(schedule, duration, workingHours);
+    let i = 0;
+    let j = 0;
 
     return {
 
@@ -94,8 +91,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (i >= available.length) {
                 return '';
             }
-            var intersection = available[i][0];
-            var offset = bankOffset - intersection.fromTs.offset;
+            let intersection = available[i][0];
+            let offset = bankOffset - intersection.fromTs.offset;
 
             return intersection.fromTs
                 .addMinutes(offset * 60)
@@ -112,7 +109,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (i >= available.length) {
                 return false;
             }
-            var [, repeat] = available[i];
+            let [, repeat] = available[i];
             if (++j > repeat) {
                 j = 0;
                 i++;
