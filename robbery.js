@@ -24,8 +24,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const sheduleWithBank = Object.assign({ bank: notWorkingHoursOfBank }, schedule);
     const parsedSchedule = getParsedSchedule(sheduleWithBank, bankTimezone);
     const intervals = getIntervalsOfFreeTime(parsedSchedule);
-    const appropriateInterval = intervals.find(interval => interval.size >= duration);
-    let timeForRobbery = (appropriateInterval) ? appropriateInterval.leftBorder : undefined;
+    let appropriateIntervals = intervals.filter(interval => interval.size >= duration);
+    let timeForRobbery = appropriateIntervals.length ? appropriateIntervals[0].leftBorder
+        : undefined;
 
     return {
 
@@ -61,19 +62,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            for (let i = 0; i < intervals.length; i += 1) {
-                if (intervals[i].leftBorder + intervals[i].size < timeForRobbery + 30) {
-                    continue;
-                }
-                let possibleRobberyTime = Math.max(timeForRobbery + 30, intervals[i].leftBorder);
-                if (possibleRobberyTime + duration <= intervals[i].leftBorder + intervals[i].size) {
-                    timeForRobbery = possibleRobberyTime;
+            appropriateIntervals = appropriateIntervals.filter(interval => {
+                let possibleRobberyTime = Math.max(timeForRobbery + 30, interval.leftBorder);
 
-                    return true;
-                }
+                return possibleRobberyTime + duration <= interval.leftBorder + interval.size;
+            });
+
+            if (!appropriateIntervals.length) {
+                return false;
             }
+            timeForRobbery = Math.max(appropriateIntervals[0].leftBorder, timeForRobbery + 30);
 
-            return false;
+            return true;
         }
     };
 };
@@ -95,11 +95,7 @@ function getParsedSchedule(schedule, bankTimezone) {
 }
 
 function addLeadingZero(number) {
-    if (number < 10) {
-        number = '0' + number;
-    }
-
-    return String(number);
+    return `0${number}`.slice(-2);
 }
 
 function translateFromMinutes(minutes) {
