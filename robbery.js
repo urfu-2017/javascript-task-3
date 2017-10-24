@@ -28,7 +28,6 @@ var numberDayToDayWeek = {
 
 const HOURS_IN_DAY = 24;
 const MINUTES_IN_HOUR = 60;
-const BANK_TIMEZONE_DIFF = 0;
 const INTERVALS_END = HOURS_IN_DAY * 3 * 60 - 1;
 
 function getRobbersSchedule(schedule) {
@@ -65,16 +64,14 @@ function getBankInfo(workingHours) {
     let to = getTime(workingHours.to);
 
     let bankWorkIntervals = [];
-    let workDays = ['ПН', 'ВТ', 'СР'];
+    const bankTimeZoneDiff = 0;
 
-    for (var i = 0; i < workDays.length; i++) {
-        var day = workDays[i];
-
+    ['ПН', 'ВТ', 'СР'].forEach(function (day) {
         bankWorkIntervals.push({
-            start: getTimeInMinutes(day, BANK_TIMEZONE_DIFF, from.hours, from.minutes),
-            end: getTimeInMinutes(day, BANK_TIMEZONE_DIFF, to.hours, to.minutes)
+            start: getTimeInMinutes(day, bankTimeZoneDiff, from.hours, from.minutes),
+            end: getTimeInMinutes(day, bankTimeZoneDiff, to.hours, to.minutes)
         });
-    }
+    });
 
     return {
         bankWorkIntervals,
@@ -83,10 +80,8 @@ function getBankInfo(workingHours) {
 }
 
 function getTimeInMinutes(day, timeZoneDifferent, hours, minutes) {
-    let allMinutes = (hours + timeZoneDifferent + daysOfWeeksToNumberDay[day] * HOURS_IN_DAY) *
+    return (hours + timeZoneDifferent + daysOfWeeksToNumberDay[day] * HOURS_IN_DAY) *
         MINUTES_IN_HOUR + minutes;
-
-    return allMinutes;
 }
 
 function getEmploymentIntervals(robbersSchedule, bankTimezone) {
@@ -108,6 +103,7 @@ function mergeEmploymentIntervals(sortedIntervals) {
     let interval = sortedIntervals[0];
     let start = interval.start;
     let end = interval.end;
+
     for (var i = 0; i < sortedIntervals.length; i++) {
         interval = sortedIntervals[i];
         if (end >= interval.end) {
@@ -167,6 +163,7 @@ function getIntervalsWhenBankIsWorking(freeIntervals, bankStart, bankEnd) {
 
 function getNeededIntervals(intervalsForDay, bankStart, bankEnd) {
     let result = [];
+
     for (let interval of intervalsForDay) {
         let start = interval.start;
         let end = interval.end;
@@ -271,6 +268,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (appropriateMoments.length === 0 || appropriateMoments.length === 1) {
                 return false;
             }
+
             let nextAnswer = getNextAnswer(currentAnswer, appropriateMoments, duration);
             if (typeof nextAnswer === 'undefined') {
                 return false;
