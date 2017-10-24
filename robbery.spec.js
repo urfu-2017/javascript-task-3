@@ -74,3 +74,47 @@ describe('robbery.getAppropriateMoment()', function () {
         });
     }
 });
+
+describe('robbery.getAppropriateMoment()', function () {
+    function getMomentFor(time) {
+        return robbery.getAppropriateMoment(
+            {
+                Danny: [
+                    { from: 'ПН 8:00+15', to: 'ПН 8:30+15' },
+                    { from: 'ПН 8:40+15', to: 'ПН 9:19+15' },
+                    { from: 'ВТ 8:00+15', to: 'ВТ 11:00+15' },
+                    { from: 'СР 7:00+15', to: 'СР 09:21+15' }
+                ],
+                Rusty: [
+                    { from: 'ВТ 19:00+3', to: 'ВТ 22:00+3' },
+                    { from: 'СР 20:20+3', to: 'СР 22:30+3' }
+                ],
+                Linus: [
+                    { from: 'ПН 10:00+10', to: 'ПН 11:00+10' }
+                ]
+            },
+            time,
+            { from: '8:00+15', to: '10:00+15' }
+        );
+    }
+
+    it('должен форматировать существующий момент', function () {
+        var moment = getMomentFor(40);
+
+        assert.ok(moment.exists());
+        assert.strictEqual(
+            moment.format('Метим на %DD, старт в %HH:%MM!'),
+            'Метим на ПН, старт в 09:19!'
+        );
+    });
+
+    it('должен вернуть пустую строку при форматировании несуществующего момента', function () {
+        var moment = getMomentFor(121);
+
+        assert.ok(!moment.exists());
+        assert.strictEqual(
+            moment.format('Метим на %DD, старт в %HH:%MM!'),
+            ''
+        );
+    });
+});
