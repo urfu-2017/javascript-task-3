@@ -52,21 +52,27 @@ function getTimeObj(dateStr, bankUTCZone) {
 }
 
 function getSchedule(schedule, bankUTCZone) {
-    let generalSchedule = [];
-    let count = 0;
+    let generalSchedule = {
+        Danny: [],
+        Rusty: [],
+        Linus: []
+    };
     Object.keys(schedule).forEach(function (name) {
-        generalSchedule.push([]);
         schedule[name].forEach(function (personalSchedule) {
-            generalSchedule[count].push({
-                from: getTimeObj(personalSchedule.from, bankUTCZone),
-                to: getTimeObj(personalSchedule.to, bankUTCZone)
+            let from = parseToTimeObj(personalSchedule.from);
+            let to = parseToTimeObj(personalSchedule.to);
+            from = applyTimeZoneToTimeObj(bankUTCZone, from);
+            to = applyTimeZoneToTimeObj(bankUTCZone, to);
+            generalSchedule[name].push({
+                from: from,
+                to: to
             });
         });
-        count++;
     });
 
     return generalSchedule;
 }
+
 
 function getFreeTime(personalSchedule) {
     const MIN_START_ROBBERY_TIME = 0;
@@ -171,8 +177,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const bankUTCZone = bankSchedule[0].from.UTCZone;
     const generalSchedule = getSchedule(schedule, bankUTCZone);
     let freeTimeGeneralSchedule = [];
-    generalSchedule.forEach(function (persnalSchedule) {
-        freeTimeGeneralSchedule.push(getFreeTime(persnalSchedule));
+    Object.keys(generalSchedule).forEach(function (name) {
+        freeTimeGeneralSchedule.push(getFreeTime(generalSchedule[name]));
     });
     freeTimeGeneralSchedule.push(bankSchedule);
     const intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
