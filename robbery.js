@@ -59,13 +59,9 @@ function getSchedule(schedule, bankUTCZone) {
     };
     Object.keys(schedule).forEach(function (name) {
         schedule[name].forEach(function (personalSchedule) {
-            let from = parseToTimeObj(personalSchedule.from);
-            let to = parseToTimeObj(personalSchedule.to);
-            from = applyTimeZoneToTimeObj(bankUTCZone, from);
-            to = applyTimeZoneToTimeObj(bankUTCZone, to);
             generalSchedule[name].push({
-                from: from,
-                to: to
+                from: getTimeObj(personalSchedule.from, bankUTCZone),
+                to: getTimeObj(personalSchedule.to, bankUTCZone)
             });
         });
     });
