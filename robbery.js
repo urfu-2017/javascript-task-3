@@ -1,6 +1,6 @@
 'use strict';
 
-exports.isStar = true;
+exports.isStar = false;
 var ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
 var HOURS = 24;
 var MINUTES = 60;
