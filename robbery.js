@@ -45,7 +45,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (timeToRob[0] !== undefined) {
+            if (timeToRob.length !== 0) {
                 return true;
             }
 
@@ -192,6 +192,7 @@ function dayShift(day) {
     for (var i = 0; i < WEEK_DAYS.length; i++) {
         if (day === WEEK_DAYS[i]) {
             day = WEEK_DAYS[i + 1];
+            break;
         }
 
     }
