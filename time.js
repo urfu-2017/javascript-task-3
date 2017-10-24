@@ -19,16 +19,20 @@ class Timestamp {
     }
 
     addMinutes(mins) {
-        mins += this.min;
-        mins += this.hour * 60;
+        let min;
+        let hour;
+        let day;
+        let result;
+
+        mins += this.min + this.hour * 60;
         mins += (this.day + this.week * 7) * 24 * 60;
-        let min = mins % 60;
+        min = mins % 60;
         mins = (mins - min) / 60;
-        let hour = mins % 24;
+        hour = mins % 24;
         mins = (mins - hour) / 24;
-        let day = mins % 7;
+        day = mins % 7;
         mins = (mins - day) / 7;
-        let result = new Timestamp(day, hour, min, this.offset);
+        result = new Timestamp(day, hour, min, this.offset);
         result.week = mins;
 
         return result;
