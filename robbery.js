@@ -45,7 +45,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (timeToRob.length !== 0) {
+            if (timeToRob[0] !== undefined) {
                 return true;
             }
 
