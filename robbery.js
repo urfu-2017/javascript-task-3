@@ -24,11 +24,11 @@ function parseTimeAndZoneStr(TimeAndZoneStr) {
     const [timeStr, UTCZone] = TimeAndZoneStr.split('+');
     const [hours, minutes] = timeStr.split(':').map(x => parseInt(x, 10));
 
-    return [UTCZone, hours , minutes];
+    return [UTCZone, hours, minutes];
 }
 function parseToTimeObj(dateSrt) {
     const [day, timeAndZone] = dateSrt.split(' ');
-    const [UTCZone, hours , minutes] = parseTimeAndZoneStr(timeAndZone);
+    const [UTCZone, hours, minutes] = parseTimeAndZoneStr(timeAndZone);
 
     return {
         timeInMinutes: minutes + hours * MINUTES_IN_HOUR + DAY_IN_WEEK[day] * MINUTES_IN_DAY,
@@ -57,10 +57,6 @@ function getSchedule(schedule, bankUTCZone) {
     Object.keys(schedule).forEach(function (name) {
         generalSchedule.push([]);
         schedule[name].forEach(function (personalSchedule) {
-            let from = parseToTimeObj(personalSchedule.from);
-            let to = parseToTimeObj(personalSchedule.to);
-            from = applyTimeZoneToTimeObj(bankUTCZone, from);
-            to = applyTimeZoneToTimeObj(bankUTCZone, to);
             generalSchedule[count].push({
                 from: getTimeObj(personalSchedule.from, bankUTCZone),
                 to: getTimeObj(personalSchedule.to, bankUTCZone)
@@ -142,7 +138,7 @@ function getIntersectionSchedule(firstSchedule, secondSchedule) {
 }
 
 function parseBankTimeToTimeObj(bankTimeStr) {
-    const [UTCZone, hours , minutes] = parseTimeAndZoneStr(bankTimeStr);
+    const [UTCZone, hours, minutes] = parseTimeAndZoneStr(bankTimeStr);
 
     return {
         timeInMinutes: minutes + hours * MINUTES_IN_HOUR,
