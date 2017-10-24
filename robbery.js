@@ -30,7 +30,7 @@ const ACTION_DAYS = ['ПН', 'ВТ', 'СР'];
 const MS_IN_MINUTE = 60000;
 const DELAY = 30;
 
-function createDate(day, hour, minute) {
+function createDateInMS(day, hour, minute) {
 
     return Date.parse(new Date(YEAR, MONTH, day, hour, minute, 0));
 }
@@ -56,7 +56,7 @@ function getDate(time, bankUTC) {
     let hours = parsedTime.hours - parsedTime.timeZone + bankUTC;
     let minutes = parsedTime.minutes;
 
-    return createDate(numberDay, hours, minutes);
+    return createDateInMS(numberDay, hours, minutes);
 }
 
 function getInterval(interval, bankUTC) {
@@ -83,24 +83,24 @@ function parseBankInterval(time) {
 }
 
 function getClosedIntervals(workingHours) {
-    let intervals = [];
     let startBankInterval = parseBankInterval(workingHours.from);
     let endBankInterval = parseBankInterval(workingHours.to);
 
-    Object.keys(DAYS).forEach(day => {
+    return Object.keys(DAYS).reduce((acc, day) => {
         day = DAYS[day];
-        intervals.push(
+        acc.push(
             {
-                from: createDate(day, 0, 0),
-                to: createDate(day, startBankInterval.hours, startBankInterval.minutes)
+                from: createDateInMS(day, 0, 0),
+                to: createDateInMS(day, startBankInterval.hours, startBankInterval.minutes)
             },
             {
-                from: createDate(day, endBankInterval.hours, endBankInterval.minutes),
-                to: createDate(day, 24, 0)
+                from: createDateInMS(day, endBankInterval.hours, endBankInterval.minutes),
+                to: createDateInMS(day, 24, 0)
             });
-    });
 
-    return intervals;
+        return acc;
+    }, []);
+
 }
 
 function getAttackIntervals(busyIntervals, duration) {
