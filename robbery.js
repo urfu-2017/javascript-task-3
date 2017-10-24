@@ -10,6 +10,10 @@ const MONTH = 9;
 const DAY = 2;
 const AMOUNT_OF_HOURS_IN_DAY = 24;
 const WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const TIME_TO_ROB_LATER = 30;
+const SECONDS_IN_MINUTE = 60;
+const MS_IN_SECOND = 1000;
+const DAYS_TO_ROB = 3;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -21,21 +25,27 @@ const WEEK_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var timeZone = workingHours.from.slice(-1);
+    // Время когда банк работает в формате date
     var bankWorkingHours = getWorkingHours(workingHours);
+    // Время когда банк не работает в формате date
     var bankNotWorkingHours = getBusyBankTime(bankWorkingHours);
-    var gangShe = getGangShedule(schedule, timeZone);
-    var timeNotToRob = getBusyTime(gangShe);
-    var noRob = getBusyTime(noRobbery(timeNotToRob, bankNotWorkingHours));
-    var timeToRob = itsTime(noRob, duration);
+    // Время когда банда занята в формате date
+    var gangSchedule = getGangShedule(schedule, timeZone);
+    // Время когда банда занята, но промежутки занятости объединены
+    var timeNotToRob = unitedTime(gangSchedule);
+    // Время когда и банда не может и банк; и мы это время объединяем
+    var noRobbery = unitedTime(noRobberyAtAll(timeNotToRob, bankNotWorkingHours));
+    // Массив времени от и до когда можно грабить
+    var timeToRob = robberyTime(noRobbery, duration);
 
     return {
 
         /**
-         * Найдено ли время
+         * Найдено ли времяR
          * @returns {Boolean}
          */
         exists: function () {
-            if (timeToRob[0] !== undefined) {
+            if (timeToRob.length !== 0) {
                 return true;
             }
 
@@ -53,14 +63,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            var hour = '0' + timeToRob[0].from.getHours();
-            var minutes = '0' + timeToRob[0].from.getMinutes();
+            var hour = beautify(timeToRob[0].from.getHours());
+            var minutes = beautify(timeToRob[0].from.getMinutes());
             var day = WEEK_DAYS[timeToRob[0].from.getDay() - 1];
 
 
             return template
-                .replace('%HH', hour.slice(-2))
-                .replace('%MM', minutes.slice(-2))
+                .replace('%HH', hour)
+                .replace('%MM', minutes)
                 .replace('%DD', day);
         },
 
@@ -73,9 +83,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return false;
             }
-            if (timeToRob[0].to - timeToRob[0].from >= (duration + 30) * 60 * 1000) {
+            if (timeToRob[0].to - timeToRob[0].from >=
+                (duration + TIME_TO_ROB_LATER) * SECONDS_IN_MINUTE * MS_IN_SECOND) {
                 timeToRob[0].from =
-                new Date (timeToRob[0].from.setMinutes(timeToRob[0].from.getMinutes() + 30));
+                new Date (timeToRob[0].from.setMinutes(timeToRob[0].from.getMinutes() +
+                TIME_TO_ROB_LATER));
 
                 return true;
             } else if (timeToRob.length !== 1) {
@@ -91,14 +103,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
 function getWorkingHours(workingHours) {
     var bankShedule = [];
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < DAYS_TO_ROB; i++) {
         bankShedule.push(
             {
                 from: toDateBank(workingHours.from, i),
                 to: toDateBank(workingHours.to, i)
             }
         );
-
     }
 
     return bankShedule;
@@ -137,16 +148,19 @@ function getGangShedule(sh, timeZone) {
         }
     });
 
-    return resultSchedule.sort(function (a, b) {
-        if (a.from > b.from) {
-            return 1;
-        }
-        if (a.from < b.from) {
-            return -1;
-        }
+    return resultSchedule.sort(sorting);
+}
 
-        return 0;
-    });
+
+function sorting(a, b) {
+    if (a.from > b.from) {
+        return 1;
+    }
+    if (a.from < b.from) {
+        return -1;
+    }
+
+    return 0;
 }
 
 function normalizeTimezone(time, delta) {
@@ -178,7 +192,6 @@ function dayShift(day) {
     for (var i = 0; i < WEEK_DAYS.length; i++) {
         if (day === WEEK_DAYS[i]) {
             day = WEEK_DAYS[i + 1];
-            break;
         }
 
     }
@@ -211,7 +224,7 @@ function toDate(date) {
     return new Date(YEAR, MONTH, DAY + deltaDay, hour, minutes);
 
 }
-function getBusyTime(gangSchedule) {
+function unitedTime(gangSchedule) {
     if (gangSchedule[0] === undefined) {
         return [];
     }
@@ -253,24 +266,15 @@ function getBusyBankTime(schedule) {
     return resultSchedule;
 }
 
-function noRobbery(timeNotToRob, bankNotWorkingHours) {
+function noRobberyAtAll(timeNotToRob, bankNotWorkingHours) {
     for (var i = 0; i < bankNotWorkingHours.length; i++) {
         timeNotToRob.push(bankNotWorkingHours[i]);
     }
 
-    return timeNotToRob.sort(function (a, b) {
-        if (a.from > b.from) {
-            return 1;
-        }
-        if (a.from < b.from) {
-            return -1;
-        }
-
-        return 0;
-    });
+    return timeNotToRob.sort(sorting);
 }
 
-function itsTime(time, duration) {
+function robberyTime(time, duration) {
     var result = [];
     for (var i = 0; i < time.length - 1; i++) {
         if ((time[i + 1].from - time[i].to) >= duration * 60 * 1000) {
