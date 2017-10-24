@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 /* eslint-env mocha */
 'use strict';
 
