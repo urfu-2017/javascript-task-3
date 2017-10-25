@@ -1,17 +1,10 @@
 'use strict';
-/* eslint-disable complexity */
+/* eslint-disable complexity, max-statements, max-depth */
 /**
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
 
-function isTimeWork(time, timeBankFrom, timeBankTo) {
-    if (time < timeBankTo && time >= timeBankFrom) {
-        return true;
-    }
-
-    return false;
-}
 function switchDay(day) {
     switch (day) {
         case 'ВТ':
@@ -24,6 +17,7 @@ function switchDay(day) {
     }
 
 }
+
 function calcTime(timeBad, deltaGMT) {
     var dayWeek = {
         from: '',
@@ -48,19 +42,12 @@ function calcTime(timeBad, deltaGMT) {
 }
 
 function parsString(person, gmtBank) {
-    var s = 0;
-    var personObject = {
-        from: [],
-        to: []
-    };
-    var gmtPerson = Number(person[1].from.split('+')[1]);
-    var deltaGMT = gmtBank - gmtPerson;
+    let personObject = [];
+    let gmtPerson = Number(person[1].from.split('+')[1]);
+    let deltaGMT = gmtBank - gmtPerson;
     for (var i = 0; i < person.length; i++) {
-        var timeBad = person[i];
-        timeBad = calcTime(timeBad, deltaGMT);
-        personObject.from[s] = timeBad.from;
-        personObject.to[s] = timeBad.to;
-        s = s + 1;
+        let timeBad = person[i];
+        personObject.push(calcTime(timeBad, deltaGMT));
     }
 
     return personObject;
@@ -74,79 +61,85 @@ function timelineBank(workingHours) {
     let timeline = [];
 
     for (var i = 0; i < 3; i++) {
-        timeline[i] = [];
-        for (var j = 0; j < 1440; j++) {
-            timeline[i][j] = isTimeWork(j, timeBankFrom, timeBankTo);
+        timeline[i] = {
+            from: timeBankFrom + 1440 * i,
+            to: timeBankTo + 1440 * i
+        };
+    }
+
+    return timeline;
+
+}
+
+function changeTimeline(moment, badTime) {
+    if ((moment.from >= badTime.from) && (moment.to <= badTime.to)) {
+        return {};
+    } else if ((moment.from >= badTime.to) || (moment.to <= badTime.from)) {
+        return moment;
+    } else if ((moment.from >= badTime.from) && (moment.to > badTime.to)) {
+        return {
+            from: badTime.to,
+            to: moment.to
+        };
+    } else if ((moment.from > badTime.from) && (moment.to <= badTime.to)) {
+        return {
+            from: moment.from,
+            to: badTime.from
+        };
+    }
+
+    return [{
+        from: moment.from,
+        to: badTime.from
+    }, {
+        from: badTime.to,
+        to: moment.to
+    }];
+}
+
+function filterDublication(array) {
+    let newArray = [];
+    for (let i = 0; i < array.length; i++) {
+        let flag = 0;
+        for (let j = i + 1; j < array.length; j++) {
+            if ((array[i].from === array[j].from) && (array[i].from === array[j].from)) {
+                flag = 1;
+                break;
+            }
+        }
+        if (flag === 0) {
+            newArray.push(array[i]);
         }
     }
 
-    return timeline;
-
+    return newArray;
 }
-
-function changeTimeline(start, end, timeline) {
-    for (var j = start; j < end; j++) {
-        timeline[Math.ceil(j / 1440) - 1][j % 1440] = false;
-    }
-
-    return timeline;
-}
-
 
 function calculating(timeline, badTime) {
-    for (var i = 0; i < badTime.from.length; i++) {
-        if (badTime.from[i] < 0 && badTime.to[i] < 0) {
-            continue;
-        } else if (badTime.to[i] > 4320 && badTime.from[i] > 4320) {
-            continue;
-        } else if (badTime.to[i] > 4320 && badTime.from[i] < 0) {
-            timeline = changeTimeline(0, 4320);
-        } else if (badTime.from[i] < 0) {
-            timeline = changeTimeline(0, badTime.to[i], timeline);
-        } else if (badTime.to[i] > 4320) {
-            timeline = changeTimeline(badTime.from[i], 4320);
-        } else {
-            timeline = changeTimeline(badTime.from[i], badTime.to[i], timeline);
+    for (let i = 0; i < badTime.length; i++) {
+        let newTimeline = [];
+        for (let j = 0; j < timeline.length; j++) {
+            newTimeline = newTimeline.concat(changeTimeline(timeline[j], badTime[i]));
         }
+        // timeline = newTimeline.filter(function (obj) {
+        //     return (Object.keys(obj).length !== 0);
+        // });
+        timeline = newTimeline.filter((obj) => Object.keys(obj) !== 0);
+
     }
 
-    return timeline;
-}
-
-function findTimeInDay(day, duration) {
-    let flag = 0;
-    let score = -1;
-    for (var j = 0; j < 1440; j++) {
-        if (flag === 0 && day[j] === true) {
-            flag = 1;
-            score = duration - 1;
-        } else if (flag === 1 && day[j] === true && score !== 0) {
-            score = score - 1;
-        } else if (flag === 1 && score === 0) {
-
-            return (j - duration);
-        } else if (flag === 1 && day[j] === false && score === 0) {
-
-            return (j - duration);
-        } else if (flag === 1 && day[j] === false) {
-            flag = 0;
-            score = -1;
-        }
-    }
-    if (score !== 0) {
-        return false;
-    }
-
-    return (1440 - duration);
+    return timeline.sort(function (a, b) {
+        return (a.from - b.from);
+    });
 }
 
 function findTime(timeline, duration) {
-    let result;
-    for (var i = 0; i < 3; i++) {
-        result = findTimeInDay(timeline[i], duration);
-        if (result !== false) {
+    for (var i = 0; i < timeline.length; i++) {
+        if ((timeline[i].to - timeline[i].from) >= duration) {
+            let day = Math.ceil(timeline[i].from / 1440) - 1;
+            let minute = timeline[i].from - 1440 * day;
 
-            return [i, result];
+            return [day, minute];
         }
     }
 
@@ -198,8 +191,16 @@ function createString(str, day, hour, minute) {
 }
 
 function laterTimeline(timeline, time) {
-    for (var i = 0; i < 30 && (time[1] + i) < 1440; i++) {
-        timeline[time[0]][time[1] + i] = false;
+    let from = time[0] * 1440 + time[1];
+    for (let i = 0; i < timeline.length; i++) {
+        if (timeline[i].from === from) {
+            if ((timeline.to - timeline.from) <= 30) {
+                timeline.splice(i, 1);
+                break;
+            }
+            timeline[i].from = timeline[i].from + 30;
+            break;
+        }
     }
 
     return timeline;
@@ -224,6 +225,38 @@ function createMoment(timeline, duration, timeOld) {
     return moment;
 }
 
+function filterSchedule(arrayBadTime) {
+    let result = arrayBadTime;
+    result.slice(1);
+
+    for (let i = 0; i < arrayBadTime.length; i++) {
+        result = concatSchedule(arrayBadTime[i], result);
+    }
+
+    return filterDublication(result);
+}
+
+function concatSchedule(time, badTime) {
+    let result = [];
+    for (var i = 0; i < badTime.length; i++) {
+        if ((time.from <= badTime[i].from) && (time.to >= badTime[i].to)) {
+            result.push(time);
+            continue;
+        } else if ((badTime[i].to < time.from) || (time.to < badTime[i].from)) {
+            result.push(badTime[i]);
+            continue;
+        } else {
+            result.push({
+                from: Math.min(time.from, badTime[i].from),
+                to: Math.max(time.to, badTime[i].to)
+            });
+            continue;
+        }
+    }
+
+    return result;
+}
+
 exports.isStar = true;
 
 /**
@@ -237,19 +270,18 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     let gmt = Number(workingHours.from.split('+')[1]);
+
     let badTime = parsString(schedule.Danny, gmt);
 
-    let rustyBadTime = parsString(schedule.Rusty, gmt);
-    badTime.to = badTime.to.concat(rustyBadTime.to);
-    badTime.from = badTime.from.concat(rustyBadTime.from);
-    let linusBadTime = parsString(schedule.Linus, gmt);
-    badTime.from = badTime.from.concat(linusBadTime.from);
-    badTime.to = badTime.to.concat(linusBadTime.to);
+    badTime = badTime.concat(parsString(schedule.Rusty, gmt));
+    badTime = badTime.concat(parsString(schedule.Linus, gmt));
 
     let timeline = timelineBank(workingHours);
+    badTime = filterSchedule(badTime);
     timeline = calculating(timeline, badTime);
     let moment = { time: [] };
     moment = createMoment(timeline, duration, moment.time);
+    console.info(moment.time);
 
     return {
 
@@ -296,7 +328,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             minute = String(date[1] % 60);
             str = createString(str, day, hour, minute);
-            console.info(str);
 
             return str;
         },
@@ -309,7 +340,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         tryLater: function () {
             moment.timeline = laterTimeline(moment.timeline, moment.time);
             moment = createMoment(moment.timeline, duration, moment.time);
-            console.info(moment.existsMoment);
 
             return moment.existsMoment;
         }
