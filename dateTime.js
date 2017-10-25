@@ -28,11 +28,12 @@ exports.getElapsedMinutes = function (startDatetime, endDatetime) {
 };
 
 exports.getElapsedMinutesSinceBeginOfWeek = function (dateTime) {
-    return MAX_MINUTE * (DAYS.indexOf(dateTime.day) * 24 + dateTime.hours) + dateTime.minutes;
+    return MINUTES_IN_DAY * DAYS.indexOf(dateTime.day) +
+        MAX_MINUTE * dateTime.hours + dateTime.minutes;
 };
 
 exports.changeTimeZone = function (timeInterval, newTimeZone) {
-    let shiftInMinutes = 60 * (newTimeZone - timeInterval.timeZone);
+    let shiftInMinutes = MAX_MINUTE * (newTimeZone - timeInterval.timeZone);
     timeInterval.from = Math.max(timeInterval.from + shiftInMinutes, 0);
     timeInterval.to = Math.min(DEADLINE, timeInterval.to + shiftInMinutes);
     timeInterval.timeZone = newTimeZone;
