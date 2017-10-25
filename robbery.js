@@ -12,11 +12,11 @@ var dateTime = require('./dateTime');
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    let banksWorkingHours = parseTimeInterval(workingHours);
-    let momentsWhenBankIsClosed = getMomentsWhenBankIsClosed(banksWorkingHours);
-    let busyMoments = getTimeIntervalsWithBankTimezone(schedule, banksWorkingHours.from.timeZone)
+    let momentsWhenBankIsClosed = getMomentsWhenBankIsClosed(workingHours);
+    let bankTimeZone = momentsWhenBankIsClosed[0].timeZone;
+    let busyMoments = getTimeIntervalsWithBankTimezone(schedule, bankTimeZone)
         .concat(momentsWhenBankIsClosed)
-        .sort((x, y) => dateTime.compareDatetimes(x.from, y.from));
+        .sort((x, y) => x.from - y.from);
 
     let appropriateMoments = getAppropriateMoments(unionTimeIntervals(busyMoments), duration);
 
@@ -43,9 +43,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
 
             let robberyBeginning = this.moments[this.currentMomentIndex].from;
+            let time = dateTime.toDateTime(robberyBeginning);
 
             return template.replace(/%(?:(?:HH)|(?:DD)|(?:MM))/g,
-                match => replaceMatched(match, robberyBeginning));
+                match => replaceMatched(match, time));
         },
 
         /**
@@ -61,15 +62,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             for (let i = this.currentMomentIndex; i < appropriateMoments.length; i++) {
                 let moment = appropriateMoments[i];
-                waitingTime -= dateTime.getElapsedMinutes(startTime, moment.from);
+                waitingTime -= moment.from - startTime;
 
-                let momentDuration = getMomentDurationInMinutes(moment);
-                if (momentDuration < this.duration + waitingTime) {
+                if (moment.to - moment.from < this.duration + waitingTime) {
                     continue;
                 }
 
                 this.currentMomentIndex = i;
-                dateTime.addMinutes(moment.from, waitingTime > 0 ? waitingTime : 0);
+                moment.from += waitingTime > 0 ? waitingTime : 0;
+                moment.from = moment.from > dateTime.DEADLINE
+                    ? dateTime.DEADLINE
+                    : moment.from;
 
                 return true;
             }
@@ -93,9 +96,13 @@ function replaceMatched(match, momentTime) {
 }
 
 function parseTimeInterval(timeInterval) {
+    let parsedStartTime = dateTime.parse(timeInterval.from);
+    let parsedFinishTime = dateTime.parse(timeInterval.to);
+
     return {
-        from: dateTime.parse(timeInterval.from),
-        to: dateTime.parse(timeInterval.to)
+        from: dateTime.getElapsedMinutesSinceBeginOfWeek(parsedStartTime),
+        to: dateTime.getElapsedMinutesSinceBeginOfWeek(parsedFinishTime),
+        timeZone: parsedStartTime.timeZone
     };
 }
 
@@ -105,7 +112,7 @@ function getTimeIntervalsWithBankTimezone(schedule, bankTimeZone) {
     return Object.values(copiedSchedule).reduce((a, b) => a.concat(b))
         .map(function (x) {
             let timeInterval = parseTimeInterval(x);
-            Object.values(timeInterval).map(t => dateTime.changeTimeZone(t, bankTimeZone));
+            dateTime.changeTimeZone(timeInterval, bankTimeZone);
 
             return timeInterval;
         });
@@ -113,35 +120,21 @@ function getTimeIntervalsWithBankTimezone(schedule, bankTimeZone) {
 
 function getMomentsWhenBankIsClosed(workingHours) {
     let moments = [];
-    for (let currentDay of dateTime.DAYS) {
+    for (let indexOfDay = 0; indexOfDay < dateTime.DAYS.length; indexOfDay++) {
         let timeBeforeOpening = {
-            from: {
-                day: currentDay,
-                hours: 0,
-                minutes: 0
-            },
-            to: {
-                day: currentDay,
-                hours: workingHours.from.hours,
-                minutes: workingHours.from.minutes
-            }
+            from: dateTime.DAYS[indexOfDay] + ' 00:00' + workingHours.from.slice(-2),
+            to: dateTime.DAYS[indexOfDay] + ' ' + workingHours.from
         };
 
         let timeAfterClosing = {
-            to: {
-                day: currentDay,
-                hours: 23,
-                minutes: 59
-            },
-
-            from: {
-                day: currentDay,
-                hours: workingHours.to.hours,
-                minutes: workingHours.to.minutes
-            }
+            from: dateTime.DAYS[indexOfDay] + ' ' + workingHours.to,
+            to: dateTime.DAYS[indexOfDay] + ' 23:59' + workingHours.to.slice(-2)
         };
 
-        moments.push(timeBeforeOpening, timeAfterClosing);
+        moments.push(
+            parseTimeInterval(timeBeforeOpening),
+            parseTimeInterval(timeAfterClosing)
+        );
     }
 
     return moments;
@@ -154,15 +147,12 @@ function unionTimeIntervals(timeIntervals) {
     for (let i = 1; i < timeIntervals.length; i++) {
         let currentInterval = timeIntervals[i];
         let lastAdded = resultIntervals[resultIntervals.length - 1];
-        if (dateTime.equals(lastAdded.from, currentInterval.from) &&
-        dateTime.equals(lastAdded.to, currentInterval.to)) {
+        if (lastAdded.from === currentInterval.from && lastAdded.to === currentInterval.to) {
             continue;
         }
 
-        if (dateTime.compareDatetimes(lastAdded.to, currentInterval.from) > 0) {
-            lastAdded.to = dateTime.compareDatetimes(currentInterval.to, lastAdded.to) > 0
-                ? currentInterval.to
-                : lastAdded.to;
+        if (lastAdded.to > currentInterval.from) {
+            lastAdded.to = currentInterval.to > lastAdded.to ? currentInterval.to : lastAdded.to;
         } else {
             resultIntervals.push(currentInterval);
         }
@@ -176,14 +166,10 @@ function getAppropriateMoments(busyMoments, duration) {
 
     for (let i = 0; i < busyMoments.length - 1; i++) {
         let freeInterval = { from: busyMoments[i].to, to: busyMoments[i + 1].from };
-        if (getMomentDurationInMinutes(freeInterval) >= duration) {
+        if (freeInterval.to - freeInterval.from >= duration) {
             appropriateMoments.push(freeInterval);
         }
     }
 
     return appropriateMoments;
-}
-
-function getMomentDurationInMinutes(timeInterval) {
-    return dateTime.getElapsedMinutes(timeInterval.from, timeInterval.to);
 }
