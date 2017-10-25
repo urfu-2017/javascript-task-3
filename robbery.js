@@ -15,6 +15,12 @@ module.exports = {
  * Реализовано оба метода и tryLater
  */
 
+
+/**
+ *
+ * @param {Number} day - название дня недели
+ * @returns {number} - возвращает номер дня (ПН - 0)
+ */
 function getDayNumber(day) {
     switch (day) {
         case 'ПН':
@@ -28,6 +34,11 @@ function getDayNumber(day) {
     }
 }
 
+/**
+ *
+ * @param {Number} dayNumber - номер дня недели (ПН - 0)
+ * @returns {String} - возвращает название дня недели
+ */
 function getDayNameByNumber(dayNumber) {
     switch (dayNumber) {
         case 0:
@@ -41,6 +52,12 @@ function getDayNameByNumber(dayNumber) {
     }
 }
 
+/**
+ * Переводит минуты в формат HH:MM
+ * @param {Number} minutes - время в минутах
+ * @returns {{day: String, hours: number, minutes: number}}
+ *      возвращает объект День, Часы, Минуты
+ */
 function devideTime(minutes) {
     var day = getDayNameByNumber(Math.floor(minutes / 1440));
     var h = Math.floor((minutes % 1440) / 60);
@@ -59,18 +76,37 @@ function devideTime(minutes) {
     };
 }
 
+/**
+ *
+ * @param {String} fullTime - время в формтае DD HH:MM+Z
+ * @returns {string} возвращет время в формате HH:MM+Z
+ */
 function getTime(fullTime) {
     return String(fullTime).substr(3);
 }
 
+/**
+ *
+ * @param {String} timeWithZone - время в формате HH:MM+Z
+ * @returns {string} возвращает время в формате HH:MM
+ */
 function getTimeWithoutZone(timeWithZone) {
     return String(timeWithZone).substr(0, 5);
 }
 
+/**
+ *
+ * @param {String} fullTime - время в формате DD HH:MM[+Z]
+ * @returns {string} - возвращает день недели DD
+ */
 function getDay(fullTime) {
     return String(fullTime).substr(0, 2);
 }
 
+/**
+ * @param {Array} busyTimes - массив занятости [{from: X, to: Y],...]
+ * @returns {Array} - возвращает массив свободного времени [{from: X, to: Y],...]
+ */
 function generateFreeTimes(busyTimes) {
     var res = [];
     if (busyTimes.length === 0) {
@@ -91,10 +127,18 @@ function generateFreeTimes(busyTimes) {
     return res;
 }
 
+/**
+ * @param {String} time - время в формате HH:MM+Z
+ * @returns {string} - возвращает временную зону Z
+ */
 function getTimeZone(time) {
     return String(time).substr(6);
 }
 
+/**
+ * @param {String} fullTime - время в формате DD HH:MM
+ * @returns {number} - возвращает количество минут, прошедших с начала неделе
+ */
 function getMintutesFromWeekStart(fullTime) {
     var time = getTime(fullTime);
     var dayNumber = getDayNumber(getDay(fullTime));
@@ -104,6 +148,10 @@ function getMintutesFromWeekStart(fullTime) {
     return Number(dayNumber) * 1440 + Number(h) * 60 + Number(m);
 }
 
+/**
+ * @param {String} time - время в формате DD HH:MM
+ * @returns {number} - возвращает количество минут, прошедших с начала дня
+ */
 function getMinutesFromDayStart(time) {
     var h = String(time).substr(0, 2);
     var m = String(time).substr(3, 2);
@@ -111,10 +159,23 @@ function getMinutesFromDayStart(time) {
     return Number(h) * 60 + Number(m);
 }
 
+/**
+ * Пересчитывает минуты одной часовой зоны в другую
+ * @param {Number} minutes - количество минут
+ * @param {Number} originalTimeZone - исходная временная зона
+ * @param {Number} targetTimeZone - временная зона назначения
+ * @returns {*} - возвращает количество минут во временной зоне назначения
+ */
 function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone) {
     return minutes + (targetTimeZone - originalTimeZone) * 60;
 }
 
+/**
+ * Генерирует расписание банка в минутах с начала недели
+ * @param {Number} startTime - время открытия банка в минутах с начала дня
+ * @param {Number} endTime - время закрытия банка в минутах с конца дня
+ * @returns {Array} - возвращает расписание банка [{from: X, to: Y}]
+ */
 function generateBankTimes(startTime, endTime) {
     var res = [];
     for (var i = 0; i < 3; i++) {
@@ -124,6 +185,12 @@ function generateBankTimes(startTime, endTime) {
     return res;
 }
 
+/**
+ * Проверяет на корректность концы отрезка
+ * @param {Number} left - левый конец
+ * @param {Number} right - правый конец
+ * @returns {*} - возвращает true если левый конец меньше правого и false в противном случае
+ */
 function checkEndsOfSegment(left, right) {
     if (left < right) {
         return { from: left, to: right };
@@ -132,6 +199,12 @@ function checkEndsOfSegment(left, right) {
     return { from: 0, to: 0 };
 }
 
+/**
+ * Находит пересечения в расписании
+ * @param {Array} firstIntervals - интервалы в расписании первого объетка
+ * @param {Array} secondIntervals - интервалы в расписании первого объетка
+ * @returns {Array} - возвращает пересечение интервалов
+ */
 function findInterSection(firstIntervals, secondIntervals) {
     var res = [];
     for (var i = 0; i < firstIntervals.length; i++) {
@@ -145,6 +218,12 @@ function findInterSection(firstIntervals, secondIntervals) {
     return res;
 }
 
+/**
+ * Находит пересечение в расписании всех членов банды с расписанием работы банка
+ * @param {Object} timeTable - расписание членов банды {name:[{from: X, to: Y}, ...], ...}
+ * @param {Array} bankTimes - расписание банка [{from: X, to: Y}, ...]
+ * @returns {Array} - возвращает пересечения [{from: X, to: Y}, ...]
+ */
 function findInterSectionsOfAll(timeTable, bankTimes) {
     var keys = Object.keys(timeTable);
     var firstTimes = findInterSection(timeTable[keys[0]], bankTimes);
@@ -155,6 +234,12 @@ function findInterSectionsOfAll(timeTable, bankTimes) {
     return firstTimes;
 }
 
+/**
+ * Переводит расписание банды в расписание в минутах часового пояса банка
+ * @param {Array} timesArray
+ * @param {Number} bankTimeZone
+ * @returns {Array}
+ */
 function formatTimeToMinutes(timesArray, bankTimeZone) {
     var res = [];
     var i = 0;
@@ -203,6 +288,8 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             .filter((x) => {
                 return x.to - x.from >= duration;
             });
+    var lastIndex = 0;
+    var timeToGrab = answer[lastIndex];
 
     return {
 
@@ -225,7 +312,7 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             if (answer.length === 0) {
                 return '';
             }
-            var t = devideTime(answer[0].from);
+            var t = devideTime(timeToGrab.from);
 
             return template.replace('%DD', t.day)
                 .replace('%HH', t.hours)
@@ -242,10 +329,15 @@ function getAppropriateMoment(schedule, duration, workingHours) {
                 return false;
             }
             for (var i = 1; i < answer.length; i++) {
-                if (answer[i].from - answer[0].from === 30) {
+                if (answer[i].from - answer[lastIndex].from >= 30) {
+                    lastIndex = i;
+                    timeToGrab = answer[lastIndex];
+
                     return true;
                 }
             }
+
+            return false;
         },
 
         answer: function () {
