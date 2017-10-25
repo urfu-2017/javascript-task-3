@@ -28,6 +28,19 @@ function getDayNumber(day) {
     }
 }
 
+var nameOfDay = {
+    0: 'ПН',
+    1: 'ВТ',
+    2: 'СР'
+}
+
+var numberOfDay
+{
+    'ПН': 0,
+    'ВТ': 1,
+    'СР': 2,
+}
+
 function getDayNameByNumber(dayNumber) {
     switch (dayNumber) {
         case 0:
@@ -145,13 +158,14 @@ function findInterSection(firstIntervals, secondIntervals) {
     return res;
 }
 
-function findInterSections(dannyTimes, rustyTimes, linusTimes, bankTimes) {
-    var appropriateDannyTime = findInterSection(generateFreeTimes(dannyTimes), bankTimes);
-    var appropriateRustyTime = findInterSection(generateFreeTimes(rustyTimes), bankTimes);
-    var appropriateLinusTime = findInterSection(generateFreeTimes(linusTimes), bankTimes);
-    var appropriateDannyAndRustyTime = findInterSection(appropriateDannyTime, appropriateRustyTime);
+function findInterSectionsOfAll(timeTable, bankTimes) {
+    var keys = Object.keys(timeTable);
+    var firstTimes = findInterSection(timeTable[keys[0]], bankTimes);
+    for (var i = 1; i < keys.length; i++) {
+        firstTimes = findInterSection(firstTimes, timeTable[keys[i]]);
+    }
 
-    return findInterSection(appropriateDannyAndRustyTime, appropriateLinusTime);
+    return firstTimes;
 }
 
 function formatTimeToMinutes(timesArray, bankTimeZone) {
@@ -188,13 +202,16 @@ exports.isStar = true;
 function getAppropriateMoment(schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var bankTimeZone = getTimeZone(workingHours.from);
-    var dannyTimes = formatTimeToMinutes(schedule.Danny, bankTimeZone);
-    var rustyTimes = formatTimeToMinutes(schedule.Rusty, bankTimeZone);
-    var linusTimes = formatTimeToMinutes(schedule.Linus, bankTimeZone);
+    var freeTimes = {};
+    for (var man in schedule) {
+        if (man !== null) {
+            freeTimes[man] = generateFreeTimes(formatTimeToMinutes(schedule[man], bankTimeZone));
+        }
+    }
     var bankStartMinutes = getMinutesFromDayStart(getTimeWithoutZone(workingHours.from));
     var bankEndMinutes = getMinutesFromDayStart(getTimeWithoutZone(workingHours.to));
     var answer =
-        findInterSections(dannyTimes, rustyTimes, linusTimes,
+        findInterSectionsOfAll(freeTimes,
             generateBankTimes(bankStartMinutes, bankEndMinutes))
             .filter((x) => {
                 return x.to - x.from >= duration;
