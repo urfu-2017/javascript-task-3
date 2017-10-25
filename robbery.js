@@ -1,10 +1,9 @@
 'use strict';
 
 exports.isStar = false;
-var ROBBERY_DAYS = ['ПН', 'ВТ', 'СР'];
+var ROBBERY_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 var HOURS = 24;
 var MINUTES = 60;
-var lastRobberyInterval;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -16,14 +15,15 @@ var lastRobberyInterval;
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var bankGmt = parseInt(workingHours.from.slice(6), 10);
-    var busyTimeList = Object.keys(schedule).reduce(function (previousFriend, currentFriend) {
-        return previousFriend.concat(schedule[currentFriend].map(function (business) {
-            return {
-                start: getCorrectTimeFormat(business.from, bankGmt),
-                end: getCorrectTimeFormat(business.to, bankGmt)
-            };
-        }));
+    var unitedSchedule = Object.keys(schedule).reduce(function (result, currentFriend) {
+        return result.concat(schedule[currentFriend]);
     }, []);
+    var busyTimeList = unitedSchedule.map(function (busyness) {
+        return {
+            start: getCorrectTimeFormat(busyness.from, bankGmt),
+            end: getCorrectTimeFormat(busyness.to, bankGmt)
+        };
+    });
     busyTimeList = busyTimeList.concat(getBankWorkTime(workingHours));
     busyTimeList.sort(function (a, b) {
         return a.start - b.start;
@@ -75,18 +75,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
 
         tryLater: function () {
-            if (!this.exists()) {
 
-                return false;
-            }
-            var newRobberyTime = getEarliest(intersectedIntervals, duration);
-            if (!newRobberyTime || lastRobberyInterval === 0) {
-
-                return false;
-            }
-            robberyMinutesTime = newRobberyTime;
-
-            return true;
+            return false;
         }
     };
 };
@@ -99,9 +89,9 @@ function getCorrectTimeFormat(stringTime, gmtBank) {
     var thiefBusyHours = parseInt(stringTime.slice(3, 5), 10);
     var thiefGmt = gmtBank - parseInt(stringTime.slice(9), 10);
     var thiefBusyMinutes = parseInt(stringTime.slice(6, 8), 10);
-    var currentDay = ROBBERY_DAYS.indexOf(stringTime.slice(0, 2)) * HOURS;
+    var lastDay = ROBBERY_DAYS.indexOf(stringTime.slice(0, 2)) * HOURS;
 
-    return (thiefBusyHours + thiefGmt + currentDay) * MINUTES + thiefBusyMinutes;
+    return (thiefBusyHours + thiefGmt + lastDay) * MINUTES + thiefBusyMinutes;
 }
 
 function getParsedBankWorkTime(workingHours) {
@@ -112,7 +102,6 @@ function getParsedBankWorkTime(workingHours) {
 function getBankWorkTime(workingHours) {
     var startWorking = getParsedBankWorkTime(workingHours.from);
     var endWorking = getParsedBankWorkTime(workingHours.to);
-    console.info({ start: endWorking + 2 * MINUTES * HOURS, end: 3 * MINUTES * HOURS - 1 });
 
     return [
         { start: 0, end: startWorking },
@@ -126,7 +115,7 @@ function getUnionOfIntervals(timeArray) {
     var previousStart = timeArray[0].start;
     var previousEnd = timeArray[0].end;
     var interval;
-    var reducedTimeArray = timeArray.slice(1).reduce(function (previousInterval, currentInterval) {
+    var unionOfIntervals = timeArray.slice(1).reduce(function (previousInterval, currentInterval) {
         if (currentInterval.start <= previousEnd) {
             previousEnd = Math.max(previousEnd, currentInterval.end);
         } else {
@@ -140,29 +129,14 @@ function getUnionOfIntervals(timeArray) {
         return previousInterval.concat([]);
     }, []);
 
-    return reducedTimeArray.concat([{ start: previousStart, end: previousEnd }]);
+    return unionOfIntervals.concat([{ start: previousStart, end: previousEnd }]);
 }
 
 function getIntersection(busyTimeList, duration, index = 1) {
     for (var i = index; i < busyTimeList.length; i++) {
         if (busyTimeList[i].start - busyTimeList[i - 1].end >= duration) {
-            lastRobberyInterval = i - 1;
 
             return busyTimeList[i - 1].end;
         }
     }
-}
-
-function getEarliest(busyTimeList, duration) {
-    var newTime = busyTimeList[lastRobberyInterval].end + 30;
-    for (var i = lastRobberyInterval; i < busyTimeList.length; i++) {
-        if (busyTimeList[i - 1].end <= newTime && busyTimeList[i].start >= newTime) {
-            var newList = busyTimeList;
-            newList[i - 1].end = newTime;
-
-            return getIntersection(getUnionOfIntervals(newList), duration, i);
-        }
-    }
-
-    return false;
 }
