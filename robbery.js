@@ -13,10 +13,10 @@ let GANG_SCHEDULE = [];
 
 
 function transformBankTime(bankTime) {
-    let [fromMatch, hoursFrom, minutesFrom] = BANK_TIME_PATTERN.exec(bankTime.from);
-    let [toMatch, hoursTo, minutesTo] = BANK_TIME_PATTERN.exec(bankTime.to);
+    const [fromMatch, hoursFrom, minutesFrom] = BANK_TIME_PATTERN.exec(bankTime.from);
+    const [toMatch, hoursTo, minutesTo] = BANK_TIME_PATTERN.exec(bankTime.to);
     if (!fromMatch || !toMatch) {
-        throw new TypeError('Working 5hours in wrong format');
+        throw new TypeError('Working hours in wrong format');
     }
 
     return {
@@ -32,52 +32,51 @@ function transformBankTime(bankTime) {
 }
 
 function getHoursInBankZone(currentHours, currentZone, bankZone) {
-    let result = Number(currentHours);
+    currentHours = Number(currentHours);
     currentZone = Number(currentZone);
     bankZone = Number(bankZone);
-    if (isNaN(result)) {
+    if (isNaN(currentHours)) {
         throw new TypeError('Hours format is not a number');
     }
-    result += (bankZone - currentZone);
 
-    return result;
+    return currentHours + bankZone - currentZone;
 }
 
 function getProcessedTime(timeString, bankTimeShift) {
-    let [match, day, ...values] = GANG_TIME_PATTERN.exec(timeString);
+    const [match, day, ...values] = GANG_TIME_PATTERN.exec(timeString);
     if (!match) {
         return;
     }
-    let [hours, minutes, zone] = values.map(Number);
-    let index = DAYS_INDICES[day];
+    const [hours, minutes, zone] = values.map(Number);
+    let dayIndex = DAYS_INDICES[day];
     let bankZoneHours = getHoursInBankZone(hours, zone, bankTimeShift);
     if (bankZoneHours >= 24) {
         bankZoneHours %= 24;
-        index++;
+        dayIndex++;
     } else if (bankZoneHours < 0) {
         bankZoneHours += 24;
-        index--;
+        dayIndex--;
     }
 
-    return { day: index, hours: bankZoneHours, minutes };
+    return { day: dayIndex, hours: bankZoneHours, minutes };
 }
 
 function pushToSchedule(index, item) {
-    if (GANG_SCHEDULE[index] === undefined) {
+    if (!GANG_SCHEDULE[index]) {
         GANG_SCHEDULE[index] = [];
     }
     GANG_SCHEDULE[index].push(item);
 }
 
 function processActivity(activity, bankTimeShift) {
-    let from = getProcessedTime(activity.from, bankTimeShift);
-    let to = getProcessedTime(activity.to, bankTimeShift);
+    const from = getProcessedTime(activity.from, bankTimeShift);
+    const to = getProcessedTime(activity.to, bankTimeShift);
     if (from.day !== to.day) {
         if (from.day >= 1 && from.day < GANG_SCHEDULE.length - 1) {
-            let firstDay = getEventTillDayEnd(from);
+            let firstDay = getPeriodTillDayEnd(from);
             pushToSchedule(from.day, firstDay);
         }
-        let secondDay = getEventFromDayBegin(to);
+        const secondDay = getPeriodFromDayStart(to);
         let startDay = from.day + 1;
         while (startDay !== to.day) {
             pushToSchedule(startDay, getFullDayEvent(startDay));
@@ -116,11 +115,11 @@ function isEarlier(first, second) {
     return first.hours < second.hours;
 }
 
-function eventsAreEqual(first, second) {
+function areEventsEqual(first, second) {
     return isEarlier(first, second) && isEarlier(second, first);
 }
 
-function getMin(first, second) {
+function getMinTime(first, second) {
     if (isEarlier(first, second)) {
         return first;
     }
@@ -128,7 +127,7 @@ function getMin(first, second) {
     return second;
 }
 
-function getMax(first, second) {
+function getMaxTime(first, second) {
     if (isEarlier(first, second)) {
         return second;
     }
@@ -136,14 +135,14 @@ function getMax(first, second) {
     return first;
 }
 
-function getUnitedActivities(activities) {
+function getUnitedEvents(activities) {
     let counter = 0;
     while (counter < activities.length - 1) {
         let current = activities[counter];
         let next = activities[counter + 1];
         if (!isEarlier(current.to, next.from)) {
-            current.from = getMin(current.from, next.from);
-            current.to = getMax(current.to, next.to);
+            current.from = getMinTime(current.from, next.from);
+            current.to = getMaxTime(current.to, next.to);
             activities.splice(counter + 1, 1);
             continue;
         }
@@ -168,14 +167,14 @@ function getFullDayEvent(day) {
     };
 }
 
-function getEventFromDayBegin(timeObject) {
+function getPeriodFromDayStart(timeObject) {
     return {
         from: { day: timeObject.day, hours: 0, minutes: 0 },
         to: timeObject
     };
 }
 
-function getEventTillDayEnd(timeObject) {
+function getPeriodTillDayEnd(timeObject) {
     return {
         from: timeObject,
         to: { day: timeObject.day, hours: 23, minutes: 59 }
@@ -188,23 +187,23 @@ function getFreeTime(activities, day) {
         return [getFullDayEvent(day)];
     }
 
-    result.push(getEventFromDayBegin(activities[0].from));
+    result.push(getPeriodFromDayStart(activities[0].from));
 
     for (let i = 0; i < activities.length - 1; i++) {
         result.push({ from: activities[i].to, to: activities[i + 1].from });
     }
 
-    result.push(getEventTillDayEnd(activities[activities.length - 1].to));
-    result = result.filter(time => !eventsAreEqual(time.from, time.to));
+    result.push(getPeriodTillDayEnd(activities[activities.length - 1].to));
+    result = result.filter(time => !areEventsEqual(time.from, time.to));
 
     return result;
 }
 
-function intersectTimes(activities, time) {
+function getIntersectedEvents(activities, time) {
     return activities.map(activity => {
         return {
-            from: getMax(activity.from, time.from),
-            to: getMin(activity.to, time.to),
+            from: getMaxTime(activity.from, time.from),
+            to: getMinTime(activity.to, time.to),
             day: activity.from.day
         };
     });
@@ -218,7 +217,7 @@ function getEventLength(event) {
     return (event.to.hours - event.from.hours) * 60 + (event.to.minutes - event.from.minutes);
 }
 
-function shiftLater(event, hours, minutes) {
+function getLaterEvent(event, hours, minutes) {
     event.from.hours += hours;
     event.from.minutes += minutes;
     if (event.from.minutes >= 60) {
@@ -240,20 +239,19 @@ function shiftLater(event, hours, minutes) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     GANG_SCHEDULE = [];
     transformSchedule(schedule, workingHours);
-    let freeTime = GANG_SCHEDULE
+    const freeTime = GANG_SCHEDULE
         .filter(events => events[0].from.day > 0 && events[0].from.day < 4)
         .map(day => day.sort(sortEventsByEnd))
-        .map(getUnitedActivities)
+        .map(getUnitedEvents)
         .map(getFreeTime);
-    let transformedWorkingHours = transformBankTime(workingHours);
-    let freeTimeWhileBankWorks = freeTime
-        .map(day => intersectTimes(day, transformedWorkingHours));
-    let freeTimesLongEnough = freeTimeWhileBankWorks
+    const transformedWorkingHours = transformBankTime(workingHours);
+    const freeTimeWhileBankWorks = freeTime
+        .map(day => getIntersectedEvents(day, transformedWorkingHours));
+    const freeTimesLongEnough = freeTimeWhileBankWorks
         .map(day => day.filter(event => getEventLength(event) >= duration));
-    let robberyTimes = [].concat(...freeTimesLongEnough);
+    const robberyTimes = [].concat(...freeTimesLongEnough);
 
     return {
-        _robberyTimes: robberyTimes.slice(),
 
         /**
          * Найдено ли время
@@ -261,10 +259,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         exists: function () {
             return Boolean(robberyTimes.length) || Boolean(this._currentTime);
-        },
-
-        _getFirstTime: function () {
-            return robberyTimes[0];
         },
 
         _currentTime: robberyTimes[0],
@@ -277,13 +271,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            let time = this._currentTime;
             if (!this.exists()) {
                 return '';
             }
-            let hours = time.from.hours.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
-            let minutes = time.from.minutes.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
-            let day = Object.keys(DAYS_INDICES)
+            const time = this._currentTime;
+            const hours = time.from.hours.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
+            const minutes = time.from.minutes.toLocaleString('ru-RU', { minimumIntegerDigits: 2 });
+            const day = Object.keys(DAYS_INDICES)
                 .filter(dayString => DAYS_INDICES[dayString] === time.day)[0];
 
             return template.replace('%HH', hours)
@@ -298,12 +292,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             if (getEventLength(this._currentTime) >= duration + 30) {
-                this._currentTime = shiftLater(this._currentTime, 0, 30);
+                this._currentTime = getLaterEvent(this._currentTime, 0, 30);
 
                 return true;
             }
             robberyTimes.splice(0, 1);
-            let nextTime = this._getFirstTime();
+            const nextTime = robberyTimes[0];
             if (!nextTime) {
                 return false;
             }
