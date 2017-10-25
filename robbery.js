@@ -28,19 +28,6 @@ function getDayNumber(day) {
     }
 }
 
-var nameOfDay = {
-    0: 'ПН',
-    1: 'ВТ',
-    2: 'СР'
-}
-
-var numberOfDay
-{
-    'ПН': 0,
-    'ВТ': 1,
-    'СР': 2,
-}
-
 function getDayNameByNumber(dayNumber) {
     switch (dayNumber) {
         case 0:
@@ -251,7 +238,14 @@ function getAppropriateMoment(schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            return false;
+            if (answer.length === 0) {
+                return false;
+            }
+            for (var i = 1; i < answer.length; i++) {
+                if (answer[i].from - answer[0].from === 30) {
+                    return true;
+                }
+            }
         },
 
         answer: function () {
