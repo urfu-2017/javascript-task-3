@@ -10,6 +10,9 @@ module.exports = {
 
 };
 
+const minutesInDay = 1440;
+const minutesInHour = 60;
+
 /**
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
@@ -59,9 +62,9 @@ function getDayNameByNumber(dayNumber) {
  *      возвращает объект День, Часы, Минуты
  */
 function devideTime(minutes) {
-    var day = getDayNameByNumber(Math.floor(minutes / 1440));
-    var h = Math.floor((minutes % 1440) / 60);
-    var m = Math.floor(minutes % 1440) % 60;
+    var day = getDayNameByNumber(Math.floor(minutes / minutesInDay));
+    var h = Math.floor((minutes % minutesInDay) / minutesInHour);
+    var m = Math.floor(minutes % minutesInDay) % minutesInHour;
     if (String(h).length === 1) {
         h = '0' + h;
     }
@@ -145,7 +148,7 @@ function getMintutesFromWeekStart(fullTime) {
     var h = String(time).substr(0, 2);
     var m = String(time).substr(3, 2);
 
-    return Number(dayNumber) * 1440 + Number(h) * 60 + Number(m);
+    return Number(dayNumber) * minutesInDay + Number(h) * minutesInHour + Number(m);
 }
 
 /**
@@ -156,7 +159,7 @@ function getMinutesFromDayStart(time) {
     var h = String(time).substr(0, 2);
     var m = String(time).substr(3, 2);
 
-    return Number(h) * 60 + Number(m);
+    return Number(h) * minutesInHour + Number(m);
 }
 
 /**
@@ -167,7 +170,7 @@ function getMinutesFromDayStart(time) {
  * @returns {*} - возвращает количество минут во временной зоне назначения
  */
 function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone) {
-    return minutes + (targetTimeZone - originalTimeZone) * 60;
+    return minutes + (targetTimeZone - originalTimeZone) * minutesInHour;
 }
 
 /**
@@ -179,7 +182,7 @@ function leadMinutesToCertainTimeZone(minutes, originalTimeZone, targetTimeZone)
 function generateBankTimes(startTime, endTime) {
     var res = [];
     for (var i = 0; i < 3; i++) {
-        res.push({ from: 1440 * i + startTime, to: 1440 * i + endTime });
+        res.push({ from: minutesInDay * i + startTime, to: minutesInDay * i + endTime });
     }
 
     return res;
