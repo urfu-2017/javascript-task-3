@@ -11,7 +11,8 @@ describe('robbery.getAppropriateMoment()', function () {
             {
                 Danny: [
                     { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
-                    { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
+                    { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' },
+                    { from: 'СР 17:00+5', to: 'ЧТ 9:00+5' }
                 ],
                 Rusty: [
                     { from: 'ПН 11:30+5', to: 'ПН 16:30+5' },
@@ -62,15 +63,12 @@ describe('robbery.getAppropriateMoment()', function () {
             assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 10:00');
         });
 
-        it('не должен сдвигать момент, если более позднего нет [*]', function () {
-            var moment = getMomentFor(90);
-
-            assert.ok(moment.tryLater());
-            assert.ok(moment.tryLater());
-            assert.ok(moment.tryLater());
-
+        it('не должен перемещаться на более поздний момент, если его вообще нет [*]', function () {
+            var moment = getMomentFor(121);
+            assert.ok(!moment.exists());
+            assert.strictEqual(moment.format('%DD %HH:%MM'), '');
             assert.ok(!moment.tryLater());
-            assert.strictEqual(moment.format('%DD %HH:%MM'), 'СР 10:00');
+            assert.strictEqual(moment.format('%DD %HH:%MM'), '');
         });
     }
 });
