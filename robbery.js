@@ -1,8 +1,11 @@
 'use strict';
 
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-const ROBBERS = ['Danny', 'Rusty', 'Linus'];
 const TIME_FORMAT = /(\d{2}):(\d{2})\+(\d+)/;
+const MINUTES_IN_HOUR = 60;
+const HOURS_IN_DAY = 24;
+const OFFSET_FOR_MOMENT_LATER = 30;
+const MINUTES_IN_DAY = MINUTES_IN_HOUR * HOURS_IN_DAY;
 
 /**
  * Сделано задание на звездочку
@@ -21,8 +24,9 @@ exports.isStar = true;
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
 
-    let datePointes = findDatePointes(schedule, workingHours);
-    let appropriateMoments = findAppropriateMoments(datePointes, duration);
+    const datePointes = findDatePointes(schedule, workingHours);
+    const appropriateMomentsInMinutes = findAppropriateMoments(datePointes, duration);
+    let appropriateMoments = getRecordsDate(appropriateMomentsInMinutes);
     let start = appropriateMoments.splice(0, 1)[0];
 
 
@@ -33,7 +37,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return start !== undefined;
+            return Boolean(start);
         },
 
         /**
@@ -44,7 +48,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (start === undefined) {
+            if (!start) {
                 return '';
             }
 
@@ -73,92 +77,53 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 };
 
 function findDatePointes(shedule, workingHours) {
-    const timeZoneforBank = parseInt(workingHours.from.split('+').slice(-1)[0]);
+    const timeZoneforBank = parseInt(workingHours.from.split('+').slice(-1)[0]) * MINUTES_IN_HOUR;
     let datePointes = [];
 
-    ROBBERS.forEach(robber => {
+    for (let robber of Object.keys(shedule)) {
         shedule[robber].forEach(date => {
-            let [dayFrom, hoursFrom, minutesFrom] = parseTime(date.from, timeZoneforBank);
-            let datePointEnd = getDatePoint(dayFrom, hoursFrom, minutesFrom, 'end');
-            datePointes.push(datePointEnd);
-            let [dayTo, hoursTo, minutesTo] = parseTime(date.to, timeZoneforBank);
-            let datePointStart = getDatePoint(dayTo, hoursTo, minutesTo, 'start');
-            datePointes.push(datePointStart);
+            let minutesFrom = parseTime(date.from) + timeZoneforBank;
+            datePointes.push(getDatePoint(minutesFrom, 'end'));
+            let minutesTo = parseTime(date.to) + timeZoneforBank;
+            datePointes.push(getDatePoint(minutesTo, 'start'));
         });
-    });
-
-    let dateFrom = workingHours.from.match(TIME_FORMAT);
-    let hoursFrom = Number(dateFrom[1]);
-    let minutesFrom = Number(dateFrom[2]);
-    let dateTo = workingHours.to.match(TIME_FORMAT);
-    let hoursTo = Number(dateTo[1]);
-    let minutesTo = Number(dateTo[2]);
+    }
     for (let i = 0; i < 3; i++) {
-        let datePointStart = getDatePoint(DAYS[i], hoursFrom, minutesFrom, 'start');
-        datePointes.push(datePointStart);
-        let datePointEnd = getDatePoint(DAYS[i], hoursTo, minutesTo, 'end');
-        datePointes.push(datePointEnd);
+        let workingFrom = parseTime(workingHours.from, DAYS[i]);
+        datePointes.push(getDatePoint(workingFrom, 'start'));
+        let workingTo = parseTime(workingHours.to, DAYS[i]);
+        datePointes.push(getDatePoint(workingTo, 'end'));
     }
 
     return datePointes;
 }
 
-function parseTime(time, timeZoneforBank) {
-    let day = time.slice(0, 2);
-    let regTime = time.match(TIME_FORMAT);
-    let hours = Number(regTime[1]);
-    let minutes = Number(regTime[2]);
-    let timeZone = Number(regTime[3]);
-    hours -= timeZone;
-
-    return getCorrectByTimeZone(day, hours, minutes, timeZoneforBank);
-}
-
-function getCorrectByTimeZone(day, hours, minutes, timeZoneforBank) {
-    hours += timeZoneforBank;
-    if (hours < 0) {
-        hours = 24 + hours;
-        if (day === 'ПН') {
-            hours = 0;
-            minutes = 0;
-        } else {
-            day = DAYS[DAYS.indexOf(day) - 1];
-        }
-    }
-    if (hours >= 24) {
-        hours -= 24;
-        if (day === 'ВС') {
-            hours = 0;
-            minutes = 0;
-        } else {
-            day = DAYS[DAYS.indexOf(day) + 1];
-        }
+function parseTime(time, day) {
+    const regTime = time.match(TIME_FORMAT);
+    const hours = Number(regTime[1]);
+    const minutes = Number(regTime[2]);
+    let timeZone = 0;
+    if (!day) {
+        day = time.slice(0, 2);
+        timeZone = Number(regTime[3]);
     }
 
-    return [day, hours, minutes];
+    return (DAYS.indexOf(day) * HOURS_IN_DAY + hours - timeZone) * MINUTES_IN_HOUR + minutes;
 }
 
-function getDatePoint(day, hours, minutes, type) {
-    return {
-        day: day,
-        hours: hours,
-        minutes: minutes,
-        type: type
-    };
+function getDatePoint(minutes, type) {
+    return { minutes, type };
 }
 
 function findAppropriateMoments(datePointes, duration) {
     let appropriateMoments = [];
     let busy = 1;
-    datePointes.sort((a, b) => compareDate(a, b));
+    datePointes.sort((a, b) => a.minutes - b.minutes);
     for (var i = 0; i < datePointes.length - 1; i++) {
-        if (datePointes[i].type === 'end') {
-            busy++;
-        } else {
-            busy--;
-        }
-        if (busy === 0 && moreThanDuration(datePointes[i], datePointes[i + 1], duration)) {
-            appropriateMoments.push(datePointes[i]);
+        let countBusy = datePointes[i].type === 'end' ? 1 : -1;
+        busy += countBusy;
+        if (!busy && (datePointes[i + 1].minutes - datePointes[i].minutes) >= duration) {
+            appropriateMoments.push(datePointes[i].minutes);
             findMomentLater(datePointes[i], datePointes[i + 1], duration, appropriateMoments);
         }
     }
@@ -167,66 +132,21 @@ function findAppropriateMoments(datePointes, duration) {
 }
 
 function findMomentLater(start, end, duration, appropriateMoments) {
-    let momentLater = addMinutesToTime(start, 30);
-    while (compareDate(momentLater, end) !== 1 &&
-    moreThanDuration(momentLater, end, duration)) {
+    let momentLater = start.minutes + OFFSET_FOR_MOMENT_LATER;
+    while (momentLater <= end.minutes && (end.minutes - momentLater) >= duration) {
         appropriateMoments.push(momentLater);
-        momentLater = addMinutesToTime(momentLater, 30);
+        momentLater += OFFSET_FOR_MOMENT_LATER;
     }
 }
 
-function addMinutesToTime(time, addMinutes) {
-    let minutes = time.minutes + addMinutes;
-    let hours = time.hours;
-    let day = time.day;
-    if (minutes >= 60) {
-        minutes -= 60;
-        hours++;
+function getRecordsDate(appropriateMomentsInMinutes) {
+    return appropriateMomentsInMinutes.reduce((dates, momentInMinutes) => {
+        let day = DAYS[Math.floor(momentInMinutes / MINUTES_IN_DAY)];
+        let hours = Math.floor(momentInMinutes % MINUTES_IN_DAY / MINUTES_IN_HOUR);
+        let minutes = momentInMinutes % MINUTES_IN_HOUR;
+        dates.push({ day, hours, minutes });
+
+        return dates;
     }
-    if (hours >= 24) {
-        hours -= 24;
-        day = DAYS[DAYS.indexOf(day) + 1];
-    }
-
-    return getDatePoint(day, hours, minutes, 'start');
-}
-
-function moreThanDuration(start, end, duration) {
-    let minutesInInterval = (end.hours - start.hours) * 60 + (end.minutes - start.minutes);
-
-    return minutesInInterval >= duration;
-}
-
-
-function compareDate(a, b) {
-    if (DAYS.indexOf(a.day) === DAYS.indexOf(b.day)) {
-        return compareHours(a, b);
-    }
-    if (DAYS.indexOf(a.day) > DAYS.indexOf(b.day)) {
-        return 1;
-    }
-
-    return -1;
-}
-
-function compareHours(a, b) {
-    if (a.hours === b.hours) {
-        return compareMinutes(a, b);
-    }
-    if (a.hours > b.hours) {
-        return 1;
-    }
-
-    return -1;
-}
-
-function compareMinutes(a, b) {
-    if (a.minutes === b.minutes) {
-        return 0;
-    }
-    if (a.minutes > b.minutes) {
-        return 1;
-    }
-
-    return -1;
+        , []);
 }
