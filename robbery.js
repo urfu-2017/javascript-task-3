@@ -136,7 +136,12 @@ function calculating(timeline, badTime) {
 function findTime(timeline, duration) {
     for (var i = 0; i < timeline.length; i++) {
         if ((timeline[i].to - timeline[i].from) >= duration) {
-            let day = Math.ceil(timeline[i].from / 1440) - 1;
+            let day;
+            if (timeline[i].from % 1440 > 0) {
+                day = Math.ceil(timeline[i].from / 1440) - 1;
+            } else {
+                day = Math.ceil(timeline[i].from / 1400);
+            }
             let minute = timeline[i].from - 1440 * day;
 
             return [day, minute];
@@ -281,7 +286,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     timeline = calculating(timeline, badTime);
     let moment = { time: [] };
     moment = createMoment(timeline, duration, moment.time);
-    console.info(moment.time);
 
     return {
 
