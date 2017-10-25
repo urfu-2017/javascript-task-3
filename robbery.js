@@ -29,8 +29,8 @@ const NAMES_BUDDY = ['Danny', 'Rusty', 'Linus'];
 const MS_IN_MINUTE = 60000;
 const DELAY = 30;
 
-function createDateInMS(day, hour, minute) {
-    return (new Date(YEAR, MONTH, day, hour, minute, 0)).getTime();
+function createDateInMinutes(day, hour, minute) {
+    return (new Date(YEAR, MONTH, day, hour, minute, 0)).getTime() / MS_IN_MINUTE;
 }
 
 function parseInterval(time) {
@@ -54,7 +54,7 @@ function getDate(time, bankTimeZone) {
     let hours = parsedTime.hours - parsedTime.timeZone + bankTimeZone;
     let minutes = parsedTime.minutes;
 
-    return createDateInMS(day, hours, minutes);
+    return createDateInMinutes(day, hours, minutes);
 }
 
 function getInterval(interval, bankTimeZone) {
@@ -65,8 +65,7 @@ function getInterval(interval, bankTimeZone) {
 }
 
 function getBusyIntervals(schedule, bankTimeZone) {
-    return schedule.map(interval => getInterval(interval, bankTimeZone)
-    );
+    return schedule.map(interval => getInterval(interval, bankTimeZone));
 }
 
 function parseBankInterval(time) {
@@ -87,12 +86,12 @@ function getClosedIntervals(workingHours) {
         day = DAYS[day];
         acc.push(
             {
-                from: createDateInMS(day, 0, 0),
-                to: createDateInMS(day, startBankInterval.hours, startBankInterval.minutes)
+                from: createDateInMinutes(day, 0, 0),
+                to: createDateInMinutes(day, startBankInterval.hours, startBankInterval.minutes)
             },
             {
-                from: createDateInMS(day, endBankInterval.hours, endBankInterval.minutes),
-                to: createDateInMS(day, 24, 0)
+                from: createDateInMinutes(day, endBankInterval.hours, endBankInterval.minutes),
+                to: createDateInMinutes(day, 24, 0)
             });
 
         return acc;
@@ -104,7 +103,7 @@ function getAttackIntervals(busyIntervals, duration) {
     let attackIntervals = [];
 
     for (let i = 0; i < busyIntervals.length - 1; i++) {
-        if (busyIntervals[i].to + (duration * MS_IN_MINUTE) <= busyIntervals[i + 1].from) {
+        if (busyIntervals[i].to + duration <= busyIntervals[i + 1].from) {
             attackIntervals.push({ from: busyIntervals[i].to, to: busyIntervals[i + 1].from });
         }
     }
@@ -114,23 +113,39 @@ function getAttackIntervals(busyIntervals, duration) {
 
 function mergeSchedules(acc, schedule) {
     for (let i = 0; i < schedule.length; i++) {
-        let fromMin = findMin(acc, schedule[i].from);
-        let toMax = findMax(acc, schedule[i].to);
+        let fromMin = findMinFromForMerge(acc, schedule[i].from);
+        let toMax = findMaxToForMerge(acc, schedule[i].to);
+        let isNoMin = fromMin.index === schedule.length;
+        let isNoMax = toMax.index === -1;
 
-        if (fromMin.index === schedule.length) {
-            acc.push({ from: fromMin.time, to: toMax.time });
-        } else if (toMax.index === -1) {
-            acc.unshift({ from: fromMin.time, to: toMax.time });
+        if (isNoMin) {
+            acc.push({
+                from: fromMin.time,
+                to: toMax.time
+            });
+        } else if (isNoMax) {
+            acc.unshift({
+                from: fromMin.time,
+                to: toMax.time
+            });
         } else {
-            acc.splice(fromMin.index, toMax.index - fromMin.index + 1,
-                { from: fromMin.time, to: toMax.time });
+            let amtToReplace = toMax.index - fromMin.index + 1;
+
+            acc.splice(
+                fromMin.index,
+                amtToReplace,
+                {
+                    from: fromMin.time,
+                    to: toMax.time
+                }
+            );
         }
     }
 
     return acc;
 }
 
-function findMin(intervals, timeStart) {
+function findMinFromForMerge(intervals, timeStart) {
     let time = timeStart;
     let index = intervals.length;
 
@@ -148,7 +163,7 @@ function findMin(intervals, timeStart) {
     return { time, index };
 }
 
-function findMax(intervals, timeEnd) {
+function findMaxToForMerge(intervals, timeEnd) {
     let time = timeEnd;
     let index = -1;
 
@@ -167,12 +182,12 @@ function findMax(intervals, timeEnd) {
 }
 
 function checkOtherIntervals(schedule, duration) {
-    let startTime = schedule[0].from + DELAY * MS_IN_MINUTE;
+    let startTime = schedule[0].from + DELAY;
 
     for (let i = 1; i < schedule.length; i++) {
         let isAfterDelay = schedule[i].to > startTime;
-        let isLongEnough = schedule[i].to - duration * MS_IN_MINUTE >= schedule[i].from;
-        let isLaterEnough = schedule[i].to - schedule[0].from >= (DELAY + duration) * MS_IN_MINUTE;
+        let isLongEnough = checkIntervalLength(schedule[i], duration);
+        let isLaterEnough = checkIntervalLength({ from: startTime, to: schedule[i].to }, duration);
 
         if (isAfterDelay && isLongEnough && isLaterEnough) {
             schedule.splice(0, i);
@@ -182,6 +197,10 @@ function checkOtherIntervals(schedule, duration) {
     }
 
     return false;
+}
+
+function checkIntervalLength({ from, to }, duration) {
+    return to - from >= duration;
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
@@ -218,7 +237,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            let robberyTime = new Date(robberySchedule[0].from);
+            let robberyTime = new Date(robberySchedule[0].from * MS_IN_MINUTE);
 
             return template
                 .replace(/%DD/g, Object.keys(DAYS)[robberyTime.getDay() - 1])
@@ -233,11 +252,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             if (robberySchedule.length !== 0 && this.exists()) {
-                let isLongEnough = robberySchedule[0].from + (duration + DELAY) * MS_IN_MINUTE <=
-                robberySchedule[0].to;
+                let isLongEnough = checkIntervalLength(robberySchedule[0], duration + DELAY);
 
                 if (isLongEnough) {
-                    robberySchedule[0].from += DELAY * MS_IN_MINUTE;
+                    robberySchedule[0].from += DELAY;
 
                     return true;
                 }
