@@ -113,9 +113,9 @@ function getAttackIntervals(busyIntervals, duration) {
 
 function mergeSchedules(acc, schedule) {
     for (let i = 0; i < schedule.length; i++) {
-        let fromMin = findMinFromForMerge(acc, schedule[i].from);
-        let toMax = findMaxToForMerge(acc, schedule[i].to);
-        let isNoMin = fromMin.index === schedule.length;
+        let fromMin = findFromOfNewInterval(acc, schedule[i].from);
+        let toMax = findToOfNewInterval(acc, schedule[i].to);
+        let isNoMin = fromMin.index === acc.length;
         let isNoMax = toMax.index === -1;
 
         if (isNoMin) {
@@ -129,11 +129,11 @@ function mergeSchedules(acc, schedule) {
                 to: toMax.time
             });
         } else {
-            let amtToReplace = toMax.index - fromMin.index + 1;
+            let numberOfReplaceItems = toMax.index - fromMin.index + 1;
 
             acc.splice(
                 fromMin.index,
-                amtToReplace,
+                numberOfReplaceItems,
                 {
                     from: fromMin.time,
                     to: toMax.time
@@ -145,7 +145,7 @@ function mergeSchedules(acc, schedule) {
     return acc;
 }
 
-function findMinFromForMerge(intervals, timeStart) {
+function findFromOfNewInterval(intervals, timeStart) {
     let time = timeStart;
     let index = intervals.length;
 
@@ -163,7 +163,7 @@ function findMinFromForMerge(intervals, timeStart) {
     return { time, index };
 }
 
-function findMaxToForMerge(intervals, timeEnd) {
+function findToOfNewInterval(intervals, timeEnd) {
     let time = timeEnd;
     let index = -1;
 
