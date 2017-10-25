@@ -21,7 +21,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let appropriateMoments = getAppropriateMoments(unionTimeIntervals(busyMoments), duration);
 
     return {
-        robberyDuration: duration,
+        duration: duration,
         currentMomentIndex: 0,
         moments: appropriateMoments,
         robberyTimeout: 30,
@@ -58,13 +58,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             let startTime = appropriateMoments[this.currentMomentIndex].from;
             let waitingTime = this.robberyTimeout;
+
             for (let i = this.currentMomentIndex; i < appropriateMoments.length; i++) {
                 let moment = appropriateMoments[i];
                 waitingTime -= dateTime.getElapsedMinutes(startTime, moment.from);
+
                 let momentDuration = getMomentDurationInMinutes(moment);
-                if (momentDuration < this.robberyDuration + waitingTime) {
+                if (momentDuration < this.duration + waitingTime) {
                     continue;
                 }
+
                 this.currentMomentIndex = i;
                 dateTime.addMinutes(moment.from, waitingTime > 0 ? waitingTime : 0);
 
@@ -90,11 +93,16 @@ function replaceMatched(match, momentTime) {
 }
 
 function parseTimeInterval(timeInterval) {
-    return { from: dateTime.parse(timeInterval.from), to: dateTime.parse(timeInterval.to) };
+    return {
+        from: dateTime.parse(timeInterval.from),
+        to: dateTime.parse(timeInterval.to)
+    };
 }
 
 function getTimeIntervalsWithBankTimezone(schedule, bankTimeZone) {
-    return Object.values(schedule).reduce((a, b) => a.concat(b))
+    let copiedSchedule = JSON.parse(JSON.stringify(schedule));
+
+    return Object.values(copiedSchedule).reduce((a, b) => a.concat(b))
         .map(function (x) {
             let timeInterval = parseTimeInterval(x);
             Object.values(timeInterval).map(t => dateTime.changeTimeZone(t, bankTimeZone));
@@ -105,13 +113,34 @@ function getTimeIntervalsWithBankTimezone(schedule, bankTimeZone) {
 
 function getMomentsWhenBankIsClosed(workingHours) {
     let moments = [];
-    for (let currentDay of ['ПН', 'ВТ', 'СР']) {
-        let timeBeforeOpening = { from: { day: currentDay, hours: 0, minutes: 0 },
-            to: { day: currentDay, hours: workingHours.from.hours,
-                minutes: workingHours.from.minutes } };
-        let timeAfterClosing = { to: { day: currentDay, hours: 23, minutes: 59 },
-            from: { day: currentDay, hours: workingHours.to.hours,
-                minutes: workingHours.to.minutes } };
+    for (let currentDay of dateTime.DAYS) {
+        let timeBeforeOpening = {
+            from: {
+                day: currentDay,
+                hours: 0,
+                minutes: 0
+            },
+            to: {
+                day: currentDay,
+                hours: workingHours.from.hours,
+                minutes: workingHours.from.minutes
+            }
+        };
+
+        let timeAfterClosing = {
+            to: {
+                day: currentDay,
+                hours: 23,
+                minutes: 59
+            },
+
+            from: {
+                day: currentDay,
+                hours: workingHours.to.hours,
+                minutes: workingHours.to.minutes
+            }
+        };
+
         moments.push(timeBeforeOpening, timeAfterClosing);
     }
 
@@ -142,11 +171,12 @@ function unionTimeIntervals(timeIntervals) {
     return resultIntervals;
 }
 
-function getAppropriateMoments(busyMoments, robberyDuration) {
+function getAppropriateMoments(busyMoments, duration) {
     let appropriateMoments = [];
+
     for (let i = 0; i < busyMoments.length - 1; i++) {
         let freeInterval = { from: busyMoments[i].to, to: busyMoments[i + 1].from };
-        if (getMomentDurationInMinutes(freeInterval) >= robberyDuration) {
+        if (getMomentDurationInMinutes(freeInterval) >= duration) {
             appropriateMoments.push(freeInterval);
         }
     }

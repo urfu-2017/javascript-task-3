@@ -5,6 +5,8 @@ const DAYS = ['ПН', 'ВТ', 'СР'];
 const MAX_MINUTE = 59;
 const MAX_HOUR = 23;
 
+exports.DAYS = DAYS;
+
 exports.compareDatetimes = function (dateTime1, dateTime2) {
     let indexOfDay1 = DAYS.indexOf(dateTime1.day);
     let indexOfDay2 = DAYS.indexOf(dateTime2.day);
@@ -26,8 +28,12 @@ exports.equals = function (dateTime1, dateTime2) {
 exports.parse = function (datetime) {
     let match = DATETIME_PATTERN.exec(datetime);
 
-    return { day: match[1], hours: Number(match[2]),
-        minutes: Number(match[3]), timeZone: Number(match[4]) };
+    return {
+        day: match[1],
+        hours: Number(match[2]),
+        minutes: Number(match[3]),
+        timeZone: Number(match[4])
+    };
 };
 
 exports.getElapsedMinutes = function (startDatetime, endDatetime) {
