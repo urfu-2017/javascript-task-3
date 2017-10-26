@@ -34,7 +34,7 @@ function toMinutes(time) {
 /**
  * Переводит минуты в дату
  * @param {Number} minutes
- * @returns {Array}
+ * @returns {Object}
  */
 function toDate(minutes) {
     let day = Math.floor(minutes / 1440);
@@ -43,7 +43,7 @@ function toDate(minutes) {
     let newMinutes = `0${minutes}`.slice(-2);
     let newHours = `0${hours}`.slice(-2);
 
-    return [days[day], newHours, newMinutes];
+    return { day: days[day], hours: newHours, minutes: newMinutes };
 }
 
 /**
@@ -163,9 +163,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             time = toDate(time.from);
 
-            return template.replace('%DD', time[0])
-                .replace('%HH', time[1])
-                .replace('%MM', time[2]);
+            return template.replace('%DD', time.day)
+                .replace('%HH', time.hours)
+                .replace('%MM', time.minutes);
         },
 
         /**
