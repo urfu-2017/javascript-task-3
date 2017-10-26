@@ -173,9 +173,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     const bankUTCZone = bankSchedule[0].from.UTCZone;
     const generalSchedule = getSchedule(schedule, bankUTCZone);
     let freeTimeGeneralSchedule = [];
-    Object.keys(generalSchedule).forEach(function (name) {
-        freeTimeGeneralSchedule.push(getFreeTime(generalSchedule[name]));
-    });
+    Object.keys(generalSchedule).reduce(function (acc, name) {
+        acc.push(getFreeTime(generalSchedule[name]));
+
+        return acc;
+    }, freeTimeGeneralSchedule);
     freeTimeGeneralSchedule.push(bankSchedule);
     const intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
         getIntersectionSchedule(prev, curr));
