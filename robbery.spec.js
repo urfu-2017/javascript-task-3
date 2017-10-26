@@ -1,9 +1,9 @@
 /* eslint-env mocha */
 'use strict';
 
-var assert = require('assert');
+let assert = require('assert');
 
-var robbery = require('./robbery');
+let robbery = require('./robbery');
 
 describe('robbery.getAppropriateMoment()', function () {
     function getMomentFor(time) {
@@ -29,7 +29,7 @@ describe('robbery.getAppropriateMoment()', function () {
     }
 
     it('должен форматировать существующий момент', function () {
-        var moment = getMomentFor(90);
+        let moment = getMomentFor(90);
 
         assert.ok(moment.exists());
         assert.strictEqual(
@@ -39,7 +39,7 @@ describe('robbery.getAppropriateMoment()', function () {
     });
 
     it('должен вернуть пустую строку при форматировании несуществующего момента', function () {
-        var moment = getMomentFor(121);
+        let moment = getMomentFor(121);
 
         assert.ok(!moment.exists());
         assert.strictEqual(
@@ -50,7 +50,7 @@ describe('robbery.getAppropriateMoment()', function () {
 
     if (robbery.isStar) {
         it('должен перемещаться на более поздний момент [*]', function () {
-            var moment = getMomentFor(90);
+            let moment = getMomentFor(90);
 
             assert.ok(moment.tryLater());
             assert.strictEqual(moment.format('%DD %HH:%MM'), 'ВТ 16:00');
@@ -63,7 +63,7 @@ describe('robbery.getAppropriateMoment()', function () {
         });
 
         it('не должен сдвигать момент, если более позднего нет [*]', function () {
-            var moment = getMomentFor(90);
+            let moment = getMomentFor(90);
 
             assert.ok(moment.tryLater());
             assert.ok(moment.tryLater());
