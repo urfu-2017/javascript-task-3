@@ -34,26 +34,16 @@ function toMinutes(time) {
 /**
  * Переводит минуты в дату
  * @param {Number} minutes
- * @returns {string}
+ * @returns {Array}
  */
 function toDate(minutes) {
-    let day = 0;
-    let hours = 0;
-    while (minutes >= 60) {
-        if (minutes >= 1440) {
-            minutes -= 1440;
-            day++;
-            continue;
-        }
-        if (minutes >= 60) {
-            minutes -= 60;
-            hours++;
-        }
-    }
+    let day = Math.floor(minutes / 1440);
+    let hours = Math.floor((minutes - day * 1440) / 60);
+    minutes -= day * 1440 + hours * 60;
     let newMinutes = `0${minutes}`.slice(-2);
     let newHours = `0${hours}`.slice(-2);
 
-    return `${days[day]} ${newHours}:${newMinutes}`;
+    return [days[day], newHours, newMinutes];
 }
 
 /**
@@ -132,9 +122,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let listOfTimes = [];
     let bankZone = Number(workingHours.to.split('+')[1]);
     for (let guy of Object.keys(schedule)) {
-        listOfTimes.push(schedule[guy].map(time => {
-            return { from: convertTime(time.from, bankZone), to: convertTime(time.to, bankZone) };
-        }));
+        listOfTimes.push(schedule[guy].map(time => ({
+            from: convertTime(time.from, bankZone),
+            to: convertTime(time.to, bankZone) })
+        ));
     }
     let goodTime = listOfTimes.reduce(getMomentForPair, [
         { from: toMinutes('ПН ' + workingHours.from), to: toMinutes('ПН ' + workingHours.to) },
@@ -142,11 +133,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         { from: toMinutes('СР ' + workingHours.from), to: toMinutes('СР ' + workingHours.to) }
     ]);
 
-    let appropriateTime = goodTime.filter(time => {
-        return time.to - time.from >= duration;
-    }).sort((obj1, obj2) => {
-        return obj1.from - obj2.from;
-    });
+    let appropriateTime = goodTime.filter(time => time.to - time.from >= duration)
+        .sort((obj1, obj2) => obj1.from - obj2.from);
 
     return {
         allMoments: appropriateTime,
@@ -173,11 +161,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!time) {
                 return '';
             }
-            time = { from: toDate(time.from), to: toDate(time.to) };
+            time = toDate(time.from);
 
-            return template.replace('%HH', time.from.slice(3, 5))
-                .replace('%MM', time.from.slice(6, 8))
-                .replace('%DD', time.from.slice(0, 2));
+            return template.replace('%DD', time[0])
+                .replace('%HH', time[1])
+                .replace('%MM', time[2]);
         },
 
         /**
