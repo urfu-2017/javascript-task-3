@@ -38,9 +38,6 @@ function translateTimeGuy(time) {
     if (day === 'ЧТ') {
         return 4320 + hour * 60 + minute;
     }
-    if (day === 'ВС') {
-        return - 1440 + hour * 60 + minute;
-    }
 
     return 5760;
 }
