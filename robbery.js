@@ -82,7 +82,7 @@ function convertTime(time) {
     if (minute < 10) {
         minute = '0' + minute;
     }
-    if (time < 10) {
+    if (hour < 10) {
         hour = '0' + hour;
     }
     if (time < 1440) {
