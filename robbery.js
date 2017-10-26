@@ -119,17 +119,19 @@ function getUnionOfIntervals(timeArray) {
         if (currentInterval.start <= previousEnd) {
             previousEnd = Math.max(previousEnd, currentInterval.end);
         } else {
-            interval = [{ start: previousStart, end: previousEnd }];
+            interval = { start: previousStart, end: previousEnd };
             previousStart = currentInterval.start;
             previousEnd = currentInterval.end;
+            previousInterval.push(interval);
 
-            return previousInterval.concat(interval);
+            return previousInterval;
         }
 
-        return previousInterval.concat([]);
+        return previousInterval;
     }, []);
+    unionOfIntervals.push({ start: previousStart, end: previousEnd });
 
-    return unionOfIntervals.concat([{ start: previousStart, end: previousEnd }]);
+    return unionOfIntervals;
 }
 
 function getIntersection(busyTimeList, duration, index = 1) {
