@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -14,8 +14,176 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
+const DAY_IN_WEEK = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+const QUANTITY_DAY_IN_WEEK = 7;
+const HOURS_IN_DAY = 24;
+const MINUTES_IN_HOUR = 60;
+const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
+
+function parseTimeAndZoneStr(TimeAndZoneStr) {
+    const [timeStr, UTCZone] = TimeAndZoneStr.split('+');
+    const [hours, minutes] = timeStr.split(':').map(x => parseInt(x, 10));
+
+    return [UTCZone, hours, minutes];
+}
+function parseToTimeObj(dateSrt) {
+    const [day, timeAndZone] = dateSrt.split(' ');
+    const [UTCZone, hours, minutes] = parseTimeAndZoneStr(timeAndZone);
+
+    return {
+        timeInMinutes: minutes + hours * MINUTES_IN_HOUR + DAY_IN_WEEK[day] * MINUTES_IN_DAY,
+        UTCZone: parseInt(UTCZone)
+    };
+}
+
+function applyTimeZoneToTimeObj(UTCZone, timeObj) {
+    const diff = UTCZone - timeObj.UTCZone;
+
+    return {
+        timeInMinutes: timeObj.timeInMinutes + diff * MINUTES_IN_HOUR,
+        UTCZone: UTCZone
+    };
+}
+
+function getTimeObj(dateStr, bankUTCZone) {
+    const timeObj = parseToTimeObj(dateStr);
+
+    return applyTimeZoneToTimeObj(bankUTCZone, timeObj);
+}
+
+function getSchedule(schedule, bankUTCZone) {
+    let generalSchedule = {
+        Danny: [],
+        Rusty: [],
+        Linus: []
+    };
+    Object.keys(schedule).forEach(function (name) {
+        schedule[name].forEach(function (personalSchedule) {
+            generalSchedule[name].push({
+                from: getTimeObj(personalSchedule.from, bankUTCZone),
+                to: getTimeObj(personalSchedule.to, bankUTCZone)
+            });
+        });
+    });
+
+    return generalSchedule;
+}
+
+
+function getFreeTime(personalSchedule) {
+    const MIN_START_ROBBERY_TIME = 0;
+    const MAX_FINISH_ROBBERY_TIME = 3 * MINUTES_IN_DAY;
+    const bankUTCZone = personalSchedule[0].from.UTCZone;
+    let freeTimeSchedule = [];
+    if (personalSchedule[0].from.timeInMinutes > 0) {
+        freeTimeSchedule.push({
+            from: {
+                timeInMinutes: MIN_START_ROBBERY_TIME,
+                UTCZone: bankUTCZone
+            },
+            to: personalSchedule[0].from
+        });
+    }
+    for (let i = 1; i < personalSchedule.length; i++) {
+        freeTimeSchedule.push({
+            from: personalSchedule[i - 1].to,
+            to: personalSchedule[i].from
+        });
+    }
+
+    if (personalSchedule[personalSchedule.length - 1].to.timeInMinutes < MAX_FINISH_ROBBERY_TIME) {
+        freeTimeSchedule.push({
+            from: personalSchedule[personalSchedule.length - 1].to,
+            to: {
+                timeInMinutes: MAX_FINISH_ROBBERY_TIME,
+                UTCZone: bankUTCZone
+            }
+        });
+    }
+
+    return freeTimeSchedule;
+}
+
+function getSegmentsInter(first, second) {
+    const maxFrom = Math.max(first.from.timeInMinutes, second.from.timeInMinutes);
+    const minTo = Math.min(first.to.timeInMinutes, second.to.timeInMinutes);
+    const bankUTCZone = first.from.UTCZone;
+    if (maxFrom < minTo) {
+        return {
+            from: {
+                timeInMinutes: maxFrom,
+                UTCZone: bankUTCZone
+            },
+            to: {
+                timeInMinutes: minTo,
+                UTCZone: bankUTCZone
+            }
+        };
+    }
+
+    return -1;
+}
+
+function getIntersectionSchedule(firstSchedule, secondSchedule) {
+    let resultSchedule = [];
+    firstSchedule.forEach(function (firstTimeSegment) {
+        secondSchedule.forEach(function (secondTimeSegment) {
+            let segmmentsIntersection =
+                getSegmentsInter (firstTimeSegment, secondTimeSegment);
+            if (segmmentsIntersection !== -1) {
+                resultSchedule.push(segmmentsIntersection);
+            }
+        });
+    });
+
+    return resultSchedule;
+}
+
+function parseBankTimeToTimeObj(bankTimeStr) {
+    const [UTCZone, hours, minutes] = parseTimeAndZoneStr(bankTimeStr);
+
+    return {
+        timeInMinutes: minutes + hours * MINUTES_IN_HOUR,
+        UTCZone: parseInt(UTCZone)
+    };
+}
+
+function getBankSchedule(workingHours) {
+    let bankSchedule = [];
+    const bankFrom = parseBankTimeToTimeObj(workingHours.from);
+    const bankTo = parseBankTimeToTimeObj(workingHours.to);
+    for (let i = 0; i < QUANTITY_DAY_IN_WEEK; i++) {
+        bankSchedule.push({
+            from: {
+                timeInMinutes: bankFrom.timeInMinutes + i * MINUTES_IN_DAY,
+                UTCZone: bankFrom.UTCZone
+            },
+            to: {
+                timeInMinutes: bankTo.timeInMinutes + i * MINUTES_IN_DAY,
+                UTCZone: bankTo.UTCZone
+            }
+        });
+    }
+
+    return bankSchedule;
+}
+
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    console.info(schedule, duration, workingHours);
+    const bankSchedule = getBankSchedule(workingHours);
+    const bankUTCZone = bankSchedule[0].from.UTCZone;
+    const generalSchedule = getSchedule(schedule, bankUTCZone);
+    let freeTimeGeneralSchedule = [];
+    Object.keys(generalSchedule).reduce(function (acc, name) {
+        acc.push(getFreeTime(generalSchedule[name]));
+
+        return acc;
+    }, freeTimeGeneralSchedule);
+    freeTimeGeneralSchedule.push(bankSchedule);
+    const intersectionSchedule = freeTimeGeneralSchedule.reduce((prev, curr) =>
+        getIntersectionSchedule(prev, curr));
+    const appropriateMoment = intersectionSchedule.filter(function (value) {
+        return (value.to.timeInMinutes - value.from.timeInMinutes) >= duration;
+    });
 
     return {
 
@@ -24,7 +192,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            return false;
+            return appropriateMoment.length > 0;
         },
 
         /**
@@ -35,7 +203,22 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            return template;
+            if (!this.exists()) {
+                return '';
+            }
+            let minutes = appropriateMoment[0].from.timeInMinutes;
+            const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+            const day = DAYS[Math.floor(minutes / MINUTES_IN_DAY)];
+            minutes = minutes % MINUTES_IN_DAY;
+            let hours = Math.floor(minutes / MINUTES_IN_HOUR);
+            minutes = minutes % MINUTES_IN_HOUR;
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+
+            return template
+                .replace('%HH', hours)
+                .replace('%MM', minutes)
+                .replace('%DD', day);
         },
 
         /**
