@@ -86,8 +86,8 @@ function getParsedSchedule(schedule, bankTimezone) {
             const parsedToDate = parseDate(interval.to);
             const timeFromInMinutes = timeToMinutes(parsedFromDate, bankTimezone);
             const timeToInMinutes = timeToMinutes(parsedToDate, bankTimezone);
-            parsedSchedule.push({ minutes: timeFromInMinutes, step: 'from' });
-            parsedSchedule.push({ minutes: timeToInMinutes, step: 'to' });
+            parsedSchedule.push({ minutes: timeFromInMinutes, step: 'from' },
+                { minutes: timeToInMinutes, step: 'to' });
         });
     });
 
@@ -112,15 +112,14 @@ function translateFromMinutes(minutes) {
 function getNotWorkingHours(workingHours, bankTimezone) {
     const workingHoursFrom = workingHours.from;
     const workingHoursTo = workingHours.to;
-    let notWorkingHours = [];
-    DAYS.forEach(day => {
-        notWorkingHours.push({ from: day + ' 00:00+' + bankTimezone,
-            to: day + ' ' + workingHoursFrom });
-        notWorkingHours.push({ from: day + ' ' + workingHoursTo,
-            to: day + ' 23:59+' + bankTimezone });
-    });
 
-    return notWorkingHours;
+    return DAYS.reduce(function (accumulator, day) {
+        accumulator.push({ from: day + ' 00:00+' + bankTimezone,
+            to: day + ' ' + workingHoursFrom }, { from: day + ' ' + workingHoursTo,
+            to: day + ' 23:59+' + bankTimezone });
+
+        return accumulator;
+    }, []);
 }
 
 function parseDate(date) {
@@ -149,8 +148,9 @@ function getIntervalsOfFreeTime(parsedSchedule) {
     let countTo = 0;
     let currentStartMinutes;
     let previousEndMinutes = 0;
-    let intervals = [];
-    sortedSchedule.forEach(event => {
+    // let intervals = [];
+
+    return sortedSchedule.reduce(function (intervals, event) {
         if (!countFrom) {
             currentStartMinutes = event.minutes;
         }
@@ -166,8 +166,7 @@ function getIntervalsOfFreeTime(parsedSchedule) {
             intervals.push({ leftBorder: previousEndMinutes, size: lengthOfInterval });
             previousEndMinutes = event.minutes;
         }
-    });
 
-    return intervals;
+        return intervals;
+    }, []);
 }
-
