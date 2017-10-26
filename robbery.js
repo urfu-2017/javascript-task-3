@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -37,9 +37,6 @@ function translateTimeGuy(time) {
     }
     if (day === 'ЧТ') {
         return 4320 + hour * 60 + minute;
-    }
-    if (day === 'ВС') {
-        return -1440 + hour * 60 + minute;
     }
 
     return 5760;
