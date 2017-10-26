@@ -54,8 +54,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
             return template
                 .replace('%DD', start.day)
-                .replace('%HH', ('0' + start.hours).slice(-2))
-                .replace('%MM', ('0' + start.minutes).slice(-2));
+                .replace('%HH', (`0${start.hours}`).slice(-2))
+                .replace('%MM', (`0${start.minutes}`).slice(-2));
         },
 
         /**
@@ -80,22 +80,21 @@ function findDatePointes(shedule, workingHours) {
     const timeZoneforBank = parseInt(workingHours.from.split('+').slice(-1)[0]) * MINUTES_IN_HOUR;
     let datePointes = [];
 
-    for (let robber of Object.keys(shedule)) {
+    Object.keys(shedule).forEach(robber => {
         shedule[robber].forEach(date => {
             let minutesFrom = parseTime(date.from) + timeZoneforBank;
-            datePointes.push(getDatePoint(minutesFrom, 'end'));
             let minutesTo = parseTime(date.to) + timeZoneforBank;
-            datePointes.push(getDatePoint(minutesTo, 'start'));
+            datePointes.push(getDatePoint(minutesFrom, 'end'), getDatePoint(minutesTo, 'start'));
         });
-    }
-    for (let i = 0; i < 3; i++) {
-        let workingFrom = parseTime(workingHours.from, DAYS[i]);
-        datePointes.push(getDatePoint(workingFrom, 'start'));
-        let workingTo = parseTime(workingHours.to, DAYS[i]);
-        datePointes.push(getDatePoint(workingTo, 'end'));
-    }
+    });
 
-    return datePointes;
+    return DAYS.slice(0, 3).reduce((updateDatePointes, day) => {
+        let workingFrom = parseTime(workingHours.from, day);
+        let workingTo = parseTime(workingHours.to, day);
+        updateDatePointes.push(getDatePoint(workingFrom, 'start'), getDatePoint(workingTo, 'end'));
+
+        return updateDatePointes;
+    }, datePointes);
 }
 
 function parseTime(time, day) {
@@ -147,6 +146,5 @@ function getRecordsDate(appropriateMomentsInMinutes) {
         dates.push({ day, hours, minutes });
 
         return dates;
-    }
-        , []);
+    }, []);
 }
