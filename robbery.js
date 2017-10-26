@@ -101,6 +101,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
+
+/**
+ *прибавляет пол часа к времени
+ */
+
 function addingHalfHour(time) {
     let day = time.split(' ')[0];
     let hours = parseInt(time.split(' ')[1].split(':')[0]);
@@ -124,6 +129,11 @@ function addingHalfHour(time) {
     return day + ' ' + hours + ':' + minutes;
 }
 
+/**
+ * работа с исходным расписанием занятости 
+ * приводим все времена к часовому поясу банка
+ */
+
 function workWithShedule(schedule, name, timeZone, invalideTime) {
     for (let times of schedule[name]) {
         let begin = normalizeTime(times.from, timeZone);
@@ -146,6 +156,10 @@ function workWithShedule(schedule, name, timeZone, invalideTime) {
     }
 }
 
+/**
+ * создаем расписание занятости
+ */
+
 function createScheduleOfEmployment(intervals, invalideTime) {
     for (let interval of intervals) {
         let day = interval.from.split(' ')[0];
@@ -156,6 +170,10 @@ function createScheduleOfEmployment(intervals, invalideTime) {
         createInvalideTime(interval, invalideTime, day);
     }
 }
+
+/**
+ * объединяем все времена , в которые грабители заняты
+ */
 
 function createInvalideTime(interval, invalideTime, day) {
     let flag = false;
@@ -174,6 +192,10 @@ function createInvalideTime(interval, invalideTime, day) {
     }
 }
 
+/**
+ * находим время , в которое возможно ограбление
+ */
+
 function findingFreeTime(invalideTime, time) {
     for (let day of Object.keys(invalideTime)) {
         for (let i = 0; i < time[day].length; i++) {
@@ -181,6 +203,10 @@ function findingFreeTime(invalideTime, time) {
         }
     }
 }
+
+/**
+ * по сути , продолжение findingFreeTime
+ */
 
 function correctingOfTime(invalideTime, day, time, i) {
     for (let wrongTime of invalideTime[day]) {
@@ -202,6 +228,10 @@ function correctingOfTime(invalideTime, day, time, i) {
     return i;
 }
 
+/**
+ * поиск времени ограбления
+ */
+
 function findTime(time, duration, timeOfRobbery) {
     let find = false;
     for (let day of Object.keys(time)) {
@@ -218,6 +248,10 @@ function findTime(time, duration, timeOfRobbery) {
     return timeOfRobbery;
 }
 
+/**
+ * сравнивание найденного промежутка и доступного времени на ограбление.
+ */
+
 function comprasionMinutes(validTime, duration, timeOfRobbery, flag) {
     let minutes = translateToMinutes(validTime.from, validTime.to);
     if (minutes >= duration) {
@@ -230,6 +264,10 @@ function comprasionMinutes(validTime, duration, timeOfRobbery, flag) {
 
     return [timeOfRobbery, flag];
 }
+
+/**
+ * разделение времени на интервалы в рамках дней 
+ */
 
 function sepationToInterval(firstTime, secondTime) {
     let index = days.indexOf(firstTime.split(' ')[0]) + 1;
@@ -246,6 +284,10 @@ function sepationToInterval(firstTime, secondTime) {
 
     return array;
 }
+
+/**
+ * вычиление объеденения двух времен
+ */
 
 function unionOfTimes(firstTime, secondTime) {
     if (checkIncluding(secondTime.from, firstTime) &&
@@ -266,6 +308,10 @@ function unionOfTimes(firstTime, secondTime) {
     return unionOfTimesPt2(firstTime, secondTime);
 }
 
+/**
+ * продолжение unionOfTimes
+ */
+
 function unionOfTimesPt2(firstTime, secondTime) {
     if (checkIncluding(firstTime.from, secondTime) &&
     checkIncluding(firstTime.to, secondTime)) {
@@ -284,6 +330,10 @@ function unionOfTimesPt2(firstTime, secondTime) {
 
     return false;
 }
+
+/**
+ * вычисление разности двух времен
+ */
 
 function differenceTimes(firstTime, secondTime) {
     if (checkIncluding(secondTime.from, firstTime) &&
@@ -313,9 +363,17 @@ function differenceTimes(firstTime, secondTime) {
     }
 }
 
+/**
+ * проверяет содержится ли время во временном интервале
+ */
+
 function checkIncluding(time, timeInterval) {
     return compareTime(timeInterval.from, time) < 0 && compareTime(timeInterval.to, time) > 0;
 }
+
+/**
+ * рефакторинг времени после его изменения
+ */
 
 function normalizeTime(time, timeZone) {
     let day = time.split(' ')[0];
@@ -333,6 +391,11 @@ function normalizeTime(time, timeZone) {
 
     return refactoringTime(time, pastDay, nextDay, day);
 }
+
+/**
+ * преобразование времени в правильный формат
+ * по сути , продолжение normalizeTime
+ */
 
 function refactoringTime(time, pastDay, nextDay, day) {
     if (time.split(':')[0].length < 2) {
@@ -359,6 +422,10 @@ function refactoringTime(time, pastDay, nextDay, day) {
     return time;
 }
 
+/**
+ * сравнивание дат
+ */
+
 function compareTime(firstTime, secondTime) {
     let firstDay = firstTime.split(' ')[0];
     let secondDay = secondTime.split(' ')[0];
@@ -379,6 +446,10 @@ function compareTime(firstTime, secondTime) {
 
     return -1;
 }
+
+/**
+ * перевод часов и минут в минуты
+ */
 
 function translateToMinutes(from, to) {
     let hours = parseInt(to.split(' ')[1].split(':')[0]) -
