@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -101,14 +101,14 @@ function convertTime(time) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let openBank = translateTimeBank(workingHours.from);
     let closeBank = translateTimeBank(workingHours.to);
-    let TimezoneBank = Number(workingHours.from.slice(6, 8));
+    let timezoneBank = Number(workingHours.from.slice(6, 8));
     let timeRobbery = [[openBank, closeBank], [1440 + openBank, 1440 + closeBank],
         [2880 + openBank, 2880 + closeBank]];
     for (let guy of Object.keys(schedule)) {
         for (let workingGuy of schedule[guy]) {
-            let TimezoneGuy = Number(workingGuy.from.slice(9, 10));
-            let startGuy = translateTimeGuy(workingGuy.from) + 60 * (TimezoneBank - TimezoneGuy);
-            let endGuy = translateTimeGuy(workingGuy.to) + 60 * (TimezoneBank - TimezoneGuy);
+            let timezoneGuy = Number(workingGuy.from.slice(9, 11));
+            let startGuy = translateTimeGuy(workingGuy.from) + 60 * (timezoneBank - timezoneGuy);
+            let endGuy = translateTimeGuy(workingGuy.to) + 60 * (timezoneBank - timezoneGuy);
             timeRobbery = refinementTime(startGuy, endGuy, timeRobbery);
         }
     }
