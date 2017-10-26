@@ -6,35 +6,22 @@
  */
 exports.isStar = true;
 
-let days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
 /**
- * Приводит время к заданному часовому поясу
+ * Переводит время в минуты с учетом нового часового пояса
  * @param {String} time
  * @param {Number} newZone
- * @returns {String}
+ * @returns {Number}
  */
 function convertTime(time, newZone) {
     let inc = newZone - Number(time.split('+')[1]);
-    let currentDay = time.slice(0, 2);
-    let currentHours = Number(time.slice(3, 5)) + inc;
-    if (currentHours >= 24) {
-        currentDay = days[days.indexOf(currentDay) + 1];
-        currentHours %= 24;
-    }
-    if (currentHours < 0) {
-        currentDay = days[days.indexOf(currentDay) - 1];
-        currentHours += 24;
-    }
-    currentHours = currentHours < 10 ? '0' + currentHours : String(currentHours);
 
-    return `${currentDay} ${currentHours + time.slice(5, 8)}+${newZone}`;
+    return toMinutes(time) + inc * 60;
 }
 
-exports.convertTime = convertTime;
-
 /**
- * Переводит дату в количество секунд с начала недели
+ * Переводит дату в количество минут) с начала недели
  * @param {String} time
  * @returns {Number}
  */
@@ -45,22 +32,29 @@ function toMinutes(time) {
 }
 
 /**
- * Сравнивает два значения времени и возвращает true если первое раньше или совпадает со вторым
- * @param {String} time1 - Считаем, что время задано в одном часовом поясе
- * @param {String} time2
- * @returns {Boolean}
+ * Переводит минуты в дату
+ * @param {Number} minutes
+ * @returns {string}
  */
-function isLessEqual(time1, time2) {
-    let index1 = days.indexOf(time1.slice(0, 2));
-    let index2 = days.indexOf(time2.slice(0, 2));
-    if (index1 < index2) {
-        return true;
+function toDate(minutes) {
+    let day = 0;
+    let hours = 0;
+    while (minutes >= 60) {
+        if (minutes >= 1440) {
+            minutes -= 1440;
+            day++;
+            continue;
+        }
+        if (minutes >= 60) {
+            minutes -= 60;
+            hours++;
+        }
     }
+    let newMinutes = `0${minutes}`.slice(-2);
+    let newHours = `0${hours}`.slice(-2);
 
-    return index1 === index2 && toMinutes(time1) <= toMinutes(time2);
+    return `${days[day]} ${newHours}:${newMinutes}`;
 }
-
-exports.less = isLessEqual;
 
 /**
  * Возвращает первый временной отрезок без второго
@@ -69,19 +63,19 @@ exports.less = isLessEqual;
  * @returns {Object[]}
  */
 function without(range1, range2) {
-    if (isLessEqual(range1.to, range2.from) || isLessEqual(range2.to, range1.from)) {
+    if (range1.to <= range2.from || range2.to <= range1.from) {
         return [range1];
     }
-    if (isLessEqual(range2.from, range1.from) && isLessEqual(range1.to, range2.to)) {
+    if (range2.from <= range1.from && range1.to <= range2.to) {
         return [null];
     }
-    if (isLessEqual(range1.from, range2.from) && isLessEqual(range2.to, range1.to)) {
+    if (range1.from <= range2.from && range2.to <= range1.to) {
         return [
             { from: range1.from, to: range2.from },
             { from: range2.to, to: range1.to }
         ];
     }
-    if (isLessEqual(range1.from, range2.from)) {
+    if (range1.from <= range2.from) {
         return [{ from: range1.from, to: range2.from }];
     }
 
@@ -89,13 +83,13 @@ function without(range1, range2) {
 }
 
 /**
- * Добавляет элемент в массив и возвращает 1, если элемент добавлен и 0 в противном случае
+ * Заменяет элемент в массиве либо убирает его если заменить нечем
  * @param {Object} element
  * @param {Object[]} array
  * @param {Number} position
  * @returns {Number}
  */
-function add(element, array, position) {
+function replace(element, array, position) {
     if (element) {
         array[position] = element;
 
@@ -114,40 +108,17 @@ function add(element, array, position) {
  */
 function getMomentForPair(goodTime, badTime) {
     for (let bad of badTime) {
-        for (let i = 0; i < goodTime.length; i++) {
+        let i = 0;
+        while (i < goodTime.length) {
             let listOfGood = without(goodTime[i], bad);
-            let j = add(listOfGood[0], goodTime, i);
-            i = i + j - 1;
-            add(listOfGood[1], goodTime, goodTime.length);
+            let j = replace(listOfGood[0], goodTime, i);
+            i = i + j;
+            replace(listOfGood[1], goodTime, goodTime.length);
         }
     }
 
     return goodTime;
 }
-
-/**
- * Добавляет пол часа к текущему времени
- * @param {String} time
- * @returns {String}
- */
-function addHalfHour(time) {
-    let minutes = Number(time.slice(6, 8)) + 30;
-    let hours = Number(time.slice(3, 5)) + 1;
-    let timezone = Number(time.split('+')[1]);
-    if (minutes < 60) {
-        return time.slice(0, 6) + `${minutes}+${timezone}`;
-    }
-    let newMinutes = (minutes % 60);
-    if (hours < 23) {
-        return `${time.slice(0, 3) + (hours < 9 ? '0' + hours : String(hours))}:${
-            newMinutes < 9 ? '0' + newMinutes : String(newMinutes)}+${timezone}`;
-    }
-
-    return `${days[days.indexOf(time.slice(0, 2)) + 1]} 00:${
-        newMinutes < 9 ? '0' + newMinutes : String(newMinutes)}+${timezone}`;
-}
-
-exports.add = addHalfHour;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -161,27 +132,20 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let listOfTimes = [];
     let bankZone = Number(workingHours.to.split('+')[1]);
     for (let guy of Object.keys(schedule)) {
-        listOfTimes.push(schedule[guy].map(el => {
-            return { from: convertTime(el.from, bankZone), to: convertTime(el.to, bankZone) };
+        listOfTimes.push(schedule[guy].map(time => {
+            return { from: convertTime(time.from, bankZone), to: convertTime(time.to, bankZone) };
         }));
     }
     let goodTime = listOfTimes.reduce(getMomentForPair, [
-        { from: 'ПН ' + workingHours.from, to: 'ПН ' + workingHours.to },
-        { from: 'ВТ ' + workingHours.from, to: 'ВТ ' + workingHours.to },
-        { from: 'СР ' + workingHours.from, to: 'СР ' + workingHours.to }
+        { from: toMinutes('ПН ' + workingHours.from), to: toMinutes('ПН ' + workingHours.to) },
+        { from: toMinutes('ВТ ' + workingHours.from), to: toMinutes('ВТ ' + workingHours.to) },
+        { from: toMinutes('СР ' + workingHours.from), to: toMinutes('СР ' + workingHours.to) }
     ]);
 
     let appropriateTime = goodTime.filter(time => {
-        return toMinutes(time.to) - toMinutes(time.from) >= duration;
+        return time.to - time.from >= duration;
     }).sort((obj1, obj2) => {
-        if (toMinutes(obj1.from) < toMinutes(obj2.from)) {
-            return -1;
-        }
-        if (toMinutes(obj1.from) > toMinutes(obj2.from)) {
-            return 1;
-        }
-
-        return 0;
+        return obj1.from - obj2.from;
     });
 
     return {
@@ -209,6 +173,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!time) {
                 return '';
             }
+            time = { from: toDate(time.from), to: toDate(time.to) };
 
             return template.replace('%HH', time.from.slice(3, 5))
                 .replace('%MM', time.from.slice(6, 8))
@@ -225,16 +190,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!time) {
                 return false;
             }
-            if (toMinutes(time.to) - toMinutes(time.from) >= this.duration + 30) {
+            if (time.to - time.from >= this.duration + 30) {
                 this.allMoments[this.momentNumber] = {
-                    from: addHalfHour(time.from),
+                    from: time.from + 30,
                     to: time.to
                 };
 
                 return true;
             }
             let possibleNext = this.allMoments[this.momentNumber + 1];
-            if (possibleNext && toMinutes(possibleNext.from) - toMinutes(time.to) >= 30) {
+            if (possibleNext && possibleNext.from - time.to >= 30) {
                 this.momentNumber++;
 
                 return true;

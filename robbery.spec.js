@@ -5,34 +5,6 @@ let assert = require('assert');
 
 let robbery = require('./robbery');
 
-describe('robbery.convertTime()', function () {
-    it('should give the correct time', function () {
-        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 6), 'ВТ 00:59+6');
-        assert.strictEqual(robbery.convertTime('СР 05:59+2', 2), 'СР 05:59+2');
-        assert.strictEqual(robbery.convertTime('ВС 22:59+1', 2), 'ВС 23:59+2');
-        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 3), 'ПН 21:59+3');
-        assert.strictEqual(robbery.convertTime('ПН 23:59+5', 5), 'ПН 23:59+5');
-    });
-});
-
-describe('robbery.less()', function () {
-    it('should be ok', function () {
-        assert.strictEqual(robbery.less('ПН 11:30+5', 'ПН 12:00+5'), true);
-        assert.strictEqual(robbery.less('ПН 23:00+5', 'ВТ 23:59+5'), true);
-        assert.strictEqual(robbery.less('ПН 23:59+5', 'ПН 00:59+5'), false);
-        assert.strictEqual(robbery.less('СР 23:59+5', 'ВТ 00:59+5'), false);
-    });
-});
-
-describe('Добавка получаса', function () {
-    it('should add', function () {
-        assert.strictEqual(robbery.add('ПН 11:30+1'), 'ПН 12:00+1');
-        assert.strictEqual(robbery.add('ПН 23:00+1'), 'ПН 23:30+1');
-        assert.strictEqual(robbery.add('ПН 23:59+1'), 'ВТ 00:29+1');
-        assert.strictEqual(robbery.add('СР 23:59+1'), 'ЧТ 00:29+1');
-    });
-});
-
 describe('robbery.getAppropriateMoment()', function () {
     function getMomentFor(time) {
         return robbery.getAppropriateMoment(
