@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = {
+/* module.exports = {
     formatTimeToMinutes: formatTimeToMinutes,
     getMintutesFromWeekStart: getMintutesFromWeekStart,
     getDay: getDay,
@@ -8,7 +8,7 @@ module.exports = {
     getAppropriateMoment: getAppropriateMoment,
     generateFreeTimes: generateFreeTimes
 
-};
+};*/
 
 const minutesInDay = 1440;
 const minutesInHour = 60;
@@ -274,7 +274,7 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
-function getAppropriateMoment(schedule, duration, workingHours) {
+exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var bankTimeZone = getTimeZone(workingHours.from);
     var freeTimes = {};
@@ -292,7 +292,11 @@ function getAppropriateMoment(schedule, duration, workingHours) {
                 return x.to - x.from >= duration;
             });
     var lastIndex = 0;
-    var timeToGrab = answer[lastIndex];
+    var countOfShifts = 0;
+    var timeToGrab = 0;
+    if (answer.length > 0) {
+        timeToGrab = answer[lastIndex].from;
+    }
 
     return {
 
@@ -315,7 +319,7 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             if (answer.length === 0) {
                 return '';
             }
-            var t = devideTime(timeToGrab.from);
+            var t = devideTime(timeToGrab);
 
             return template.replace('%DD', t.day)
                 .replace('%HH', t.hours)
@@ -331,10 +335,17 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             if (answer.length === 0) {
                 return false;
             }
-            for (var i = 1; i < answer.length; i++) {
+            countOfShifts++;
+            if (answer[lastIndex].from + countOfShifts * 30 <= answer[lastIndex].to - duration) {
+                timeToGrab = answer[lastIndex].from + countOfShifts * 30;
+
+                return true;
+            }
+            countOfShifts = 0;
+            for (var i = lastIndex + 1; i < answer.length; i++) {
                 if (answer[i].from - answer[lastIndex].from >= 30) {
                     lastIndex = i;
-                    timeToGrab = answer[lastIndex];
+                    timeToGrab = answer[lastIndex].from;
 
                     return true;
                 }
@@ -347,4 +358,4 @@ function getAppropriateMoment(schedule, duration, workingHours) {
             return answer;
         }
     };
-}
+};
