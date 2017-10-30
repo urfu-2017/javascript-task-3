@@ -30,29 +30,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     var durationMs = duration * 60 * 1000;
 
-    var workTime = parseTask(workingHours, getTimezone(workingHours.from));
-    var workTimeWeek = getWorkTimeWeek(workTime);
+    var dailyBankWork = parseTask(workingHours, getTimezone(workingHours.from));
+    var weeklyBankWork = getWorkTimeWeek(dailyBankWork);
 
-    var sortedTasks = parseSchedule(schedule, workingHours);
-    var robberyTimes = getRobberyTimes(sortedTasks, workTimeWeek);
-    var availableTimes = splitContinuousTimeOnDays(robberyTimes, workTimeWeek)
-        .map(function (time) {
-
-            var earlyWorkingHours = workTimeWeek[time[0].getDate()].from;
-            var laterWorkingHours = workTimeWeek[time[1].getDate()].to;
-
-            if (time[0] < earlyWorkingHours) {
-                time[0] = earlyWorkingHours;
-            } else if (time[1] > laterWorkingHours) {
-                time[1] = laterWorkingHours;
-            }
-
-            return time;
-        })
-        .filter(function (time) {
-            return time[1] - time[0] >= durationMs;
-        });
-
+    var sortedTasks = getSortedSchedule(schedule, workingHours);
+    var robberyTimes = getRobberyTimes(sortedTasks, weeklyBankWork);
+    var availableTimes = splitContinuousTimeOnDays(robberyTimes, weeklyBankWork)
+        .map(time => combineBankSheduleAndRobberyTimes(time, weeklyBankWork))
+        .filter(time => time[1] - time[0] >= durationMs);
 
     return {
 
@@ -115,22 +100,34 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
-function getWorkTimeWeek(workTime) {
-    var workTimeWeek = [];
-    Object.keys(DAYS_OF_WEEK).forEach(function (day) {
+function combineBankSheduleAndRobberyTimes(time, weeklyBankWork) {
+    var earlyWorkingHours = weeklyBankWork[time[0].getDate()].from;
+    var laterWorkingHours = weeklyBankWork[time[1].getDate()].to;
+
+    if (time[0] < earlyWorkingHours) {
+        time[0] = earlyWorkingHours;
+    } else if (time[1] > laterWorkingHours) {
+        time[1] = laterWorkingHours;
+    }
+
+    return time;
+}
+
+function getWorkTimeWeek(dailyBankWork) {
+    return Object.keys(DAYS_OF_WEEK).reduce((acc, day) => {
         var dayNumber = DAYS_OF_WEEK[day];
-        var copyWorkTime = Object.assign({}, workTime);
-        workTimeWeek[dayNumber] = {
+        var copyWorkTime = Object.assign({}, dailyBankWork);
+        acc[dayNumber] = {
             from: new Date(copyWorkTime.from.setDate(dayNumber)),
             to: new Date(copyWorkTime.to.setDate(dayNumber))
         };
-    });
 
-    return workTimeWeek;
+        return acc;
+    }, {});
 }
 
-function getRobberyTimes(sortedTasks, workTimeWeek) {
-    var endOfCurRobbery = workTimeWeek[DAYS_OF_WEEK['ПН']].from;
+function getRobberyTimes(sortedTasks, weeklyBankWork) {
+    var endOfCurRobbery = weeklyBankWork[DAYS_OF_WEEK['ПН']].from;
 
     var robberyTimes = [];
     sortedTasks.forEach(function (task) {
@@ -145,7 +142,7 @@ function getRobberyTimes(sortedTasks, workTimeWeek) {
             endOfCurRobbery = task.to;
         }
     });
-    var lastMomentToRobbery = workTimeWeek[DAYS_OF_WEEK['СР']].to;
+    var lastMomentToRobbery = weeklyBankWork[DAYS_OF_WEEK['СР']].to;
     if (endOfCurRobbery < lastMomentToRobbery) {
         robberyTimes.push([endOfCurRobbery, lastMomentToRobbery]);
     }
@@ -157,7 +154,7 @@ function isTaskAfterDeadline(task) {
     return task.from.getDate() > DAYS_OF_WEEK['СР'] && task.to.getDate() > DAYS_OF_WEEK['СР'];
 }
 
-function splitContinuousTimeOnDays(robberyTime, workTimeWeek) {
+function splitContinuousTimeOnDays(robberyTime, weeklyBankWork) {
     for (var i = 0; i < robberyTime.length; i++) {
         var isSplit = false;
 
@@ -165,8 +162,8 @@ function splitContinuousTimeOnDays(robberyTime, workTimeWeek) {
         if (time[0].getDate() !== time[1].getDate()) {
             isSplit = true;
 
-            var endCurDay = workTimeWeek[time[0].getDate()].to;
-            var startNextDay = workTimeWeek[time[0].getDate() + 1].from;
+            var endCurDay = weeklyBankWork[time[0].getDate()].to;
+            var startNextDay = weeklyBankWork[time[0].getDate() + 1].from;
             robberyTime.splice(i, 1, [time[0], endCurDay], [startNextDay, time[1]]);
         }
         // на тот случай, если startNextDay будет меньше, чем time[1].getDate()
@@ -176,19 +173,14 @@ function splitContinuousTimeOnDays(robberyTime, workTimeWeek) {
     return robberyTime;
 }
 
-function parseSchedule(schedule, workingHours) {
+function getSortedSchedule(schedule, workingHours) {
     var result = [];
     var timezone = getTimezone(workingHours.from);
-    Object.keys(schedule).forEach(function (name) {
-        schedule[name].forEach(function (task) {
-            result.push(parseTask(task, timezone));
-        });
-    });
+    Object.keys(schedule).forEach(name =>
+        schedule[name].forEach(task => result.push(parseTask(task, timezone)))
+    );
 
-    return result
-        .sort(function (a, b) {
-            return a.from - b.from;
-        });
+    return result.sort((a, b) => a.from - b.from);
 }
 
 function getTimezone(time) {
