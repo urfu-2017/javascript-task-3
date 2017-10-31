@@ -5,7 +5,7 @@
  * Реализовано оба метода и tryLater
  */
 exports.isStar = false;
-const DayShift = {
+const dayShift = {
     'ПН': 'ВТ',
     'ВТ': 'СР',
     'СР': 'ЧТ',
@@ -26,10 +26,10 @@ const DayShift = {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info(schedule, duration, workingHours);
     let timezone = getTimeZone(workingHours);
-    schedule = evenSchedule(schedule, timezone);
+    schedule = convertSchedule(schedule, timezone);
     schedule = cutSchedule(schedule);
-    schedule = convertScheduleToMinutes (schedule);
-    workingHours = convertBankScheduleToMinutes (workingHours);
+    schedule = convertScheduleToMinutes(schedule);
+    workingHours = convertBankScheduleToMinutes(workingHours);
     for (let person of Object.keys(schedule)) {
         schedule[person] = formatSchedule(schedule[person], workingHours);
     }
@@ -39,7 +39,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     if (finalSchedule !== null) {
         normalDate = convertToNormalDate(finalSchedule);
     }
-    // console.info(normalDate);
+
 
     return {
 
@@ -304,7 +304,7 @@ function separateDate(date) {
             from: date.from,
             to: fromDate[0] + ' ' + midnightPatternBefore
         });
-        fromDate[0] = DayShift[fromDate[0]];
+        fromDate[0] = dayShift[fromDate[0]];
         date.from = fromDate[0] + ' ' + midnightPatternAfter;
     }
     result.push({
@@ -399,15 +399,14 @@ function convertToMinutes(date) {
  * @param {Number} timezone 
  * @returns {Object}
  */
-function evenSchedule(schedule, timezone) {
+function convertSchedule(schedule, timezone) {
     let result = {};
     for (let person of Object.keys(schedule)) {
-        let dateArray = [];
+        let dates = [];
         for (let date of schedule[person]) {
-            var record = changeRecord(date, timezone);
-            dateArray.push(record);
+            dates.push(convertDateTime(date, timezone));
         }
-        result[person] = dateArray;
+        result[person] = dates;
     }
 
     return result;
@@ -428,7 +427,7 @@ function getTimeZone(hours) {
  * @param {Number} timezone 
  * @returns {Object}
  */
-function changeRecord(date, timezone) {
+function convertDateTime(date, timezone) {
     //  { from: 'ПН 12:00+5', to: 'ПН 17:00+5' }
     if (getTimeZone(date) === timezone) {
         return date;
@@ -454,10 +453,11 @@ function changeRecord(date, timezone) {
  */
 function parseDate(date) {
     // 'ПН 09:00+3'
-    let day = date.split(':')[0].split(' ')[0];
-    let hours = date.split(':')[0].split(' ')[1];
-    let minutes = date.split(':')[1].split('+')[0];
-    let timezone = date.split(':')[1].split('+')[1];
+    let splittedDate = date.split(':');
+    let day = splittedDate[0].split(' ')[0];
+    let hours = splittedDate[0].split(' ')[1];
+    let minutes = splittedDate[1].split('+')[0];
+    let timezone = splittedDate[1].split('+')[1];
 
     return [day, hours, minutes, timezone];
 }
@@ -474,19 +474,7 @@ function normalizeDate(rawDate, timezone) {
     let hours = parseInt(rawDate[1]);
     let newHour = hours + shift;
     if (newHour > 24) {
-        switch (rawDate[0]) {
-            case 'ПН':
-                rawDate[0] = 'ВТ';
-                break;
-            case 'ВТ':
-                rawDate[0] = 'СР';
-                break;
-            case 'СР':
-                rawDate[0] = 'ЧТ';
-                break;
-            default:
-                break;
-        }
+        rawDate[rawDate[0]] = dayShift[rawDate[0]];
         newHour = Number.parseInt(newHour / 24);
     }
     rawDate[1] = newHour;
