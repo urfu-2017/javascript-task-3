@@ -15,45 +15,47 @@ exports.isStar = true;
  * @returns {Object}
  */
 
-var DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
+const DAYS_OF_WEEK = ['ПН', 'ВТ', 'СР'];
 
 function convertToHours(mins) {
-    var hours = parseInt(mins / 60);
-    var minutes = mins % 60;
-    if (minutes < 10) {
-        minutes = '0' + minutes;
-    }
-    if (hours < 10) {
-        hours = '0' + hours;
-    }
+    const hours = parseInt(mins / 60);
+    const minutes = mins % 60;
 
-    return hours + ':' + minutes;
+    return convertTo24Format(hours) + ':' + convertTo24Format(minutes);
+}
+
+function convertTo24Format(time) {
+    return time < 10 ? '0' + time : time;
 }
 
 function convertToMinutes(time) {
-    var hours = parseInt(time.split(':')[0]);
-    var mins = parseInt(time.split(':')[1]);
+    const [hours, mins] = time
+        .split(':')
+        .map(x => parseInt(x));
 
-    return hours * 60 + mins;
+    return (hours * 60) + mins;
 }
 
 function getMax(maxFrom, current) {
+    const maxValue = Math.max(maxFrom, current);
 
-    return (maxFrom > current)
-        ? convertToHours(maxFrom)
-        : convertToHours(current);
+    return convertToHours(maxValue);
 }
 
 function customSort(x, y) {
-    var dayFromX = x.day;
-    var dayFromY = y.day;
-    var timeFromX = x.from.match(/\d{1,2}/g).join('');
-    var timeFromY = y.from.match(/\d{1,2}/g).join('');
-    var timeToX = x.to.match(/\d{1,2}/g).join('');
-    var timeToY = y.to.match(/\d{1,2}/g).join('');
+    const dayFromX = x.day;
+    const dayFromY = y.day;
+
     if (dayFromX !== dayFromY) {
         return DAYS_OF_WEEK.indexOf(dayFromX) - DAYS_OF_WEEK.indexOf(dayFromY);
     }
+
+    const getTime = X => X.match(/\d{1,2}/g).join('');
+    const timeFromX = getTime(x.from);
+    const timeFromY = getTime(y.from);
+    const timeToX = getTime(x.to);
+    const timeToY = getTime(y.to);
+
     if (timeFromX !== timeFromY) {
         return timeFromX - timeFromY;
     }
@@ -64,10 +66,11 @@ function customSort(x, y) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     function convertToBankTimezone(str) {
-        var bankTimezone = parseInt(workingHours.from.split('+')[1]);
-        var day = str.split(' ')[0];
-        var time = str.match(/\d{1,2}/g);
-        var newHours = parseInt(time[0]) + bankTimezone - str.split('+')[1];
+        const bankTimezone = parseInt(workingHours.from.split('+')[1]);
+        const day = str.split(' ')[0];
+        const time = str.match(/\d{1,2}/g);
+        let newHours = parseInt(time[0]) + bankTimezone - str.split('+')[1];
+
         if (isNaN(str.split('+')[1])) {
             return '';
         }
@@ -76,15 +79,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         } else if (newHours < 0) {
             newHours += 24;
         }
-        if (newHours < 10) {
-            newHours = '0' + newHours;
-        }
 
-        return (day + ' ' + newHours + ':' + time[1] + '+' + bankTimezone);
+        return day + ' ' + convertTo24Format(newHours) + ':' + time[1] + '+' + bankTimezone;
     }
 
     function splitIntervalsOverDay(robber, record) {
-        var dayOfWeek = schedule[robber][record].from.slice(0, 2);
+        const dayOfWeek = schedule[robber][record].from.slice(0, 2);
+
         if (DAYS_OF_WEEK.indexOf(schedule[robber][record].to.slice(0, 2)) === -1) {
             schedule[robber][record].to = 'СР 23:59+5';
         }
@@ -108,27 +109,25 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function cutForBankHours(robber) {
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
-                continue;
-            }
-            var from = convertToMinutes(schedule[robber][record].from.slice(3, 8));
-            var to = convertToMinutes(schedule[robber][record].to.slice(3, 8));
-            var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
-            var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+        schedule[robber].forEach(function (record) {
+            let from = convertToMinutes(record.from.slice(3, 8));
+            let to = convertToMinutes(record.to.slice(3, 8));
+            let bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
+            let bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+
             if (from <= bankFrom) {
-                schedule[robber][record].from = schedule[robber][record].from.slice(0, 3) +
+                record.from = record.from.slice(0, 3) +
                     workingHours.from;
             }
             if (to >= bankTo) {
-                schedule[robber][record].to = schedule[robber][record].from.slice(0, 3) +
+                record.to = record.from.slice(0, 3) +
                     workingHours.to;
             }
-        }
+        });
     }
 
     function convertByBankRange() {
-        for (var robber in schedule) {
+        for (let robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
@@ -137,62 +136,51 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function addRecordWhenBusy(day, robber, intervals) {
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
-                continue;
-            }
-            if (schedule[robber][record].from.slice(0, 2) === DAYS_OF_WEEK[day]) {
-                intervals.push({
+        schedule[robber].reduce(function (acc, record) {
+            if (record.from.slice(0, 2) === DAYS_OF_WEEK[day]) {
+                acc.push({
                     day: DAYS_OF_WEEK[day],
-                    from: schedule[robber][record].from.match(/\d{1,2}:\d{1,2}/g).toString(),
-                    to: schedule[robber][record].to.match(/\d{1,2}:\d{1,2}/g).toString()
+                    from: record.from.match(/\d{1,2}:\d{1,2}/g).toString(),
+                    to: record.to.match(/\d{1,2}:\d{1,2}/g).toString()
                 });
             }
-        }
 
+            return acc;
+        }, intervals);
     }
 
     function addRecordInCorrectForm(robber) {
-        for (var record in schedule[robber]) {
-            if (!schedule[robber].hasOwnProperty(record)) {
-                continue;
-            }
-            if (convertToBankTimezone(schedule[robber][record].from) === '' ||
-                convertToBankTimezone(schedule[robber][record].to) === '') {
-                schedule[robber].splice(parseInt(record), 1);
-                break;
-            }
-            schedule[robber][record].from =
-                convertToBankTimezone(schedule[robber][record].from);
-            schedule[robber][record].to =
-                convertToBankTimezone(schedule[robber][record].to);
-            splitIntervalsOverDay(robber, record);
-        }
+        schedule[robber] = schedule[robber].filter(function (record) {
+            return convertToBankTimezone(record.from) !== '' &&
+                convertToBankTimezone(record.to) !== '';
+        });
+        schedule[robber].forEach(function (record, index) {
+            record.from = convertToBankTimezone(record.from);
+            record.to = convertToBankTimezone(record.to);
+            splitIntervalsOverDay(robber, index);
+        });
     }
 
     function setScheduleCorrectForm() {
-        for (var robber in schedule) {
+        for (let robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
             addRecordInCorrectForm(robber);
-            if (!schedule.hasOwnProperty(robber)) {
-                continue;
-            }
             schedule[robber] = schedule[robber].filter(function (rec) {
-                var from = convertToMinutes(rec.from.slice(3, 8));
-                var to = convertToMinutes(rec.to.slice(3, 8));
-                var bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
-                var bankTo = convertToMinutes(workingHours.to.split('+')[0]);
+                let from = convertToMinutes(rec.from.slice(3, 8));
+                let to = convertToMinutes(rec.to.slice(3, 8));
+                let bankFrom = convertToMinutes(workingHours.from.split('+')[0]);
+                let bankTo = convertToMinutes(workingHours.to.split('+')[0]);
 
-                return !(from <= bankFrom && to <= bankFrom || from >= bankTo && to >= bankTo);
+                return (from > bankFrom || to > bankFrom) && (from < bankTo || to < bankTo);
             });
         }
         convertByBankRange();
     }
 
     function createScheduleWhenBusy(day, intervals) {
-        for (var robber in schedule) {
+        for (let robber in schedule) {
             if (!schedule.hasOwnProperty(robber)) {
                 continue;
             }
@@ -201,40 +189,43 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function createScheduleWhenFree(day, result, intervals) {
-        var maxFrom = 0;
-        for (var i = 1; i < intervals.length; i++) {
+        let maxFrom = 0;
+
+        intervals.reduce(function (prev, cur) {
             intervals.sort(customSort);
-            var intervalFrom = intervals[i - 1].to;
-            var intervalTo = intervals[i].from;
-            if (maxFrom <= convertToMinutes(intervals[i - 1].to)) {
-                maxFrom = convertToMinutes(intervals[i - 1].to);
+            let intervalFrom = prev.to;
+            let intervalTo = cur.from;
+
+            if (maxFrom <= convertToMinutes(prev.to)) {
+                maxFrom = convertToMinutes(prev.to);
             }
-            if (convertToMinutes(intervals[i].from) - convertToMinutes(intervals[i - 1].to) <
-                duration) {
-                continue;
+            if (convertToMinutes(cur.from) - convertToMinutes(prev.to) >= duration) {
+                intervalFrom = getMax(maxFrom, convertToMinutes(prev.to));
+                if (convertToMinutes(intervalTo) - convertToMinutes(intervalFrom) >= duration) {
+                    result.push({
+                        day: DAYS_OF_WEEK[day],
+                        from: intervalFrom,
+                        to: intervalTo
+                    });
+                }
             }
-            intervalFrom = getMax(maxFrom, convertToMinutes(intervals[i - 1].to));
-            if (convertToMinutes(intervalTo) - convertToMinutes(intervalFrom) >= duration) {
-                result.push({
-                    day: DAYS_OF_WEEK[day],
-                    from: intervalFrom,
-                    to: intervalTo
-                });
-            }
-        }
+
+            return cur;
+        });
     }
 
     function checkRangeLimits(day, result, intervals) {
         intervals.sort(customSort);
-        var minFrom = intervals[0].from;
+        const minFrom = intervals[0].from;
+        const getTime = x => x.to.match(/\d{2}/g).join('');
+        const bankFrom = workingHours.from.split('+')[0];
+        const bankTo = workingHours.to.split('+')[0];
         intervals.sort(function (x, y) {
 
-            return x.to.match(/\d{2}/g).join('') -
-                y.to.match(/\d{2}/g).join('');
+            return getTime(x) - getTime(y);
         });
-        var maxTo = intervals[intervals.length - 1].to;
-        var bankFrom = workingHours.from.split('+')[0];
-        var bankTo = workingHours.to.split('+')[0];
+        let maxTo = intervals[intervals.length - 1].to;
+
         if (convertToMinutes(minFrom) - convertToMinutes(bankFrom) >= duration) {
             result.push({
                 day: DAYS_OF_WEEK[day],
@@ -252,7 +243,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function getResultsForTryLater(cur, record, result) {
-        while (cur + 30 <= (convertToMinutes(record.to) - duration)) {
+        const nextRange = convertToMinutes(record.to) - duration;
+
+        while (cur + 30 <= nextRange) {
             cur += 30;
             result.push({
                 day: record.day,
@@ -263,49 +256,51 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
 
     function modifyResult(result) {
-        result.sort(customSort);
-        for (var i = 0; i < result.length; i++) {
-            if (convertToMinutes(result[i].to) - convertToMinutes(result[i].from) >=
-                duration + 30) {
-                var cur = convertToMinutes(result[i].from);
-                getResultsForTryLater(cur, result[i], result);
-                result[i].to = convertToHours(convertToMinutes(result[i].from) + duration);
-            }
-        }
+        result.sort(customSort)
+            .forEach(function (record) {
+                if (convertToMinutes(record.to) - convertToMinutes(record.from) >=
+                    duration + 30) {
+                    let cur = convertToMinutes(record.from);
+                    getResultsForTryLater(cur, record, result);
+                    record.to = convertToHours(convertToMinutes(record.from) + duration);
+                }
+            });
         result.sort(customSort);
     }
 
     function formResult(intervals, result) {
-        for (var i = 0; i < DAYS_OF_WEEK.length; i++) {
-            createScheduleWhenBusy(i, intervals);
+        const bankFrom = workingHours.from.split('+')[0];
+        const bankTo = workingHours.to.split('+')[0];
+
+        DAYS_OF_WEEK.forEach(function (day, index) {
+            createScheduleWhenBusy(index, intervals);
             intervals.sort(customSort);
             if (workingHours.from !== workingHours.to && intervals.length === 0 &&
-                convertToMinutes(workingHours.to.split('+')[0]) -
-                convertToMinutes(workingHours.from.split('+')[0]) >= duration) {
+                convertToMinutes(bankTo) - convertToMinutes(bankFrom) >= duration) {
                 result.push({
-                    day: DAYS_OF_WEEK[i],
-                    from: workingHours.from.split('+')[0],
-                    to: workingHours.to.split('+')[0]
+                    day: day,
+                    from: bankFrom,
+                    to: bankTo
                 });
             } else if (intervals.length === 1) {
-                checkRangeLimits(i, result, intervals);
+                checkRangeLimits(index, result, intervals);
             } else if (intervals.length > 1) {
-                createScheduleWhenFree(i, result, intervals);
-                checkRangeLimits(i, result, intervals);
+                createScheduleWhenFree(index, result, intervals);
+                checkRangeLimits(index, result, intervals);
             }
             intervals = [];
-        }
+        });
     }
 
     function getRobberySchedule() {
+        let intervals = [];
+        let result = [];
+
         if (duration <= 0 || duration > 1439) {
             return [];
         }
         setScheduleCorrectForm();
-        var intervals = [];
-        var result = [];
         formResult(intervals, result);
-
         if (result.length !== 0) {
             modifyResult(result);
         }
@@ -337,10 +332,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return ('');
             }
+            const day = this.daysForRobbery[0].day;
+            const from = this.daysForRobbery[0].from.split(':');
 
-            return template.replace('%HH', this.daysForRobbery[0].from.split(':')[0])
-                .replace('%MM', this.daysForRobbery[0].from.split(':')[1])
-                .replace('%DD', this.daysForRobbery[0].day);
+            return template.replace('%HH', from[0])
+                .replace('%MM', from[1])
+                .replace('%DD', day);
         },
 
         /**
@@ -349,11 +346,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (this.daysForRobbery.length === 0) {
+            const days = this.daysForRobbery.length;
+            if (days === 0) {
                 return false;
             }
-            var willRob = this.daysForRobbery.length > 1;
-            if (this.daysForRobbery.length > 1) {
+            let willRob = days > 1;
+
+            if (willRob) {
                 this.daysForRobbery.splice(0, 1);
             }
 
