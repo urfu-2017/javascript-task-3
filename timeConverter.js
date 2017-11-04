@@ -1,12 +1,10 @@
 'use strict';
 
 /**
- * Возвращает количество минут, прошедших с 00:00 понедельника до переданного момента
- * @param {String} time - Время в формате HH:MM
- * @param {String} day - Двухбуквенное сокращение дня недели
- * @returns {Number}
+ * @param {NoteTime} noteTime - момент времени.
+ * @returns {Number} - количество минут прошедших с 00:00 понедельника до noteTime.
  */
-function quantityMinutes(time, day) {
+function quantityMinutes(noteTime) {
     let minutesInDay = 24 * 60;
     let dayToMinute = {
         'ПН': 0,
@@ -17,6 +15,8 @@ function quantityMinutes(time, day) {
         'СБ': minutesInDay * 5,
         'ВС': minutesInDay * 6
     };
+    let time = noteTime.match(/\d{2}:\d{2}/)[0];
+    let day = noteTime.substr(0, 2).toUpperCase();
 
     return parseInt(time.substr(0, 2), 10) * 60 +
            parseInt(time.substr(3), 10) +
@@ -24,30 +24,13 @@ function quantityMinutes(time, day) {
 }
 
 /**
- * @param {String} element - Строка в формате "DD HH:MM+timezone" 
- * @returns {Object} 
- */
-function parseElementRecord(element) {
-    let time = element.match(/\d{2}:\d{2}/)[0];
-    let day = element.substr(0, 2).toUpperCase();
-
-    return { time, day };
-}
-
-/**
- * Преобразует объект {from: "DD HH:MM+timezone", to:...} (те элемент расписания)
- * в объект, представляющий собой отрезок, началом которого является количество минут
- * с 00:00 понедельника до момена from, а концом - до момента to. Также в возвращаемом объекте 
- * сохраняется часовой пояс.
- * @param {Object} recordSchedule - {from: "DD HH:MM+timezone", to:...}
- * @returns {Object} - { start:number, end:number, timezone:number }
+ * Конвертирует объект BusyTime в Segment
+ * @param {BusyTime} recordSchedule
+ * @returns {Segment}
  */
 function toMinuteSegment(recordSchedule) {
-
-    let from = parseElementRecord(recordSchedule.from);
-    let to = parseElementRecord(recordSchedule.to);
-    let start = quantityMinutes(from.time, from.day);
-    let end = quantityMinutes(to.time, to.day);
+    let start = quantityMinutes(recordSchedule.from);
+    let end = quantityMinutes(recordSchedule.to);
     let timezone = parseInt((recordSchedule.from.split('+')[1]), 10);
 
     return { start, end, timezone };
@@ -56,9 +39,9 @@ function toMinuteSegment(recordSchedule) {
 /**
  * Конвертирует границы минутного отрезка в новый часовой пояс.
  * Возвращает тот же самый отрезок.
- * @param {Object} segment
- * @param {Object} newTimezone
- * @returns {Object}
+ * @param {Segment} segment
+ * @param {Number} newTimezone
+ * @returns {Segment}
  */
 function shiftSegment(segment, newTimezone) {
     let offsetMinutes = (newTimezone - segment.timezone) * 60;
@@ -72,8 +55,8 @@ function shiftSegment(segment, newTimezone) {
 /**
  *Преобразует рабочие часы банка в три минутных отрезка.
  *Каждый отрезок соответствует времени работы банка в понедельник, вторник и среду.
- *@param {String} workingHours
- *@returns {Array}
+ *@param {String} workingHours - строка в формате "HH:MM +timezone"
+ *@returns {Segment[]}
  */
 function toWorkingSegments(workingHours) {
     let monday = toMinuteSegment(
@@ -100,7 +83,7 @@ function toWorkingSegments(workingHours) {
  *к указанному часовому поясу.
  *@param {Object} schedule
  *@param {Number} timezone
- *@returns {Array} 
+ *@returns {Segment[]} 
  */
 function toSegments(schedule, timezone) {
     let result = [];

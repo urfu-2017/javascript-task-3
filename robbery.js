@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 let timeConverter = require('./timeConverter.js');
 let segmentHelper = require('./segmentHelper.js');
 
@@ -25,11 +25,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     let existTime = robberySegment !== null;
 
     return {
-        duration: duration,
-        timezoneBank: timezoneBank,
-        busySegments: busySegments,
-        workingSegments: workingSegments,
-        robberySegment: robberySegment,
 
         /**
          * Найдено ли время
@@ -64,7 +59,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             let nextRobberySegment = segmentHelper.findSegmentRobbery(workingSegments,
-                busySegments, duration, robberySegment.start + 30);
+                busySegments, duration, (robberySegment !== null) ? robberySegment.start + 30 : 0);
             if (nextRobberySegment !== null) {
                 robberySegment = nextRobberySegment;
 

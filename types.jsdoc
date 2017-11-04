@@ -1,0 +1,25 @@
+/* подумал, что так будет удобнее смотреть обределения типов */
+/**
+ * Отрезок, началом и концом которого является количество минут
+ * прошедших c 00:00 понедельника.
+ * @typedef Segment
+ * @type {Object}
+ * @property {Number} start – начало отрезка.
+ * @property {Number} end – конец отрезка.
+ * @property {Number} timezone – часовой пояс отрезка.
+ */
+
+/**
+ * Запись, являющаяся началом или концом 
+ * момента времени.
+ * @typedef NoteTime
+ * @type {String} – строка в формате "DD HH:MM+timezone"
+ */
+
+/**
+ * Момент времени, когда бандит занят.
+ * @typedef BusyTime
+ * @type {Object}
+ * @property {NoneTime} from – начальный момент.
+ * @property {NoneTime} to – конечный момент.
+ */
