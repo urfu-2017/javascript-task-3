@@ -6,105 +6,80 @@
  */
 exports.isStar = true;
 
-var days = { 'ПН': 0, 'ВТ': 1, 'СР': 2, 'ЧТ': 3, 'ПТ': 4, 'СБ': 5, 'ВС': 6 };
+const HOURS_IN_DAY = 24;
+const MINUTES_IN_HOUR = 60;
+const MINUTES_IN_DAY = HOURS_IN_DAY * MINUTES_IN_HOUR;
+const TEMPLATE_TIME = /([ПВСЧ][НТРБС])\s([0-2]\d):([0-5]\d)\+(\d{1,2})/;
+const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
-var parserTime = function parserTime(timeString, timeZone) {
-    var time = timeString.split(/\s|:|\+/);
-    var hours = days[time[0]] * 24 + parseInt(time[1]) + (timeZone - parseInt(time[3]));
 
-    return hours * 60 + parseInt(time[2]);
+const parseTime = function (timeString, timeZone) {
+    const time = TEMPLATE_TIME.exec(timeString);
+    const day = DAYS.indexOf(time[1]);
+    const hours = parseInt(time[2]);
+    const minutes = parseInt(time[3]);
+    const shiftOnTimeZone = timeZone - parseInt(time[4]);
+
+    return day * MINUTES_IN_DAY + (hours + shiftOnTimeZone) * MINUTES_IN_HOUR + minutes;
 };
 
-var parserSchedule = function parserSchedule(schedule, timeZone) {
-    var intervals = [];
+const getBusyTime = function (schedule, timeZone) {
+    let intervals = [];
     Object.keys(schedule).forEach(function (name) {
         schedule[name].forEach(function (interval) {
-            var beginWork = parserTime(interval.from, timeZone);
-            var endWork = parserTime(interval.to, timeZone);
-            intervals.push([beginWork, endWork]);
+            intervals.push({
+                'from': parseTime(interval.from, timeZone),
+                'to': parseTime(interval.to, timeZone)
+            });
         });
     });
 
     return intervals.sort(function (a, b) {
-
-        return a[0] - b[0];
+        return a.from - b.from;
     });
 };
 
-var getIntervalsScheduleFree = function (intervals) {
-    var begin = 0;
-    var intervalsFree = [];
+const getFreeTime = function (intervals) {
+    let start = 0;
+    let freeTime = [];
     intervals.forEach(function (interval) {
-        if (interval[0] > begin) {
-            intervalsFree.push([begin, interval[0]]);
+        if (interval.from > start) {
+            freeTime.push({
+                'from': start,
+                'to': interval.from
+            });
         }
-        if (interval[1] > begin) {
-            begin = interval[1];
+        if (interval.to > start) {
+            start = interval.to;
         }
     });
-    intervalsFree.push([begin, 7 * 24 * 60]);
 
-    return intervalsFree;
+    return freeTime;
 };
 
-var getIntervalsWorks = function (beginWork, endWork) {
-    var intervalsWorks = [];
-    for (var i = 0; i < 3; i++) {
-        intervalsWorks.push([(beginWork + i * 24 * 60), (endWork + i * 24 * 60)]);
-    }
+const getСlosedBankTime = function (workingHours, timeZone) {
 
-    return intervalsWorks;
+    return [{ 'from': 'ПН 00:00+' + timeZone.toString(), 'to': 'ПН ' + workingHours.from },
+        { 'from': 'ПН ' + workingHours.to, 'to': 'ВТ ' + workingHours.from },
+        { 'from': 'ВТ ' + workingHours.to, 'to': 'СР ' + workingHours.from },
+        { 'from': 'СР ' + workingHours.to, 'to': 'СР 23:59+' + timeZone.toString() }
+    ];
 };
 
-var getStartRobberyOnIntervals = function (intervalFree, intervalWork, duration) {
-    var startRobbery = ((intervalFree[0] > intervalWork[0]) ? intervalFree[0] : intervalWork[0]);
-    var endRobbery = startRobbery + duration;
-    if ((endRobbery <= intervalFree[1]) && (endRobbery <= intervalWork[1])) {
-
-        return startRobbery;
-    }
+const addNullStart = function (value) {
+    return (value < 10) ? '0' + value : value.toString();
 };
 
-var getStartRobbery = function (intervals, intervalsWorks, duration) {
-    var i = 0;
-    var j = 0;
-    while ((i < intervals.length) && (j < intervalsWorks.length)) {
-        if (intervals[i][0] >= intervalsWorks[j][1]) {
-            j++;
-            continue;
-        }
-        if (intervals[i][1] < intervalsWorks[j][0]) {
-            i++;
-            continue;
-        }
-        var startRobbery = getStartRobberyOnIntervals(intervals[i], intervalsWorks[j], duration);
-        if (startRobbery !== undefined) {
+const getDifferentTime = function (time) {
+    const day = Math.floor(time / MINUTES_IN_DAY);
+    const hours = Math.floor(time / MINUTES_IN_HOUR) - day * HOURS_IN_DAY;
+    const minutes = time % MINUTES_IN_HOUR;
 
-            return startRobbery;
-        }
-        if (intervals[i][1] > intervalsWorks[j][1]) {
-            j++;
-        } else {
-            i++;
-        }
-    }
-};
-
-var getCutIntervalsFree = function (intervalsFree, start) {
-    var i = 0;
-    for (var j in intervalsFree) {
-        if (intervalsFree[j][1] <= start) {
-            i += 1;
-        }
-    }
-    intervalsFree = intervalsFree.slice(i);
-    if (intervalsFree.length === 0) {
-
-        return [];
-    }
-    intervalsFree[0][0] = start;
-
-    return intervalsFree;
+    return {
+        day: DAYS[day],
+        hours: addNullStart(hours),
+        minutes: addNullStart(minutes)
+    };
 };
 
 /**
@@ -117,13 +92,17 @@ var getCutIntervalsFree = function (intervalsFree, start) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    var timeZone = parseInt(workingHours.from.split('+')[1]);
-    var beginWork = parserTime('ПН ' + workingHours.from, timeZone);
-    var endWork = parserTime('ПН ' + workingHours.to, timeZone);
-    var intervals = parserSchedule(schedule, timeZone);
-    var intervalsFree = getIntervalsScheduleFree(intervals);
-    var intervalsWorks = getIntervalsWorks(beginWork, endWork);
-    var startRobbery = getStartRobbery(intervalsFree, intervalsWorks, duration);
+    const timeZone = parseInt(workingHours.from.split('+')[1]);
+    schedule.bank = getСlosedBankTime(workingHours, timeZone);
+    const busyIntervals = getBusyTime(schedule, timeZone);
+    let intervalsForRobbery = getFreeTime(busyIntervals)
+        .filter(function (interval) {
+            return interval.from + duration <= interval.to;
+        });
+    let startRobbery;
+    if (intervalsForRobbery.length > 0) {
+        startRobbery = intervalsForRobbery[0].from;
+    }
 
     return {
 
@@ -143,29 +122,15 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            if (startRobbery === undefined) {
-
+            if (!this.exists()) {
                 return '';
             }
-            var daysArray = ['ПН', 'ВТ', 'СР'];
-            var day = parseInt(startRobbery / (24 * 60));
-            var hours = parseInt(startRobbery / 60) - day * 24;
-            var minutes = startRobbery - day * 24 * 60 - hours * 60;
-            hours = (hours < 10) ? '0' + hours : hours.toString();
-            minutes = (minutes < 10) ? '0' + minutes : minutes.toString();
+            const time = getDifferentTime(startRobbery);
 
-            var time = template.replace(/(%DD)|(%HH)|(%MM)/g, function (pattern) {
-                switch (pattern) {
-                    case '%DD':
-                        return daysArray[day];
-                    case '%HH':
-                        return hours;
-                    default:
-                        return minutes;
-                }
-            });
-
-            return time;
+            return template
+                .replace('%DD', time.day)
+                .replace('%HH', time.hours)
+                .replace('%MM', time.minutes);
         },
 
         /**
@@ -174,18 +139,25 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (startRobbery === undefined) {
+            if (!this.exists()) {
 
                 return false;
             }
-            var startNewRobbery = startRobbery + 30;
-            intervalsFree = getCutIntervalsFree(intervalsFree, startNewRobbery);
-            startNewRobbery = getStartRobbery(intervalsFree, intervalsWorks, duration);
-            if (startNewRobbery === undefined) {
-
+            let newStart = startRobbery + 30;
+            while (intervalsForRobbery.length > 0 &&
+                intervalsForRobbery[0].to < newStart + duration) {
+                intervalsForRobbery.shift();
+            }
+            if (intervalsForRobbery.length === 0) {
                 return false;
             }
-            startRobbery = startNewRobbery;
+
+            if (intervalsForRobbery[0].from < newStart) {
+                intervalsForRobbery[0].from = newStart;
+                startRobbery = newStart;
+            } else {
+                startRobbery = intervalsForRobbery[0].from;
+            }
 
             return true;
         }
