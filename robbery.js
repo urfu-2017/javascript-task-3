@@ -23,7 +23,7 @@ const parseTime = function (timeString, timeZone) {
     return day * MINUTES_IN_DAY + (hours + shiftOnTimeZone) * MINUTES_IN_HOUR + minutes;
 };
 
-const getBusyTime = function (schedule, timeZone) {
+const getBusyIntervals = function (schedule, timeZone) {
     let intervals = [];
     Object.keys(schedule).forEach(function (name) {
         schedule[name].forEach(function (interval) {
@@ -39,7 +39,7 @@ const getBusyTime = function (schedule, timeZone) {
     });
 };
 
-const getFreeTime = function (intervals) {
+const getFreeIntervals = function (intervals) {
     let start = 0;
     let freeTime = [];
     intervals.forEach(function (interval) {
@@ -57,7 +57,7 @@ const getFreeTime = function (intervals) {
     return freeTime;
 };
 
-const getСlosedBankTime = function (workingHours, timeZone) {
+const getСlosedBankIntervals = function (workingHours, timeZone) {
 
     return [{ 'from': 'ПН 00:00+' + timeZone.toString(), 'to': 'ПН ' + workingHours.from },
         { 'from': 'ПН ' + workingHours.to, 'to': 'ВТ ' + workingHours.from },
@@ -93,9 +93,9 @@ const getDifferentTime = function (time) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     const timeZone = parseInt(workingHours.from.split('+')[1]);
-    schedule.bank = getСlosedBankTime(workingHours, timeZone);
-    const busyIntervals = getBusyTime(schedule, timeZone);
-    let intervalsForRobbery = getFreeTime(busyIntervals)
+    schedule.bank = getСlosedBankIntervals(workingHours, timeZone);
+    const busyIntervals = getBusyIntervals(schedule, timeZone);
+    let intervalsForRobbery = getFreeIntervals(busyIntervals)
         .filter(function (interval) {
             return interval.from + duration <= interval.to;
         });
@@ -140,7 +140,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             if (!this.exists()) {
-
                 return false;
             }
             let newStart = startRobbery + 30;
@@ -155,9 +154,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (intervalsForRobbery[0].from < newStart) {
                 intervalsForRobbery[0].from = newStart;
                 startRobbery = newStart;
-            } else {
-                startRobbery = intervalsForRobbery[0].from;
+
+                return true;
             }
+            startRobbery = intervalsForRobbery[0].from;
 
             return true;
         }
