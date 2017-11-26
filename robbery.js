@@ -4,30 +4,29 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
-var wh1;
-var wh2;
-var basetimezone;
-const day = 1440;
-var t1 = [0];
-var t2 = [day * 3];
-var gTime;
+const minutesInDay = 1440;
+var startInterval = [];
+var endInterval = [];
+var bankTimeZone;
+var openTime;
+var closeTime;
+var globalTime;
 var counter = 0;
-// var boolControl = true;
 
 function transform(time, template) {
-    var days = ['ПН', 'ВТ', 'СР'];
-    var numday = 0;
-    while (time >= day) {
-        time -= day;
+    let days = ['ПН', 'ВТ', 'СР'];
+    let numday = 0;
+    while (time >= minutesInDay) {
+        time -= minutesInDay;
         numday++;
     }
-    var mm = time % 60;
+    let mm = time % 60;
     if (mm === 0) {
         mm = '00';
     }
-    var hh = (time - mm) / 60;
+    let hh = (time - mm) / 60;
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
         .replace('%DD', days[numday]);
@@ -35,134 +34,105 @@ function transform(time, template) {
     return template;
 }
 
-function excluder(duration) {
-    var q = 0;
-    while (q < t1.length) {
-        if (t2[q] - t1[q] < duration) {
-            // console.info ('BEFORE', t1, t2, q, duration);
-            delete t1.splice(q, 1);
-            delete t2.splice(q, 1);
-            // console.info ('THEN', t1, t2, q, duration);
+function deleteAndSortAndExclude(duration) {
+    let k = 0;
+    while (k < startInterval.length) {
+        if (endInterval[k] - startInterval[k] < duration) {
+            startInterval.splice(k, 1);
+            endInterval.splice(k, 1);
         } else {
-            q++;
+            k++;
         }
     }
+    startInterval.sort((a, b) => {
+        return a - b;
+    });
+    endInterval.sort((a, b) => {
+        return a - b;
+    });
 }
 
-// function minuteToHours(t_, t__) {
-//     for (var l = 0; l < t_.length; l++) {
-//         var time = t_[l];
-//         var mm = time % 60;
-//         var hh = (time - mm) / 60;
-//         time = t__[l];
-//         var mm2 = time % 60;
-//         var hh2 = (time - mm2) / 60;
-//         console.info(hh, ':', mm, '--', hh2, ':', mm2);
-//     }
-// }
-
-function cutout(typeConf, k, busy1, busy2) {
+function cutInterval(typeConf, k, startBusy, endBusy) {
     if (typeConf !== 0) {
-        console.info('case', typeConf, busy1, busy2, '\n', t1, '\n', t2);
         switch (typeConf) {
             case 1:
-                // console.info('case 1    ', busy1, busy2, t1, t2);
-                t1[k] = busy2;
-                // console.info('case 1    ', busy1, busy2, t1, t2);
+                startInterval[k] = endBusy;
                 break;
             case 2:
-                // console.info('case 2    ', busy1, busy2, t1, t2);
-                t2[k] = busy1;
-                // console.info('case 2    ', busy1, busy2, t1, t2);
-                break;
-            case 3:
-                // console.info('case 3    ', busy1, busy2, t1, t2);
-                t2.push(t2[k]);
-                t2[k] = busy1;
-                t1.push(busy2);
-                // console.info('case 3    ', busy1, busy2, t1, t2);
+                endInterval[k] = startBusy;
                 break;
             default:
+                // делим на 2 интервала, добавляем второй в конец массива
+                startInterval.push(endBusy);
+                endInterval.push(endInterval[k]);
+                endInterval[k] = startBusy;
         }
-        console.info('стало', '\n', t1, '\n', t2);
     }
 }
 
-function typeOfConfluence(k, busy1, busy2) {
-    var typeConf = 0;
-    if ((busy1 >= t2[k]) || (busy2 <= t1[k])) {
+function applyForIntervals(k, startBusy, endBusy) {
+    let typeConf = 0;
+
+    /* typeConf -- тип пересечения интервалов
+    0 - не пересекаются
+    1 - нынешний пересекает правым краем
+    2 - нынешний пересекает левым краем
+    3 - нынешний входит в заданный */
+    if ((startBusy > endInterval[k]) || (endBusy < startInterval[k])) {
         typeConf = 0;
-        console.info(busy1, busy2, t1[k], t2[k], typeConf);
-    } else if ((busy1 > t1[k]) && (busy2 < t2[k])) {
-        typeConf = 3;
-        console.info(busy1, busy2, t1[k], t2[k], typeConf);
-    } else if (busy1 > t1[k]) {
-        typeConf = 2;
-        console.info(busy1, busy2, t1[k], t2[k], typeConf);
-    } else if (busy2 < t2[k]) {
-        typeConf = 1;
-        console.info(busy1, busy2, t1[k], t2[k], typeConf);
-    } else {
-        t1.splice(k, 1);
-        t2.splice(k, 1);
-    }
-    cutout(typeConf, k, busy1, busy2);
-}
-
-function cutter(busy1, busy2) {
-    // console.info(busy1, busy2);
-    if (busy1 > 0 && busy2 > 0) {
-        for (var k = 0; k < t1.length; k++) {
-            typeOfConfluence(k, busy1, busy2);
+        // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+    } else if (startBusy > startInterval[k]) {
+        if (endBusy < endInterval[k]) {
+            typeConf = 3;
+        } else {
+            typeConf = 2;
         }
+    } else if (endBusy < endInterval[k]) {
+        typeConf = 1;
+    } else {
+        startInterval[k] = -1;
+        endInterval[k] = -1;
     }
+    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+    cutInterval(typeConf, k, startBusy, endBusy);
 }
 
 function parseBusyTime(time) {
-    var arr = time.split(/ |:|\+/);
-    var x;
-    switch (arr[0]) {
+    let timeTokens = time.split(/ |:|\+/);
+    let dayNumber;
+    switch (timeTokens[0]) {
         case 'ПН':
-            x = 0;
+            dayNumber = 0;
             break;
         case 'ВТ':
-            x = 1;
+            dayNumber = 1;
             break;
         case 'СР':
-            x = 2;
+            dayNumber = 2;
             break;
         default:
-            x = -1000;
+            dayNumber = -1000;
     }
-    // console.info(arr[1], arr[2], time);
-    if (arr[1] > 24 || arr[2] > 60) {
-        x = -1000;
-    }
-    var busy = arr[1] * 60 + Number(arr[2]) + x * day + 60 * (basetimezone - arr[3]);
+    let timeInMinutes = timeTokens[1] * 60;
+    timeInMinutes += Number(timeTokens[2]);
+    timeInMinutes += Number(dayNumber * minutesInDay);
+    timeInMinutes += Number(60 * (bankTimeZone - timeTokens[3]));
 
-    return busy;
+    return timeInMinutes;
 }
 
-function firstExpulsion(a, b) {
-    t1 = [];
-    t2 = [];
-    t1[0] = a;
-    t1.push(a + day);
-    t1.push(a + day * 2);
-    t2[0] = b;
-    t2.push(b + day);
-    t2.push(b + day * 2);
-    // console.info(t1, t2);
+function inMinutes(workingHours) {
+    let tempWorkingHours = workingHours.from.split(/:|\+/);
+    bankTimeZone = tempWorkingHours[2];
+    openTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
+    tempWorkingHours = workingHours.to.split(/:|\+/);
+    closeTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
+    // console.info (workingHours);
+    // console.info (bankTimeZone, openTime, closeTime);
 }
 
-function whCoercion(workingHours) {
-    var arrwh = workingHours.from.split(/:|\+/);
-    basetimezone = arrwh[2];
-    wh1 = Number(arrwh[0]) * 60 + Number(arrwh[1]);
-    arrwh = workingHours.to.split(/:|\+/);
-    wh2 = Number(arrwh[0]) * 60 + Number(arrwh[1]);
-    // console.info (basetimezone, wh1, wh2);
-}
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -174,28 +144,26 @@ function whCoercion(workingHours) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
-    whCoercion(workingHours);
-    firstExpulsion(wh1, wh2);
-    let value = Object.values(schedule);
-    // console.info (value[0].length, value[1].length, value[2].length);
-    for (var i = 0; i < 3; i++) {
-        for (var j = 0; j < value[i].length; j++) {
-            var busy1 = parseBusyTime(value[i][j].from);
-            var busy2 = parseBusyTime(value[i][j].to);
-            cutter(busy1, busy2);
-        }
+    inMinutes(workingHours);
+    for (let i = 0; i < 3; i++) {
+        startInterval.push(openTime + minutesInDay * i);
+        endInterval.push(closeTime + minutesInDay * i);
     }
-    t1.sort(function (a, b) {
-        return a - b;
+    let arraySchedules = Object.values(schedule);
+    // console.info (value[0].length, value[1].length, value[2].length);
+    arraySchedules.forEach((onePersonSchedule) => {
+        onePersonSchedule.forEach((lineFromSchedule) => {
+            let startBusy = parseBusyTime(lineFromSchedule.from);
+            let endBusy = parseBusyTime(lineFromSchedule.to);
+            for (var k = 0; k < startInterval.length; k++) {
+                // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval);
+                // console.info(startBusy, endBusy, k);
+                applyForIntervals(k, startBusy, endBusy);
+            }
+        });
     });
-    t2.sort(function (a, b) {
-        return a - b;
-    });
-    excluder(duration);
+    deleteAndSortAndExclude(duration);
     counter = 0;
-    // minuteToHours(t1, t2);
-    // console.info('NUTICHE', t1, t2);
-
 
     return {
 
@@ -207,7 +175,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             // if (!boolControl) {
             //     return false;
             // }
-            return t1.length !== 0;
+            return startInterval.length !== 0;
         },
 
         /**
@@ -218,9 +186,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            gTime = t1[counter];
-            // console.info('vivod', t1, t2, gTime);
-            var time = gTime;
+            globalTime = startInterval[counter];
+            // console.info('vivod', startInterval, endInterval, globalTime);
+            let time = globalTime;
             if (!this.exists()) {
                 return '';
             }
@@ -238,16 +206,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         tryLater: function () {
             var b1 = false;
-            gTime = t1[counter];
-            // console.info('ROVAAA', t1, t2, gTime);
-            if (t2[counter] - t1[counter] - 30 >= duration) {
-                // console.info('qq', t1[counter] + 30);
+            globalTime = startInterval[counter];
+            // console.info('ROVAAA', startInterval, endInterval, globalTime);
+            if (endInterval[counter] - startInterval[counter] - 30 >= duration) {
+                // console.info('qq', startInterval[counter] + 30);
                 // counter--;
-                t1[counter] = t1[counter] + 30;
+                startInterval[counter] = startInterval[counter] + 30;
                 b1 = true;
-            } else if (t1[counter + 1]) {
-                // console.info(t1[counter]);
-                // console.info('GTIMEE', gTime);
+            } else if (startInterval[counter + 1]) {
+                // console.info(startInterval[counter]);
+                // console.info('globalTimeE', globalTime);
                 counter++;
                 b1 = true;
             }
