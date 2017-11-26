@@ -12,8 +12,16 @@ var endInterval = [];
 var bankTimeZone;
 var openTime;
 var closeTime;
-var globalTime;
-var counter = 0;
+var momentExist = false;
+
+function clearGlobalVariable() {
+    startInterval = [];
+    endInterval = [];
+    bankTimeZone = undefined;
+    openTime = undefined;
+    closeTime = undefined;
+    momentExist = false;
+}
 
 function transform(time, template) {
     let days = ['ПН', 'ВТ', 'СР'];
@@ -35,19 +43,16 @@ function transform(time, template) {
 }
 
 function deleteAndSortAndExclude(duration) {
-    let k = 0;
-    while (k < startInterval.length) {
-        if (endInterval[k] - startInterval[k] < duration) {
-            startInterval.splice(k, 1);
-            endInterval.splice(k, 1);
+    // console.info(momentExist, 'PROVERKA');
+    for (let i = 0; i < startInterval.length; i++) {
+        if (endInterval[i] - startInterval[i] < duration) {
+            startInterval[i] = 9999;
         } else {
-            k++;
+            momentExist = true;
+            // console.info('TIVPIVE');
         }
     }
     startInterval.sort((a, b) => {
-        return a - b;
-    });
-    endInterval.sort((a, b) => {
         return a - b;
     });
 }
@@ -90,8 +95,8 @@ function applyForIntervals(k, startBusy, endBusy) {
     } else if (endBusy < endInterval[k]) {
         typeConf = 1;
     } else {
-        startInterval[k] = -1;
-        endInterval[k] = -1;
+        startInterval[k] = 9999;
+        endInterval[k] = 9999;
     }
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
@@ -143,7 +148,9 @@ function inMinutes(workingHours) {
  * @returns {Object}
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
+    clearGlobalVariable();
     console.info(schedule, duration, workingHours);
+    // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval);
     inMinutes(workingHours);
     for (let i = 0; i < 3; i++) {
         startInterval.push(openTime + minutesInDay * i);
@@ -163,7 +170,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         });
     });
     deleteAndSortAndExclude(duration);
-    counter = 0;
 
     return {
 
@@ -172,10 +178,9 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            // if (!boolControl) {
-            //     return false;
-            // }
-            return startInterval.length !== 0;
+            // console.info(momentExist);
+
+            return momentExist;
         },
 
         /**
@@ -186,42 +191,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            globalTime = startInterval[counter];
-            // console.info('vivod', startInterval, endInterval, globalTime);
-            let time = globalTime;
+            let time = startInterval[0];
             if (!this.exists()) {
                 return '';
             }
             template = transform(time, template);
-            // counter++;
-            // console.info(template);
 
             return template;
-        },
-
-        /**
-         * Попробовать найти часы для ограбления позже [*]
-         * @star
-         * @returns {Boolean}
-         */
-        tryLater: function () {
-            var b1 = false;
-            globalTime = startInterval[counter];
-            // console.info('ROVAAA', startInterval, endInterval, globalTime);
-            if (endInterval[counter] - startInterval[counter] - 30 >= duration) {
-                // console.info('qq', startInterval[counter] + 30);
-                // counter--;
-                startInterval[counter] = startInterval[counter] + 30;
-                b1 = true;
-            } else if (startInterval[counter + 1]) {
-                // console.info(startInterval[counter]);
-                // console.info('globalTimeE', globalTime);
-                counter++;
-                b1 = true;
-            }
-            // console.info(b1, counter);
-
-            return b1;
         }
     };
 };
