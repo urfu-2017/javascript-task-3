@@ -7,7 +7,8 @@
 exports.isStar = true;
 
 var days = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-var invalidDays = 'ЧТПТСБВС';
+var validDays = days.slice(0, 3);
+var invalidDays = days.slice(3);
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -20,28 +21,22 @@ var invalidDays = 'ЧТПТСБВС';
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     let timeOfRobbery = '';
-    let time = {};
-    let timeZone = workingHours.from.slice(5);
+    let freeTime = {};
+    let bankTimeZone = workingHours.from.slice(5);
     let invalideTime = {};
 
-    invalideTime['ПН'] = [];
-    invalideTime['ВТ'] = [];
-    invalideTime['СР'] = [];
-
-    for (let name of Object.keys(schedule)) {
-        workWithShedule(schedule, name, timeZone, invalideTime);
+    for (var _day of validDays) {
+        invalideTime[_day] = [];
+        scheduling(freeTime, _day, workingHours);
     }
 
-    time['ПН'] = [{ from: 'ПН ' + workingHours.from.slice(0, 5),
-        to: 'ПН ' + workingHours.to.slice(0, 5) }];
-    time['ВТ'] = [{ from: 'ВТ ' + workingHours.from.slice(0, 5),
-        to: 'ВТ ' + workingHours.to.slice(0, 5) }];
-    time['СР'] = [{ from: 'СР ' + workingHours.from.slice(0, 5),
-        to: 'СР ' + workingHours.to.slice(0, 5) }];
+    for (let name of Object.keys(schedule)) {
+        invalideTime = fillInvalidTime(schedule, name, bankTimeZone, invalideTime);
+    }
 
-    findingFreeTime(invalideTime, time);
+    freeTime = findingFreeTime(invalideTime, freeTime);
 
-    timeOfRobbery = findTime(time, duration, timeOfRobbery);
+    timeOfRobbery = findTime(freeTime, duration, timeOfRobbery);
 
     return {
 
@@ -82,7 +77,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             let day = timeOfRobbery.split(' ')[0];
             let flag = true;
-            for (let interval of time[day]) {
+            for (let interval of freeTime[day]) {
                 if (interval.from === timeOfRobbery) {
                     interval.from = addingHalfHour(interval.from);
                     flag = interval.from;
@@ -91,7 +86,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (flag === false) {
                 return false;
             }
-            let result = findTime(time, duration, '');
+            let result = findTime(freeTime, duration, '');
             if (result.length > 0) {
                 timeOfRobbery = result;
             }
@@ -101,6 +96,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     };
 };
 
+function scheduling(freeTime, day, workingHours) {
+    freeTime[day] = [{ from: day + ' ' + workingHours.from.slice(0, 5),
+        to: day + ' ' + workingHours.to.slice(0, 5) }];
+}
 
 /**
  *прибавляет пол часа к времени
@@ -134,41 +133,45 @@ function addingHalfHour(time) {
  * приводим все времена к часовому поясу банка
  */
 
-function workWithShedule(schedule, name, timeZone, invalideTime) {
+function fillInvalidTime(schedule, name, bankTimeZone, invalideTime) {
+    let obj = Object.assign(invalideTime);
     for (let times of schedule[name]) {
-        let begin = normalizeTime(times.from, timeZone);
-        if (invalidDays.indexOf(begin.split(' ')[0]) !== -1) {
+        let begin = normalizeTime(times.from, bankTimeZone);
+        if (invalidDays.includes(begin.split(' ')[0])) {
             begin = 'ПН 00:00';
         }
-        let beginDay = begin.split(' ')[0];
-        let end = normalizeTime(times.to, timeZone);
-        if (invalidDays.indexOf(end.split(' ')[0]) !== -1) {
+        let end = normalizeTime(times.to, bankTimeZone);
+        if (invalidDays.includes(end.split(' ')[0])) {
             end = 'СР 23:59';
         }
-        let endDay = end.split(' ')[0];
         let intervals = [];
-        if (beginDay !== endDay) {
+        if (begin.split(' ')[0] !== end.split(' ')[0]) {
             intervals = sepationToInterval(begin, end);
         } else {
             intervals = [{ from: begin, to: end }];
         }
-        createScheduleOfEmployment(intervals, invalideTime);
+        obj = createScheduleOfBusyness(intervals, obj);
     }
+
+    return obj;
 }
 
 /**
  * создаем расписание занятости
  */
 
-function createScheduleOfEmployment(intervals, invalideTime) {
+function createScheduleOfBusyness(intervals, invalideTime) {
+    let obj = Object.assign(invalideTime);
     for (let interval of intervals) {
         let day = interval.from.split(' ')[0];
-        if (invalideTime[day].length === 0) {
-            invalideTime[day].push(interval);
+        if (obj[day].length === 0) {
+            obj[day].push(interval);
             continue;
         }
-        createInvalideTime(interval, invalideTime, day);
+        obj = createInvalideTime(interval, obj, day);
     }
+
+    return obj;
 }
 
 /**
@@ -176,53 +179,57 @@ function createScheduleOfEmployment(intervals, invalideTime) {
  */
 
 function createInvalideTime(interval, invalideTime, day) {
+    let obj = Object.assign(invalideTime);
     let flag = false;
-    for (let element of invalideTime[day]) {
+    for (let element of obj[day]) {
         let result = unionOfTimes(element, interval);
         if (result !== false) {
-            invalideTime[day]
-                .splice(invalideTime[day]
+            obj[day]
+                .splice(obj[day]
                     .indexOf(element), 1, result);
             flag = true;
             break;
         }
     }
     if (!flag) {
-        invalideTime[day].push(interval);
+        obj[day].push(interval);
     }
+
+    return obj;
 }
 
 /**
  * находим время , в которое возможно ограбление
  */
 
-function findingFreeTime(invalideTime, time) {
+function findingFreeTime(invalideTime, freeTime) {
+    let obj = Object.assign({}, freeTime);
     for (let day of Object.keys(invalideTime)) {
-        for (let i = 0; i < time[day].length; i++) {
-            i = correctingOfTime(invalideTime, day, time, i);
+        for (let i = 0; i < obj[day].length; i++) {
+            i = correctingFreeTime(invalideTime, day, obj, i);
         }
     }
+
+    return obj;
 }
 
 /**
  * по сути , продолжение findingFreeTime
  */
 
-function correctingOfTime(invalideTime, day, time, i) {
+function correctingFreeTime(invalideTime, day, freeTime, i) {
     for (let wrongTime of invalideTime[day]) {
-        let result = differenceTimes(time[day][i], wrongTime);
-        if (result === true) {
-            time[day].splice(i, 1);
-            i--;
-            break;
-        } else if (result === false) {
+        let result = calculatingTimeDifference(freeTime[day][i], wrongTime);
+        if (result === false) {
             continue;
-        } else {
-            time[day].splice(i, 1);
-            time[day] = time[day].concat(result);
-            i--;
-            break;
         }
+        freeTime[day].splice(i, 1);
+        if (result !== true) {
+            freeTime[day] = freeTime[day].concat(result);
+        }
+
+        i--;
+        break;
     }
 
     return i;
@@ -232,10 +239,10 @@ function correctingOfTime(invalideTime, day, time, i) {
  * поиск времени ограбления
  */
 
-function findTime(time, duration, timeOfRobbery) {
+function findTime(freeTime, duration, timeOfRobbery) {
     let find = false;
-    for (let day of Object.keys(time)) {
-        for (let validTime of time[day]) {
+    for (let day of Object.keys(freeTime)) {
+        for (let validTime of freeTime[day]) {
             let result = comprasionMinutes(validTime, duration, timeOfRobbery, find);
             timeOfRobbery = result[0];
             find = result[1];
@@ -335,7 +342,7 @@ function unionOfTimesPt2(firstTime, secondTime) {
  * вычисление разности двух времен
  */
 
-function differenceTimes(firstTime, secondTime) {
+function calculatingTimeDifference(firstTime, secondTime) {
     if (checkIncluding(secondTime.from, firstTime) &&
     !checkIncluding(secondTime.to, firstTime)) {
         firstTime.to = secondTime.from;
@@ -367,27 +374,28 @@ function differenceTimes(firstTime, secondTime) {
  * проверяет содержится ли время во временном интервале
  */
 
-function checkIncluding(time, timeInterval) {
-    return compareTime(timeInterval.from, time) < 0 && compareTime(timeInterval.to, time) > 0;
+function checkIncluding(freeTime, timeInterval) {
+    return compareTime(timeInterval.from, freeTime) < 0 &&
+    compareTime(timeInterval.to, freeTime) > 0;
 }
 
 /**
  * рефакторинг времени после его изменения
  */
 
-function normalizeTime(time, timeZone) {
+function normalizeTime(time, bankTimeZone) {
     let day = time.split(' ')[0];
     let pastDay = 0;
     let nextDay = 0;
-    let Hours = parseInt(time.slice(3, 5)) + (parseInt(timeZone) - parseInt(time.slice(8)));
-    if (Hours > 23) {
-        nextDay = Math.round(Hours / 24);
-        Hours = Hours - nextDay * 24;
-    } else if (Hours < 0) {
-        pastDay = Math.abc(Math.round(Hours / 24));
-        Hours = 24 + (Hours + pastDay * 24);
+    let hours = parseInt(time.slice(3, 5)) + (parseInt(bankTimeZone) - parseInt(time.slice(8)));
+    if (hours > 23) {
+        nextDay = Math.round(hours / 24);
+        hours = hours - nextDay * 24;
+    } else if (hours < 0) {
+        pastDay = Math.abc(Math.round(hours / 24));
+        hours = 24 + (hours + pastDay * 24);
     }
-    time = Hours + time.slice(5, 8);
+    time = hours + time.slice(5, 8);
 
     return refactoringTime(time, pastDay, nextDay, day);
 }
