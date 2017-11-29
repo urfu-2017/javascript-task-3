@@ -11,6 +11,9 @@ const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
 
+const AVAILABLE_DAYS = ['ПН', 'ВТ', 'СР'];
+const NEXT_TIME_OFFSET = 30;
+
 /**
  * @param {Object} schedule – Расписание Банды
  * @param {Number} duration - Время на ограбление в минутах
@@ -44,7 +47,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
     let baseTimezone = parseTimeParts(workingHours.from).timezone;
     let periodsToFind = parsePeriods(
-        DAY_NAMES.slice(0, 3).map(day => appendDay(day, workingHours)));
+        AVAILABLE_DAYS.map(day => appendDay(day, workingHours)));
     let excludePeriods = parsePeriods(Object.values(schedule).reduce((a, b) => a.concat(b)));
     let firstPossibleTime = findPeriod(
         periodsToFind[0].from, periodsToFind, excludePeriods, duration);
@@ -86,15 +89,16 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            let result = null;
-            if (currentTime !== null) {
-                result = findPeriod(currentTime + 30, periodsToFind, excludePeriods, duration);
+            if (!currentTime) {
+                return false;
             }
-            if (result !== null) {
+            let result = findPeriod(
+                currentTime + NEXT_TIME_OFFSET, periodsToFind, excludePeriods, duration);
+            if (result) {
                 currentTime = result;
             }
 
-            return result !== null;
+            return Boolean(result);
         }
     };
 };
@@ -115,7 +119,7 @@ function parseTimeParts(timeStr) {
     let [, dayStr, hours, minutes, timezone] = /(?:(\S{2}) )?(\d\d):(\d\d)\+(\d+)/.exec(timeStr);
     let day = DAY_NAMES.indexOf(dayStr);
     if (day === -1) {
-        day = undefined;
+        day = null;
     }
 
     return createTimeParts(day, Number(hours), Number(minutes), Number(timezone));
@@ -124,7 +128,7 @@ function parseTimeParts(timeStr) {
 function fromAbsoluteTime(absoluteTime, timezone) {
     absoluteTime += timezone * MINUTES_PER_HOUR;
     const days = Math.floor(absoluteTime / MINUTES_PER_DAY);
-    let dayPart = absoluteTime % MINUTES_PER_DAY;
+    const dayPart = absoluteTime % MINUTES_PER_DAY;
     const hours = Math.floor(dayPart / MINUTES_PER_HOUR);
     const minutes = dayPart % MINUTES_PER_HOUR;
 
