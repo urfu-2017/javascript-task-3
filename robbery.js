@@ -4,15 +4,17 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
-const minutesInDay = 1440;
+const ARRAY_OF_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+const MINUTES_IN_DAY = 1440;
 var startInterval = [];
 var endInterval = [];
 var bankTimeZone;
 var openTime;
 var closeTime;
 var momentExist = false;
+var timeNumber = 0;
 
 function clearGlobalVariable() {
     startInterval = [];
@@ -21,13 +23,13 @@ function clearGlobalVariable() {
     openTime = undefined;
     closeTime = undefined;
     momentExist = false;
+    timeNumber = 0;
 }
 
 function transform(time, template) {
-    let days = ['ПН', 'ВТ', 'СР'];
     let numday = 0;
-    while (time >= minutesInDay) {
-        time -= minutesInDay;
+    while (time >= MINUTES_IN_DAY) {
+        time -= MINUTES_IN_DAY;
         numday++;
     }
     let mm = time % 60;
@@ -37,24 +39,38 @@ function transform(time, template) {
     let hh = (time - mm) / 60;
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
-        .replace('%DD', days[numday]);
+        .replace('%DD', ARRAY_OF_DAYS[numday]);
 
     return template;
 }
 
 function deleteAndSortAndExclude(duration) {
     // console.info(momentExist, 'PROVERKA');
+    let countFalse = 0;
     for (let i = 0; i < startInterval.length; i++) {
         if (endInterval[i] - startInterval[i] < duration) {
             startInterval[i] = 9999;
+            endInterval[i] = 9999;
+            countFalse++;
         } else {
             momentExist = true;
             // console.info('TIVPIVE');
         }
     }
+    // console.info(startInterval);
+    // console.info(endInterval);
     startInterval.sort((a, b) => {
         return a - b;
     });
+    endInterval.sort((a, b) => {
+        return a - b;
+    });
+    // console.info(startInterval);
+    // console.info(endInterval);
+    for (let i = 0; i < countFalse; i++) {
+        startInterval.pop();
+        endInterval.pop();
+    }
 }
 
 function cutInterval(typeConf, k, startBusy, endBusy) {
@@ -99,31 +115,17 @@ function applyForIntervals(k, startBusy, endBusy) {
         endInterval[k] = 9999;
     }
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
-    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
-    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     cutInterval(typeConf, k, startBusy, endBusy);
 }
 
 function parseBusyTime(time) {
     let timeTokens = time.split(/ |:|\+/);
-    let dayNumber;
-    switch (timeTokens[0]) {
-        case 'ПН':
-            dayNumber = 0;
-            break;
-        case 'ВТ':
-            dayNumber = 1;
-            break;
-        case 'СР':
-            dayNumber = 2;
-            break;
-        default:
-            dayNumber = -1000;
-    }
+    let dayNumber = ARRAY_OF_DAYS.indexOf(timeTokens[0]);
     let timeInMinutes = timeTokens[1] * 60;
     timeInMinutes += Number(timeTokens[2]);
-    timeInMinutes += Number(dayNumber * minutesInDay);
+    timeInMinutes += Number(dayNumber * MINUTES_IN_DAY);
     timeInMinutes += Number(60 * (bankTimeZone - timeTokens[3]));
+    // console.info(timeInMinutes);
 
     return timeInMinutes;
 }
@@ -153,23 +155,31 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval);
     inMinutes(workingHours);
     for (let i = 0; i < 3; i++) {
-        startInterval.push(openTime + minutesInDay * i);
-        endInterval.push(closeTime + minutesInDay * i);
+        startInterval.push(openTime + MINUTES_IN_DAY * i);
+        endInterval.push(closeTime + MINUTES_IN_DAY * i);
     }
     let arraySchedules = Object.values(schedule);
-    // console.info (value[0].length, value[1].length, value[2].length);
+    // console.info (arraySchedules[0].length, arraySchedules[1].length, arraySchedules[2].length);
     arraySchedules.forEach((onePersonSchedule) => {
+        // console.info('ONEPERSON', onePersonSchedule);
         onePersonSchedule.forEach((lineFromSchedule) => {
+            // console.info(lineFromSchedule);
             let startBusy = parseBusyTime(lineFromSchedule.from);
             let endBusy = parseBusyTime(lineFromSchedule.to);
+            // console.info(startInterval.length);
             for (var k = 0; k < startInterval.length; k++) {
-                // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval);
+                // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval, k);
                 // console.info(startBusy, endBusy, k);
                 applyForIntervals(k, startBusy, endBusy);
             }
         });
     });
+    console.info(startInterval);
+    console.info(endInterval);
     deleteAndSortAndExclude(duration);
+    console.info(startInterval);
+    console.info(endInterval);
+    console.info(timeNumber);
 
     return {
 
@@ -191,13 +201,35 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
-            let time = startInterval[0];
+            let time = startInterval[timeNumber];
+            console.info(time, timeNumber);
             if (!this.exists()) {
                 return '';
             }
             template = transform(time, template);
+            console.info(template);
 
             return template;
+        },
+
+        /**
+         * Попробовать найти часы для ограбления позже [*]
+         * @star
+         * @returns {Boolean}
+         */
+        tryLater: function () {
+            if (endInterval[timeNumber] - startInterval[timeNumber] - 30 >= duration) {
+                startInterval[timeNumber] += 30;
+
+                return true;
+            } else if (startInterval[timeNumber + 1] &&
+                startInterval[timeNumber + 1] - startInterval[timeNumber] >= 30) {
+                ++timeNumber;
+
+                return true;
+            }
+
+            return false;
         }
     };
 };
