@@ -37,6 +37,9 @@ function transform(time, template) {
         mm = '00';
     }
     let hh = (time - mm) / 60;
+    if (hh === 0) {
+        hh = '00';
+    }
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
         .replace('%DD', ARRAY_OF_DAYS[numday]);
@@ -101,8 +104,6 @@ function applyForIntervals(k, startBusy, endBusy) {
     3 - нынешний входит в заданный */
     if ((startBusy > endInterval[k]) || (endBusy < startInterval[k])) {
         typeConf = 0;
-
-        return 0;
         // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     } else if (startBusy > startInterval[k]) {
         if (endBusy < endInterval[k]) {
@@ -115,8 +116,6 @@ function applyForIntervals(k, startBusy, endBusy) {
     } else {
         startInterval[k] = 9999;
         endInterval[k] = 9999;
-
-        return 0;
     }
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     cutInterval(typeConf, k, startBusy, endBusy);
@@ -196,7 +195,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            // console.info(momentExist);
+            console.info(momentExist);
 
             return momentExist;
         },
