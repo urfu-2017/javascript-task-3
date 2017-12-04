@@ -47,10 +47,15 @@ function transform(time, template) {
     return template;
 }
 
-function deleteAndSortAndExclude(duration) {
-    // console.info(momentExist, 'PROVERKA');
-    let countFalse = 0;
+function invalidInterval(duration, countFalse) {
     for (let i = 0; i < startInterval.length; i++) {
+        if (startInterval[i] >= 4320) {
+            startInterval[i] = 9999;
+            endInterval[i] = 9999;
+            countFalse++;
+        } else if (endInterval[i] > 4320) {
+            endInterval[i] = 4320;
+        }
         if (endInterval[i] - startInterval[i] < duration) {
             startInterval[i] = 9999;
             endInterval[i] = 9999;
@@ -60,8 +65,16 @@ function deleteAndSortAndExclude(duration) {
             // console.info('TIVPIVE');
         }
     }
-    // console.info(startInterval);
-    // console.info(endInterval);
+
+    return countFalse;
+}
+
+function deleteAndSortAndExclude(duration) {
+    // console.info(momentExist, 'PROVERKA');
+    let countFalse = 0;
+    countFalse = invalidInterval(duration, countFalse);
+    console.info(startInterval);
+    console.info(endInterval);
     startInterval.sort((a, b) => {
         return a - b;
     });
