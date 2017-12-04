@@ -33,12 +33,12 @@ function transform(time, template) {
         numday++;
     }
     let mm = time % 60;
-    if (mm === 0) {
-        mm = '00';
+    if (mm < 10) {
+        mm = '0' + mm;
     }
     let hh = (time - mm) / 60;
-    if (hh === 0) {
-        hh = '00';
+    if (hh < 10) {
+        hh = '0' + hh;
     }
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
@@ -47,15 +47,10 @@ function transform(time, template) {
     return template;
 }
 
-function invalidInterval(duration, countFalse) {
+function deleteAndSortAndExclude(duration) {
+    // console.info(momentExist, 'PROVERKA');
+    let countFalse = 0;
     for (let i = 0; i < startInterval.length; i++) {
-        if (startInterval[i] >= 4320) {
-            startInterval[i] = 9999;
-            endInterval[i] = 9999;
-            countFalse++;
-        } else if (endInterval[i] > 4320) {
-            endInterval[i] = 4320;
-        }
         if (endInterval[i] - startInterval[i] < duration) {
             startInterval[i] = 9999;
             endInterval[i] = 9999;
@@ -65,16 +60,8 @@ function invalidInterval(duration, countFalse) {
             // console.info('TIVPIVE');
         }
     }
-
-    return countFalse;
-}
-
-function deleteAndSortAndExclude(duration) {
-    // console.info(momentExist, 'PROVERKA');
-    let countFalse = 0;
-    countFalse = invalidInterval(duration, countFalse);
-    console.info(startInterval);
-    console.info(endInterval);
+    // console.info(startInterval);
+    // console.info(endInterval);
     startInterval.sort((a, b) => {
         return a - b;
     });
