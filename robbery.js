@@ -130,6 +130,20 @@ function parseBusyTime(time) {
     return timeInMinutes;
 }
 
+function excludeByMember(gangMember) {
+    gangMember.forEach((lineFromSchedule) => {
+        // console.info(lineFromSchedule);
+        let startBusy = parseBusyTime(lineFromSchedule.from);
+        let endBusy = parseBusyTime(lineFromSchedule.to);
+        // console.info(startInterval.length);
+        for (var k = 0; k < startInterval.length; k++) {
+            // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval, k);
+            // console.info(startBusy, endBusy, k);
+            applyForIntervals(k, startBusy, endBusy);
+        }
+    });
+}
+
 function inMinutes(workingHours) {
     let tempWorkingHours = workingHours.from.split(/:|\+/);
     bankTimeZone = tempWorkingHours[2];
@@ -158,24 +172,14 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
         startInterval.push(openTime + MINUTES_IN_DAY * i);
         endInterval.push(closeTime + MINUTES_IN_DAY * i);
     }
-    let arraySchedules = Object.values(schedule);
+    // let arraySchedules = Object.values(schedule);
     // console.info (arraySchedules[0].length, arraySchedules[1].length, arraySchedules[2].length);
-    arraySchedules.forEach((onePersonSchedule) => {
-        // console.info('ONEPERSON', onePersonSchedule);
-        onePersonSchedule.forEach((lineFromSchedule) => {
-            // console.info(lineFromSchedule);
-            let startBusy = parseBusyTime(lineFromSchedule.from);
-            let endBusy = parseBusyTime(lineFromSchedule.to);
-            // console.info(startInterval.length);
-            for (var k = 0; k < startInterval.length; k++) {
-                // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval, k);
-                // console.info(startBusy, endBusy, k);
-                applyForIntervals(k, startBusy, endBusy);
-            }
-        });
-    });
-    console.info(startInterval);
-    console.info(endInterval);
+    for (let gangMember of Object.values(schedule)) {
+        // console.info('ONEPERSON', gangMember);
+        excludeByMember(gangMember);
+    }
+    // console.info(startInterval);
+    // console.info(endInterval);
     deleteAndSortAndExclude(duration);
     console.info(startInterval);
     console.info(endInterval);
