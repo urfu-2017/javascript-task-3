@@ -101,6 +101,8 @@ function applyForIntervals(k, startBusy, endBusy) {
     3 - нынешний входит в заданный */
     if ((startBusy > endInterval[k]) || (endBusy < startInterval[k])) {
         typeConf = 0;
+
+        return 0;
         // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     } else if (startBusy > startInterval[k]) {
         if (endBusy < endInterval[k]) {
@@ -113,6 +115,8 @@ function applyForIntervals(k, startBusy, endBusy) {
     } else {
         startInterval[k] = 9999;
         endInterval[k] = 9999;
+
+        return 0;
     }
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     cutInterval(typeConf, k, startBusy, endBusy);
