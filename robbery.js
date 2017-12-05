@@ -71,8 +71,8 @@ function deleteAndSortAndExclude(duration) {
     }
     // console.info(startInterval);
     // console.info(endInterval);
-    startInterval.sort(sortByIncrease());
-    endInterval.sort(sortByIncrease());
+    startInterval.sort(sortByIncrease);
+    endInterval.sort(sortByIncrease);
     // console.info(startInterval);
     // console.info(endInterval);
     for (let i = 0; i < countFalse; i++) {
