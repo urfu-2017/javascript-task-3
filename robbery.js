@@ -26,6 +26,14 @@ function clearGlobalVariable() {
     timeNumber = 0;
 }
 
+function addingZero(parameter) {
+    if (parameter < 10) {
+        parameter = '0' + parameter;
+    }
+
+    return parameter;
+}
+
 function transform(time, template) {
     let numday = 0;
     while (time >= MINUTES_IN_DAY) {
@@ -33,13 +41,9 @@ function transform(time, template) {
         numday++;
     }
     let mm = time % 60;
-    if (mm < 10) {
-        mm = '0' + mm;
-    }
+    mm = addingZero(mm);
     let hh = (time - mm) / 60;
-    if (hh < 10) {
-        hh = '0' + hh;
-    }
+    hh = addingZero(hh);
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
         .replace('%DD', ARRAY_OF_DAYS[numday]);
@@ -47,38 +51,33 @@ function transform(time, template) {
     return template;
 }
 
+function sortByIncrease(a, b) {
+    return a - b;
+}
+
 function deleteAndSortAndExclude(duration) {
-    // console.info(momentExist, 'PROVERKA');
     let countFalse = 0;
     for (let i = 0; i < startInterval.length; i++) {
         if (endInterval[i] - startInterval[i] < duration) {
-            startInterval[i] = 9999;
-            endInterval[i] = 9999;
+            startInterval[i] = Infinity;
+            endInterval[i] = Infinity;
             countFalse++;
         } else {
             momentExist = true;
-            // console.info('TIVPIVE');
+
         }
     }
-    // console.info(startInterval);
-    // console.info(endInterval);
-    startInterval.sort((a, b) => {
-        return a - b;
-    });
-    endInterval.sort((a, b) => {
-        return a - b;
-    });
-    // console.info(startInterval);
-    // console.info(endInterval);
+    startInterval.sort(sortByIncrease());
+    endInterval.sort(sortByIncrease());
     for (let i = 0; i < countFalse; i++) {
         startInterval.pop();
         endInterval.pop();
     }
 }
 
-function cutInterval(typeConf, k, startBusy, endBusy) {
-    if (typeConf !== 0) {
-        switch (typeConf) {
+function cutInterval(crossType, k, startBusy, endBusy) {
+    if (crossType !== 0) {
+        switch (crossType) {
             case 1:
                 startInterval[k] = endBusy;
                 break;
@@ -86,7 +85,7 @@ function cutInterval(typeConf, k, startBusy, endBusy) {
                 endInterval[k] = startBusy;
                 break;
             default:
-                // делим на 2 интервала, добавляем второй в конец массива
+
                 startInterval.push(endBusy);
                 endInterval.push(endInterval[k]);
                 endInterval[k] = startBusy;
@@ -95,30 +94,29 @@ function cutInterval(typeConf, k, startBusy, endBusy) {
 }
 
 function applyForIntervals(k, startBusy, endBusy) {
-    let typeConf = 0;
+    let crossType = 0;
 
-    /* typeConf -- тип пересечения интервалов
+    /* crossType -- тип пересечения интервалов
     0 - не пересекаются
     1 - нынешний пересекает правым краем
     2 - нынешний пересекает левым краем
     3 - нынешний входит в заданный */
     if ((startBusy > endInterval[k]) || (endBusy < startInterval[k])) {
-        typeConf = 0;
-        // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+        crossType = 0;
+
     } else if (startBusy > startInterval[k]) {
         if (endBusy < endInterval[k]) {
-            typeConf = 3;
+            crossType = 3;
         } else {
-            typeConf = 2;
+            crossType = 2;
         }
     } else if (endBusy < endInterval[k]) {
-        typeConf = 1;
+        crossType = 1;
     } else {
-        startInterval[k] = 9999;
-        endInterval[k] = 9999;
+        startInterval[k] = Infinity;
+        endInterval[k] = Infinity;
     }
-    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
-    cutInterval(typeConf, k, startBusy, endBusy);
+    cutInterval(crossType, k, startBusy, endBusy);
 }
 
 function parseBusyTime(time) {
@@ -128,33 +126,30 @@ function parseBusyTime(time) {
     timeInMinutes += Number(timeTokens[2]);
     timeInMinutes += Number(dayNumber * MINUTES_IN_DAY);
     timeInMinutes += Number(60 * (bankTimeZone - timeTokens[3]));
-    // console.info(timeInMinutes);
 
     return timeInMinutes;
 }
 
 function excludeByMember(gangMember) {
     gangMember.forEach((lineFromSchedule) => {
-        // console.info(lineFromSchedule);
+
         let startBusy = parseBusyTime(lineFromSchedule.from);
         let endBusy = parseBusyTime(lineFromSchedule.to);
-        // console.info(startInterval.length);
+
         for (var k = 0; k < startInterval.length; k++) {
-            // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval, k);
-            // console.info(startBusy, endBusy, k);
+
+
             applyForIntervals(k, startBusy, endBusy);
         }
     });
 }
 
 function inMinutes(workingHours) {
-    let tempWorkingHours = workingHours.from.split(/:|\+/);
-    bankTimeZone = tempWorkingHours[2];
-    openTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
-    tempWorkingHours = workingHours.to.split(/:|\+/);
-    closeTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
-    // console.info (workingHours);
-    // console.info (bankTimeZone, openTime, closeTime);
+    let workingHoursFrom = workingHours.from.split(/:|\+/);
+    bankTimeZone = workingHoursFrom[2];
+    openTime = Number(workingHoursFrom[0]) * 60 + Number(workingHoursFrom[1]);
+    let workingHoursTo = workingHours.to.split(/:|\+/);
+    closeTime = Number(workingHoursTo[0]) * 60 + Number(workingHoursTo[1]);
 }
 
 
@@ -168,25 +163,16 @@ function inMinutes(workingHours) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     clearGlobalVariable();
-    console.info(schedule, duration, workingHours);
-    // console.info('AFTERPUSH', startInterval, '\nAFTERPUSH', endInterval);
     inMinutes(workingHours);
     for (let i = 0; i < 3; i++) {
         startInterval.push(openTime + MINUTES_IN_DAY * i);
         endInterval.push(closeTime + MINUTES_IN_DAY * i);
     }
-    // let arraySchedules = Object.values(schedule);
-    // console.info (arraySchedules[0].length, arraySchedules[1].length, arraySchedules[2].length);
     for (let gangMember of Object.values(schedule)) {
-        // console.info('ONEPERSON', gangMember);
+
         excludeByMember(gangMember);
     }
-    // console.info(startInterval);
-    // console.info(endInterval);
     deleteAndSortAndExclude(duration);
-    console.info(startInterval);
-    console.info(endInterval);
-    console.info(timeNumber);
 
     return {
 
@@ -195,7 +181,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            console.info(momentExist);
+
 
             return momentExist;
         },
@@ -209,12 +195,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          */
         format: function (template) {
             let time = startInterval[timeNumber];
-            console.info(time, timeNumber);
+
             if (!this.exists()) {
                 return '';
             }
             template = transform(time, template);
-            console.info(template);
+
 
             return template;
         },
