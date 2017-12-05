@@ -51,6 +51,10 @@ function transform(time, template) {
     return template;
 }
 
+function sortByIncrease(a, b) {
+    return a - b;
+}
+
 function deleteAndSortAndExclude(duration) {
     // console.info(momentExist, 'PROVERKA');
     let countFalse = 0;
@@ -67,12 +71,8 @@ function deleteAndSortAndExclude(duration) {
     }
     // console.info(startInterval);
     // console.info(endInterval);
-    startInterval.sort((a, b) => {
-        return a - b;
-    });
-    endInterval.sort((a, b) => {
-        return a - b;
-    });
+    startInterval.sort(sortByIncrease());
+    endInterval.sort(sortByIncrease());
     // console.info(startInterval);
     // console.info(endInterval);
     for (let i = 0; i < countFalse; i++) {
