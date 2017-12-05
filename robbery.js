@@ -55,7 +55,8 @@ function deleteAndSortAndExclude(duration) {
     // console.info(momentExist, 'PROVERKA');
     let countFalse = 0;
     for (let i = 0; i < startInterval.length; i++) {
-        if (endInterval[i] - startInterval[i] < duration) {
+        if (endInterval[i] - startInterval[i] < duration ||
+            startInterval[i] + endInterval[i] === Infinity) {
             startInterval[i] = Infinity;
             endInterval[i] = Infinity;
             countFalse++;
