@@ -56,8 +56,8 @@ function deleteAndSortAndExclude(duration) {
     let countFalse = 0;
     for (let i = 0; i < startInterval.length; i++) {
         if (endInterval[i] - startInterval[i] < duration) {
-            startInterval[i] = 9999;
-            endInterval[i] = 9999;
+            startInterval[i] = Infinity;
+            endInterval[i] = Infinity;
             countFalse++;
         } else {
             momentExist = true;
@@ -118,8 +118,8 @@ function applyForIntervals(k, startBusy, endBusy) {
     } else if (endBusy < endInterval[k]) {
         typeConf = 1;
     } else {
-        startInterval[k] = 9999;
-        endInterval[k] = 9999;
+        startInterval[k] = Infinity;
+        endInterval[k] = Infinity;
     }
     // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
     cutInterval(typeConf, k, startBusy, endBusy);
