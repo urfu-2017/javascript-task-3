@@ -41,8 +41,8 @@ function transform(time, template) {
         numday++;
     }
     let mm = time % 60;
-    mm = addingZero(mm);
     let hh = (time - mm) / 60;
+    mm = addingZero(mm);
     hh = addingZero(hh);
     template = template.replace('%HH', hh)
         .replace('%MM', mm)
@@ -67,8 +67,12 @@ function deleteAndSortAndExclude(duration) {
 
         }
     }
+    // console.info(startInterval);
+    // console.info(endInterval);
     startInterval.sort(sortByIncrease());
     endInterval.sort(sortByIncrease());
+    // console.info(startInterval);
+    // console.info(endInterval);
     for (let i = 0; i < countFalse; i++) {
         startInterval.pop();
         endInterval.pop();
