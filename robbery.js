@@ -81,9 +81,9 @@ function deleteAndSortAndExclude(duration) {
     }
 }
 
-function cutInterval(typeConf, k, startBusy, endBusy) {
-    if (typeConf !== 0) {
-        switch (typeConf) {
+function cutInterval(crossIntervalType, k, startBusy, endBusy) {
+    if (crossIntervalType !== 0) {
+        switch (crossIntervalType) {
             case 1:
                 startInterval[k] = endBusy;
                 break;
@@ -100,30 +100,30 @@ function cutInterval(typeConf, k, startBusy, endBusy) {
 }
 
 function applyForIntervals(k, startBusy, endBusy) {
-    let typeConf = 0;
+    let crossIntervalType = 0;
 
-    /* typeConf -- тип пересечения интервалов
+    /* crossIntervalType -- тип пересечения интервалов
     0 - не пересекаются
     1 - нынешний пересекает правым краем
     2 - нынешний пересекает левым краем
     3 - нынешний входит в заданный */
     if ((startBusy > endInterval[k]) || (endBusy < startInterval[k])) {
-        typeConf = 0;
-        // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
+        crossIntervalType = 0;
+        // console.info(startBusy, endBusy, startInterval[k], endInterval[k], crossIntervalType);
     } else if (startBusy > startInterval[k]) {
         if (endBusy < endInterval[k]) {
-            typeConf = 3;
+            crossIntervalType = 3;
         } else {
-            typeConf = 2;
+            crossIntervalType = 2;
         }
     } else if (endBusy < endInterval[k]) {
-        typeConf = 1;
+        crossIntervalType = 1;
     } else {
         startInterval[k] = Infinity;
         endInterval[k] = Infinity;
     }
-    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], typeConf);
-    cutInterval(typeConf, k, startBusy, endBusy);
+    // console.info(startBusy, endBusy, startInterval[k], endInterval[k], crossIntervalType);
+    cutInterval(crossIntervalType, k, startBusy, endBusy);
 }
 
 function parseBusyTime(time) {
@@ -153,11 +153,11 @@ function excludeByMember(gangMember) {
 }
 
 function inMinutes(workingHours) {
-    let tempWorkingHours = workingHours.from.split(/:|\+/);
-    bankTimeZone = tempWorkingHours[2];
-    openTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
-    tempWorkingHours = workingHours.to.split(/:|\+/);
-    closeTime = Number(tempWorkingHours[0]) * 60 + Number(tempWorkingHours[1]);
+    let workingHoursFrom = workingHours.from.split(/:|\+/);
+    bankTimeZone = workingHoursFrom[2];
+    openTime = Number(workingHoursFrom[0]) * 60 + Number(workingHoursFrom[1]);
+    let workingHoursTo = workingHours.to.split(/:|\+/);
+    closeTime = Number(workingHoursTo[0]) * 60 + Number(workingHoursTo[1]);
     // console.info (workingHours);
     // console.info (bankTimeZone, openTime, closeTime);
 }
