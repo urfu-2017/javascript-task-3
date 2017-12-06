@@ -267,13 +267,13 @@ function interpretatorIntervals(name) {
         return a.from - b.from;
     });
     if (iPeople[0].from !== 0) {
-        addNormInterval(0, iPeople[0].from, name);
+        addNormInterval(0, iPeople[0].from - 1, name);
     }
     for (let i = 1; i < iPeople.length; i++) {
-        addNormInterval(iPeople[i - 1].to, iPeople[i].from, name);
+        addNormInterval(iPeople[i - 1].to + 1, iPeople[i].from - 1, name);
     }
     if (iPeople[iPeople.length - 1].to < 168 * 60 - 1) {
-        addNormInterval(iPeople[iPeople.length - 1].to, 168 * 60 - 1, name);
+        addNormInterval(iPeople[iPeople.length - 1].to + 1, 168 * 60 - 1, name);
     }
 }
 
