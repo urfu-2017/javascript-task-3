@@ -8,13 +8,13 @@ exports.isStar = true;
 
 const ARRAY_OF_DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 const MINUTES_IN_DAY = 1440;
-var startInterval = [];
-var endInterval = [];
-var bankTimeZone;
-var openTime;
-var closeTime;
-var momentExist = false;
-var timeNumber = 0;
+let startInterval = [];
+let endInterval = [];
+let bankTimeZone;
+let openTime;
+let closeTime;
+let momentExist = false;
+let timeNumber = 0;
 
 function clearGlobalVariable() {
     startInterval = [];
@@ -126,7 +126,7 @@ function excludeByMember(gangMember) {
     gangMember.forEach((lineFromSchedule) => {
         let startBusy = parseBusyTime(lineFromSchedule.from);
         let endBusy = parseBusyTime(lineFromSchedule.to);
-        for (var k = 0; k < startInterval.length; k++) {
+        for (let k = 0; k < startInterval.length; k++) {
             applyForIntervals(k, startBusy, endBusy);
         }
     });
