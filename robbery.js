@@ -16,16 +16,16 @@ let intervalTime = {
 };
 
 let freeTime = {
-    Bank: [],
+   /* Bank: [],
     Danny: [],
     Rusty: [],
-    Linus: []
+    Linus: []*/
 };
 
 let busyTime = {
-    Danny: [],
+    /*Danny: [],
     Rusty: [],
-    Linus: []
+    Linus: []*/
 };
 
 let arrayAllIntervals = [];
@@ -236,7 +236,7 @@ function linkage(timeFrom, timeTo, name) {
 }
 
 function check(timeFrom, timeTo, name, intervalCh) {
-    let arr = busyTime[name];
+    let arr = busyTime[name];//массив addNormInterval?
     for (let i = 0; i < arr.length; i++) {
         if (timeFrom >= arr[i].from && timeTo <= arr[i].to ||
             timeFrom <= arr[i].from && timeTo >= arr[i].to) {
@@ -272,8 +272,8 @@ function interpretatorIntervals(name) {
     for (let i = 1; i < iPeople.length; i++) {
         addNormInterval(iPeople[i - 1].to, iPeople[i].from, name);
     }
-    if (iPeople[iPeople.length - 1].to < 168 * 60 - 1) {
-        addNormInterval(iPeople[iPeople.length - 1].to, 168 * 60 - 1, name);
+    if (iPeople[iPeople.length - 1].to < 168 * 60) {
+        addNormInterval(iPeople[iPeople.length - 1].to, 168 * 60, name);
     }
 }
 
