@@ -15,18 +15,9 @@ let intervalTime = {
     to: undefined
 };
 
-let freeTime = {
-   /* Bank: [],
-    Danny: [],
-    Rusty: [],
-    Linus: []*/
-};
+let freeTime = {};
 
-let busyTime = {
-    /*Danny: [],
-    Rusty: [],
-    Linus: []*/
-};
+let busyTime = {};
 
 let arrayAllIntervals = [];
 
@@ -236,7 +227,7 @@ function linkage(timeFrom, timeTo, name) {
 }
 
 function check(timeFrom, timeTo, name, intervalCh) {
-    let arr = busyTime[name];//массив addNormInterval?
+    let arr = busyTime[name];
     for (let i = 0; i < arr.length; i++) {
         if (timeFrom >= arr[i].from && timeTo <= arr[i].to ||
             timeFrom <= arr[i].from && timeTo >= arr[i].to) {
