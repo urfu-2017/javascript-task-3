@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -14,56 +14,37 @@ exports.isStar = false;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
-const dayMinute = 1440;
-var bankTimeZone = 0;
-function splitTime(time) {
-    var t = String(time).split(/ |:|\+/);
-    var info = {
-        day: t[0],
-        hour: Number(t[1]),
-        minute: Number(t[2]),
-        timeZone: Number(t[3])
-    };
+const MINUTES_IN_DAY = 1440;
+const MINUTES_IN_HOUR = 60;
+const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+let bankTimeZone = 0;
+let endBankWork = 0;
+let beginBankWork = 0;
+let freeTimeIntervalsFrom = [];
+let freeTimeIntevalsTo = [];
+let apprepriateTimeStart = [];
+let apprepriateTimeEnd = [];
+let timeNumber = 0;
 
-    return info;
+function splitGangTime(time) {
+    let parsingTime = time.split(/ |:|\+/);
+    let day = DAYS.indexOf(parsingTime[0]);
+    let timeInMinutes = parsingTime[1] * MINUTES_IN_HOUR +
+        Number(parsingTime[2]) + Number(day * MINUTES_IN_DAY) +
+        Number(MINUTES_IN_HOUR * (bankTimeZone - parsingTime[3]));
+
+    return timeInMinutes;
 }
 
-function getBankTimeZone(workingHours) {
-    bankTimeZone = bankSplitTime(workingHours.from).timeZone;
-
-    return bankTimeZone;
+function bankTimeInMinutes(workingHours) {
+    let workingHoursFrom = workingHours.from.split(/:|\+/);
+    let workingHoursTo = workingHours.to.split(/:|\+/);
+    bankTimeZone = workingHoursFrom[2];
+    beginBankWork = workingHoursFrom[0] * MINUTES_IN_HOUR + Number(workingHoursFrom[1]);
+    endBankWork = workingHoursTo[0] * MINUTES_IN_HOUR + Number(workingHoursTo[1]);
 }
 
-function bankSplitTime(time) {
-    var t = String(time).split(/ |:|\+/);
-    var info = {
-        hour: Number(t[0]),
-        minute: Number(t[1]),
-        timeZone: Number(t[2])
-    };
-
-    return info;
-}
-
-function bankIntervals(workingHour) {
-    var interval = [];
-    var bank = bankSplitTime(workingHour);
-    for (let i = 0; i < 3; i++) {
-        interval.push(bank.hour * 60 + bank.minute + i * dayMinute);
-    }
-
-    return interval;
-}
-
-function gangIntervals(schedule) {
-    var a = Object.values(schedule);
-    for (var i = 0; i < 3; i++) {
-        for (var j = 0; j < a[i].length; j++) {
-            ingoing(a[i][j].from, a[i][j].to);
-        }
-    }
-}
-function sorti(time1, time2) {
+function sortTime(time1, time2) {
     if (time1 > time2) {
         return 1;
     } else if (time1 < time2) {
@@ -73,61 +54,67 @@ function sorti(time1, time2) {
     return 0;
 }
 
-function checkInterval(q, p, duration) {
-    var apprepriateTime = [];
-    for (let i = 0; i < q.length; i++) {
-        if (p[i] - q[i] >= duration) {
-            apprepriateTime.push(q[i]);
+function checkInterval(duration) {
+    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
+        if (freeTimeIntevalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
+            apprepriateTimeStart.push(freeTimeIntervalsFrom[i]);
+            apprepriateTimeEnd.push(freeTimeIntevalsTo[i]);
         }
     }
-    q.sort(sorti);
-    p.sort(sorti);
-
-    return (apprepriateTime);
+    apprepriateTimeStart.sort(sortTime);
+    apprepriateTimeEnd.sort(sortTime);
 }
-var q = [];
-var p = [];
-function ingoing(from, to) {
 
-    from = busyMinutes(from);
-    to = busyMinutes(to);
-    for (let m = 0; m < q.length; m++) {
-        if (to > q[m] && from < q[m] && to < p[m]) {
-            q[m] = to;
-        } else if (to > p[m] && from > q[m] && from < p[m]) {
-            p[m] = from;
-        } else if (to < p[m] && from > q[m]) {
-            p.push(p[m]);
-            q.push(to);
-            p[m] = from;
-        } else if (to === p[m] && from === q[m]) {
-            q.splice(m, 1);
-            p.splice(m, 1);
-        }
+function confluence(gangTimeFrom, gangTimeTo, i) {
+    if (gangTimeFrom >= freeTimeIntevalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
+        freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
+    } else if (gangTimeTo > freeTimeIntevalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+        freeTimeIntevalsTo[i] = gangTimeFrom;
+    } else if (gangTimeTo < freeTimeIntevalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
+        freeTimeIntervalsFrom[i] = gangTimeTo;
+    } else if (gangTimeTo < freeTimeIntevalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+        freeTimeIntevalsTo.push(freeTimeIntevalsTo[i]);
+        freeTimeIntervalsFrom.push(gangTimeTo);
+        freeTimeIntevalsTo[i] = gangTimeFrom;
+    } else {
+        freeTimeIntervalsFrom[i] = 0;
+        freeTimeIntevalsTo[i] = 0;
     }
 }
 
-function busyMinutes(time) {
-    var busy = splitTime(time);
-    var day = busy.day;
-    var m = busy.hour * 60 + busy.minute + 60 * (bankTimeZone - busy.timeZone);
-    if (day === 'ВТ') {
-        m += dayMinute;
+function intervals(gangTimeFrom, gangTimeTo) {
+    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
+        confluence(gangTimeFrom, gangTimeTo, i);
     }
-    if (day === 'СР') {
-        m += 2 * dayMinute;
-    }
+}
 
-    return m;
+
+function exclude(schedule) {
+    for (let gang of Object.keys(schedule)) {
+        schedule[gang].forEach(item => {
+            let gangTimeFrom = splitGangTime(item.from);
+            let gangTimeTo = splitGangTime(item.to);
+            intervals(gangTimeFrom, gangTimeTo);
+        });
+    }
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    q = bankIntervals(workingHours.from);
-    p = bankIntervals(workingHours.to);
-    getBankTimeZone(workingHours);
-    gangIntervals(schedule);
-    console.info(schedule, duration, workingHours);
-    var check = checkInterval(q, p, duration);
+    bankTimeZone = 0;
+    endBankWork = 0;
+    beginBankWork = 0;
+    freeTimeIntervalsFrom = [];
+    freeTimeIntevalsTo = [];
+    apprepriateTimeStart = [];
+    apprepriateTimeEnd = [];
+    timeNumber = 0;
+    bankTimeInMinutes(workingHours);
+    for (let i = 0; i < 3; i++) {
+        freeTimeIntervalsFrom.push(beginBankWork + MINUTES_IN_DAY * i);
+        freeTimeIntevalsTo.push(endBankWork + MINUTES_IN_DAY * i);
+    }
+    exclude(schedule);
+    checkInterval(duration);
 
     return {
 
@@ -136,8 +123,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
+            if (apprepriateTimeStart.length) {
+                return true;
+            }
 
-            return (check.length > 0);
+            return false;
         },
 
         /**
@@ -151,18 +141,21 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            var day = Math.floor(check[0] / dayMinute);
-            var days = ['ПН', 'ВТ', 'СР'];
-            var weekDay = days[day];
-            var hour = Math.floor((check[0] % dayMinute) / 60);
-            hour = (hour < 10 ? '0' : '') + hour;
-            var minute = (check[0] % dayMinute) % 60;
-            minute = (minute < 10 ? '0' : '') + minute;
+            let time = apprepriateTimeStart[timeNumber];
+            let numday = 0;
+            while (time >= MINUTES_IN_DAY) {
+                time -= MINUTES_IN_DAY;
+                numday++;
+            }
+            let mm = time % MINUTES_IN_HOUR;
+            let hh = (time - mm) / MINUTES_IN_HOUR;
+            mm = (mm < 10 ? '0' : '') + mm;
+            hh = (hh < 10 ? '0' : '') + hh;
 
             return template
-                .replace('%DD', weekDay)
-                .replace('%HH', hour)
-                .replace('%MM', minute);
+                .replace('%HH', hh)
+                .replace('%MM', mm)
+                .replace('%DD', DAYS[numday]);
         },
 
         /**
@@ -171,6 +164,17 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            let time = apprepriateTimeEnd[timeNumber] - apprepriateTimeStart[timeNumber];
+            if (time - 30 >= duration) {
+                apprepriateTimeStart[timeNumber] += 30;
+
+                return true;
+            } else if (apprepriateTimeStart[timeNumber + 1]) {
+                timeNumber++;
+
+                return true;
+            }
+
             return false;
         }
     };

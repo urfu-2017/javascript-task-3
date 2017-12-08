@@ -23,6 +23,7 @@ var bankWorkingHours = {
     to: '18:00+5'
 };
 
+
 // Время не существует
 var longMoment = robbery.getAppropriateMoment(gangSchedule, 121, bankWorkingHours);
 
