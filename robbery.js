@@ -55,7 +55,7 @@ function sortTime(time1, time2) {
 }
 
 function checkInterval(duration) {
-    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {        
+    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
         if (freeTimeIntervalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
             apprepriateTimeStart.push(freeTimeIntervalsFrom[i]);
             apprepriateTimeEnd.push(freeTimeIntervalsTo[i]);
@@ -65,7 +65,7 @@ function checkInterval(duration) {
     apprepriateTimeEnd.sort(sortTime);
 }
 
-function confluence(gangTimeFrom, gangTimeTo, i) {    
+function confluence(gangTimeFrom, gangTimeTo, i) {
     if (gangTimeFrom >= freeTimeIntervalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
     } else if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
@@ -150,7 +150,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let mm = time % MINUTES_IN_HOUR;
             let hh = (time - mm) / MINUTES_IN_HOUR;
             mm = (mm < 10 ? '0' : '') + mm;
-            hh = (hh < 10 ? '0' : '') + hh;            
+            hh = (hh < 10 ? '0' : '') + hh;
 
             return template
                 .replace('%HH', hh)
