@@ -17,11 +17,11 @@ exports.isStar = true;
 const MINUTES_IN_DAY = 1440;
 const MINUTES_IN_HOUR = 60;
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-let bankTimeZone = 0;
-let endBankWork = 0;
-let beginBankWork = 0;
+let bankTimeZone;
+let endBankWork;
+let beginBankWork;
 let freeTimeIntervalsFrom = [];
-let freeTimeIntevalsTo = [];
+let freeTimeIntervalsTo = [];
 let apprepriateTimeStart = [];
 let apprepriateTimeEnd = [];
 let timeNumber = 0;
@@ -55,30 +55,30 @@ function sortTime(time1, time2) {
 }
 
 function checkInterval(duration) {
-    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
-        if (freeTimeIntevalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
+    for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {        
+        if (freeTimeIntervalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
             apprepriateTimeStart.push(freeTimeIntervalsFrom[i]);
-            apprepriateTimeEnd.push(freeTimeIntevalsTo[i]);
+            apprepriateTimeEnd.push(freeTimeIntervalsTo[i]);
         }
     }
     apprepriateTimeStart.sort(sortTime);
     apprepriateTimeEnd.sort(sortTime);
 }
 
-function confluence(gangTimeFrom, gangTimeTo, i) {
-    if (gangTimeFrom >= freeTimeIntevalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
+function confluence(gangTimeFrom, gangTimeTo, i) {    
+    if (gangTimeFrom >= freeTimeIntervalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
-    } else if (gangTimeTo > freeTimeIntevalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
-        freeTimeIntevalsTo[i] = gangTimeFrom;
-    } else if (gangTimeTo < freeTimeIntevalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
+    } else if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+        freeTimeIntervalsTo[i] = gangTimeFrom;
+    } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = gangTimeTo;
-    } else if (gangTimeTo < freeTimeIntevalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
-        freeTimeIntevalsTo.push(freeTimeIntevalsTo[i]);
+    } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+        freeTimeIntervalsTo.push(freeTimeIntervalsTo[i]);
         freeTimeIntervalsFrom.push(gangTimeTo);
-        freeTimeIntevalsTo[i] = gangTimeFrom;
+        freeTimeIntervalsTo[i] = gangTimeFrom;
     } else {
         freeTimeIntervalsFrom[i] = 0;
-        freeTimeIntevalsTo[i] = 0;
+        freeTimeIntervalsTo[i] = 0;
     }
 }
 
@@ -100,18 +100,18 @@ function exclude(schedule) {
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    bankTimeZone = 0;
-    endBankWork = 0;
-    beginBankWork = 0;
+    bankTimeZone = undefined;
+    endBankWork = undefined;
+    beginBankWork = undefined;
     freeTimeIntervalsFrom = [];
-    freeTimeIntevalsTo = [];
+    freeTimeIntervalsTo = [];
     apprepriateTimeStart = [];
     apprepriateTimeEnd = [];
     timeNumber = 0;
     bankTimeInMinutes(workingHours);
     for (let i = 0; i < 3; i++) {
         freeTimeIntervalsFrom.push(beginBankWork + MINUTES_IN_DAY * i);
-        freeTimeIntevalsTo.push(endBankWork + MINUTES_IN_DAY * i);
+        freeTimeIntervalsTo.push(endBankWork + MINUTES_IN_DAY * i);
     }
     exclude(schedule);
     checkInterval(duration);
@@ -150,7 +150,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             let mm = time % MINUTES_IN_HOUR;
             let hh = (time - mm) / MINUTES_IN_HOUR;
             mm = (mm < 10 ? '0' : '') + mm;
-            hh = (hh < 10 ? '0' : '') + hh;
+            hh = (hh < 10 ? '0' : '') + hh;            
 
             return template
                 .replace('%HH', hh)
