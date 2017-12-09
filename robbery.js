@@ -17,9 +17,9 @@ exports.isStar = true;
 const MINUTES_IN_DAY = 1440;
 const MINUTES_IN_HOUR = 60;
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-let bankTimeZone;
-let endBankWork;
-let beginBankWork;
+let bankTimeZone = 0;
+let endBankWork = 0;
+let beginBankWork = 0;
 let freeTimeIntervalsFrom = [];
 let freeTimeIntervalsTo = [];
 let apprepriateTimeStart = [];
@@ -44,17 +44,14 @@ function bankTimeInMinutes(workingHours) {
     endBankWork = workingHoursTo[0] * MINUTES_IN_HOUR + Number(workingHoursTo[1]);
 }
 
-function sortTime(time1, time2) {
-    if (time1 > time2) {
-        return 1;
-    } else if (time1 < time2) {
-        return -1;
-    }
 
-    return 0;
+function sortTime(time1, time2) {
+    return time1 - time2;
 }
 
 function checkInterval(duration) {
+    console.info(freeTimeIntervalsFrom);
+    console.info(freeTimeIntervalsTo);
     for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
         if (freeTimeIntervalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
             apprepriateTimeStart.push(freeTimeIntervalsFrom[i]);
@@ -100,9 +97,6 @@ function exclude(schedule) {
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
-    bankTimeZone = undefined;
-    endBankWork = undefined;
-    beginBankWork = undefined;
     freeTimeIntervalsFrom = [];
     freeTimeIntervalsTo = [];
     apprepriateTimeStart = [];
@@ -115,6 +109,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
     exclude(schedule);
     checkInterval(duration);
+    console.info(apprepriateTimeStart);
+    console.info(apprepriateTimeEnd);
 
     return {
 
@@ -142,10 +138,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
             let time = apprepriateTimeStart[timeNumber];
-            let numday = 0;
+            let numDay = 0;
             while (time >= MINUTES_IN_DAY) {
                 time -= MINUTES_IN_DAY;
-                numday++;
+                numDay++;
             }
             let mm = time % MINUTES_IN_HOUR;
             let hh = (time - mm) / MINUTES_IN_HOUR;
@@ -155,7 +151,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template
                 .replace('%HH', hh)
                 .replace('%MM', mm)
-                .replace('%DD', DAYS[numday]);
+                .replace('%DD', DAYS[numDay]);
         },
 
         /**
