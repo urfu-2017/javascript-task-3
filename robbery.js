@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = true;
+exports.isStar = false;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -165,8 +165,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 appropriateTimeStart[timeNumber] += 30;
 
                 return true;
-            } else if (appropriateTimeStart[timeNumber + 1] &&
-                appropriateTimeStart[timeNumber + 1] - appropriateTimeStart[timeNumber] >= 30) {
+            } else if (appropriateTimeStart[timeNumber + 1]) {
                 timeNumber++;
 
                 return true;
