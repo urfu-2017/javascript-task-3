@@ -22,8 +22,8 @@ let endBankWork = 0;
 let beginBankWork = 0;
 let freeTimeIntervalsFrom = [];
 let freeTimeIntervalsTo = [];
-let apprepriateTimeStart = [];
-let apprepriateTimeEnd = [];
+let appropriateTimeStart = [];
+let appropriateTimeEnd = [];
 let timeNumber = 0;
 
 function splitGangTime(time) {
@@ -54,12 +54,12 @@ function checkInterval(duration) {
     console.info(freeTimeIntervalsTo);
     for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
         if (freeTimeIntervalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
-            apprepriateTimeStart.push(freeTimeIntervalsFrom[i]);
-            apprepriateTimeEnd.push(freeTimeIntervalsTo[i]);
+            appropriateTimeStart.push(freeTimeIntervalsFrom[i]);
+            appropriateTimeEnd.push(freeTimeIntervalsTo[i]);
         }
     }
-    apprepriateTimeStart.sort(sortTime);
-    apprepriateTimeEnd.sort(sortTime);
+    appropriateTimeStart.sort(sortTime);
+    appropriateTimeEnd.sort(sortTime);
 }
 
 function confluence(gangTimeFrom, gangTimeTo, i) {
@@ -99,8 +99,8 @@ function exclude(schedule) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     freeTimeIntervalsFrom = [];
     freeTimeIntervalsTo = [];
-    apprepriateTimeStart = [];
-    apprepriateTimeEnd = [];
+    appropriateTimeStart = [];
+    appropriateTimeEnd = [];
     timeNumber = 0;
     bankTimeInMinutes(workingHours);
     for (let i = 0; i < 3; i++) {
@@ -109,8 +109,8 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
     exclude(schedule);
     checkInterval(duration);
-    console.info(apprepriateTimeStart);
-    console.info(apprepriateTimeEnd);
+    console.info(appropriateTimeStart);
+    console.info(appropriateTimeEnd);
 
     return {
 
@@ -119,7 +119,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         exists: function () {
-            if (apprepriateTimeStart.length) {
+            if (appropriateTimeStart.length) {
                 return true;
             }
 
@@ -137,7 +137,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             if (!this.exists()) {
                 return '';
             }
-            let time = apprepriateTimeStart[timeNumber];
+            let time = appropriateTimeStart[timeNumber];
             let numDay = 0;
             while (time >= MINUTES_IN_DAY) {
                 time -= MINUTES_IN_DAY;
@@ -160,12 +160,13 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            let time = apprepriateTimeEnd[timeNumber] - apprepriateTimeStart[timeNumber];
+            let time = appropriateTimeEnd[timeNumber] - appropriateTimeStart[timeNumber];
             if (time - 30 >= duration) {
-                apprepriateTimeStart[timeNumber] += 30;
+                appropriateTimeStart[timeNumber] += 30;
 
                 return true;
-            } else if (apprepriateTimeStart[timeNumber + 1]) {
+            } else if (appropriateTimeStart[timeNumber + 1] &&
+                appropriateTimeStart[timeNumber + 1] - appropriateTimeStart[timeNumber] >= 30) {
                 timeNumber++;
 
                 return true;
