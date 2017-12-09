@@ -50,8 +50,6 @@ function sortTime(time1, time2) {
 }
 
 function checkInterval(duration) {
-    console.info(freeTimeIntervalsFrom);
-    console.info(freeTimeIntervalsTo);
     for (let i = 0; i < freeTimeIntervalsFrom.length; i++) {
         if (freeTimeIntervalsTo[i] - freeTimeIntervalsFrom[i] >= duration) {
             appropriateTimeStart.push(freeTimeIntervalsFrom[i]);
@@ -63,9 +61,7 @@ function checkInterval(duration) {
 }
 
 function confluence(gangTimeFrom, gangTimeTo, i) {
-    if (gangTimeFrom >= freeTimeIntervalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
-        freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
-    } else if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+    if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsTo[i] = gangTimeFrom;
     } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = gangTimeTo;
