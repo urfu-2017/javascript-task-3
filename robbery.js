@@ -107,6 +107,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (!intervalsForTry.length) {
+
+                return false;
+            }
             tryL++;
             metka = true;
             if (intervalsForTry[tryL] !== undefined) {
@@ -216,7 +220,6 @@ function timeWithWeek(time, dayWeek, flag) {
 
 // проверка с ВС
 function withSun(time, flag) {
-    // console.log('time1', time);
     if (time > 168 * 60) {
         time = time - 168 * 60;
     }
@@ -226,7 +229,6 @@ function withSun(time, flag) {
     if (time < 0) {
         time = 0;
     }
-    // console.log('time2', time);
 
     return time;
 }
