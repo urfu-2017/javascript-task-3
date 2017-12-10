@@ -210,6 +210,12 @@ function timeWithWeek(time, dayWeek, flag) {
             time += index[i] * 60;
         }
     }
+
+    return withSun(time, flag);
+}
+
+// проверка с ВС
+function withSun(time, flag) {
     if (time > 168 * 60) {
         time = time - 168 * 60;
     }
