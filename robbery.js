@@ -116,7 +116,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             tryL--;
 
-            return false;
+            return intervalsForTry !== null;
         }
     };
 };
@@ -220,7 +220,6 @@ function withSun(time) {
         time = time - 168 * 60;
     }
     if (time === 168 * 60) {
-        // time = flag === 'from' ? 0 : 168 * 60 - 1;
         time = 0;
     }
     if (time < 0) {
