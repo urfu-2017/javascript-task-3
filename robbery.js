@@ -214,7 +214,7 @@ function timeWithWeek(time, dayWeek) {
         time = time - 168 * 60;
     }
     if (time < 0) {
-        time = (168 * 60) + time;
+        time = 0;
     }
 
     return time;
@@ -269,8 +269,8 @@ function interpretatorIntervals() {
     for (let i = 1; i < busyTimeSort.length; i++) {
         addNormInterval(busyTimeSort[i - 1].to, busyTimeSort[i].from);
     }
-    if (busyTimeSort[busyTimeSort.length - 1].to < 168 * 60) {
-        addNormInterval(busyTimeSort[busyTimeSort.length - 1].to, 168 * 60);
+    if (busyTimeSort[busyTimeSort.length - 1].to < 168 * 60 - 1) {
+        addNormInterval(busyTimeSort[busyTimeSort.length - 1].to, 168 * 60 - 1);
     }
 }
 
