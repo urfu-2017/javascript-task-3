@@ -216,6 +216,7 @@ function timeWithWeek(time, dayWeek, flag) {
 
 // проверка с ВС
 function withSun(time, flag) {
+    // console.log('time1', time);
     if (time > 168 * 60) {
         time = time - 168 * 60;
     }
@@ -225,6 +226,7 @@ function withSun(time, flag) {
     if (time < 0) {
         time = 0;
     }
+    // console.log('time2', time);
 
     return time;
 }
@@ -443,7 +445,11 @@ function normFormTime(interval) {
             dayWeek = i;
         }
     }
-    parseInterval.hour = (interval.from - parseInterval.min - (index[dayWeek] * 60)) / 60;
+    let hour = (interval.from - parseInterval.min - (index[dayWeek] * 60)) / 60;
+    if (hour < 10) {
+        hour = '0' + hour;
+    }
+    parseInterval.hour = hour;
     parseInterval.dayWeek = week[dayWeek];
 
     return parseInterval;
