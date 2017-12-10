@@ -214,15 +214,7 @@ function timeWithWeek(time, dayWeek, flag) {
         time = time - 168 * 60;
     }
     if (time === 168 * 60) {
-        switch(flag) {
-            case 'from':
-                time = 0;
-            break;
-            case 'to':
-                time = 168 * 60 - 1;
-            break;
-            default:
-        }
+        time = flag === 'from' ? 0 : 168 * 60 - 1;
     }
     if (time < 0) {
         time = 0;
