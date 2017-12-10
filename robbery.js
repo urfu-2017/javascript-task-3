@@ -88,7 +88,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return template;
             }
-            if (metka && tryL < intervalsForTry.length) {
+            if (metka && tryL < intervalsForTry.length ) {
                 let obj = normFormTime(intervalsForTry[tryL]);
                 template = template.replace(/%DD/, obj.dayWeek);
                 template = template.replace(/%HH/, obj.hour);
@@ -107,10 +107,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (!intervalsForTry.length) {
-
-                return false;
-            }
             tryL++;
             metka = true;
             if (intervalsForTry[tryL] !== undefined) {
@@ -224,7 +220,8 @@ function withSun(time, flag) {
         time = time - 168 * 60;
     }
     if (time === 168 * 60) {
-        time = flag === 'from' ? 0 : 168 * 60 - 1;
+        // time = flag === 'from' ? 0 : 168 * 60 - 1;
+        time = 0;
     }
     if (time < 0) {
         time = 0;
