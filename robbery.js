@@ -317,7 +317,7 @@ function bustWithBank() {
 
 // функция сравнивания интервалов
 function compareAndCut(timeBank, interval, indexBank) {
-    if (intersection(timeBank, interval)) {
+    if (entrance(timeBank, interval)) {
 
         return true;
     }
@@ -325,7 +325,7 @@ function compareAndCut(timeBank, interval, indexBank) {
     // удалять только если он не относится ни к одному интервалу банка
     let k = 0;
     freeTime.Bank.forEach(function (element) {
-        if (interval.from >= timeBank.from && interval.to <= timeBank.to) {
+        if (interval.from >= element.from && interval.to <= element.to) {
             k++;
         }
     });
@@ -345,7 +345,7 @@ function compareAndCut(timeBank, interval, indexBank) {
 }
 
 // входит только или начало или конец
-function intersection(timeBank, interval) {
+function entrance(timeBank, interval) {
     // если входит полностью
     if (interval.from >= timeBank.from && interval.to <= timeBank.to) {
         intervalsForRobbery.push({
@@ -357,6 +357,28 @@ function intersection(timeBank, interval) {
 
         return true;
     }
+    // если и начало и конец не входят
+    if (interval.from <= timeBank.from && interval.to >= timeBank.to) {
+        intervalsForRobbery.push({
+            from: timeBank.from,
+            to: timeBank.to,
+            duration: timeBank.to - timeBank.from
+        });
+        freeTime.Robbery.splice(0, 1);
+        freeTime.Robbery.push({ from: interval.from, to: timeBank.from });
+        freeTime.Robbery.push({ from: timeBank.to, to: interval.to });
+
+        return true;
+    }
+    if (intersection(timeBank, interval)) {
+
+        return true;
+    }
+
+    return false;
+}
+
+function intersection(timeBank, interval) {
     // если начало не входит, а конец входит в рамки работы банка
     if (interval.from <= timeBank.from &&
         (interval.to <= timeBank.to && interval.to > timeBank.from) &&
@@ -381,19 +403,6 @@ function intersection(timeBank, interval) {
             duration: timeBank.to - interval.from
         });
         freeTime.Robbery.splice(0, 1);
-        freeTime.Robbery.push({ from: timeBank.to, to: interval.to });
-
-        return true;
-    }
-    // если и начало и конец не входят
-    if (interval.from <= timeBank.from && interval.to >= timeBank.to) {
-        intervalsForRobbery.push({
-            from: timeBank.from,
-            to: timeBank.to,
-            duration: timeBank.to - timeBank.from
-        });
-        freeTime.Robbery.splice(0, 1);
-        freeTime.Robbery.push({ from: interval.from, to: timeBank.from });
         freeTime.Robbery.push({ from: timeBank.to, to: interval.to });
 
         return true;
