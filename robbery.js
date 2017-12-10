@@ -269,8 +269,8 @@ function interpretatorIntervals() {
     for (let i = 1; i < busyTimeSort.length; i++) {
         addNormInterval(busyTimeSort[i - 1].to, busyTimeSort[i].from);
     }
-    if (busyTimeSort[busyTimeSort.length - 1].to < 168 * 60 - 1) {
-        addNormInterval(busyTimeSort[busyTimeSort.length - 1].to, 168 * 60 - 1);
+    if (busyTimeSort[busyTimeSort.length - 1].to < 168 * 60) {
+        addNormInterval(busyTimeSort[busyTimeSort.length - 1].to, 168 * 60);
     }
 }
 
