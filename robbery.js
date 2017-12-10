@@ -116,7 +116,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             }
             tryL--;
 
-            return intervalsForTry !== null;
+            return false;
         }
     };
 };
