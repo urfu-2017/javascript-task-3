@@ -197,21 +197,32 @@ function parseSchedule(schedulePeople) {
         let timeTo;
         timeFrom = parseTime(dayWeekFrom[1], 'from');
         timeTo = parseTime(dayWeekTo[1], 'to');
-        timeFrom = timeWithWeek(timeFrom, dayWeekFrom[0]);
-        timeTo = timeWithWeek(timeTo, dayWeekTo[0]);
+        timeFrom = timeWithWeek(timeFrom, dayWeekFrom[0], 'from');
+        timeTo = timeWithWeek(timeTo, dayWeekTo[0], 'to');
         linkage(timeFrom, timeTo);
     }
 }
 
 // учитываем день недели для времени
-function timeWithWeek(time, dayWeek) {
+function timeWithWeek(time, dayWeek, flag) {
     for (let i = 0; i < 7; i++) {
         if (dayWeek === week[i]) {
             time += index[i] * 60;
         }
     }
-    if (time >= 168 * 60) {
+    if (time > 168 * 60) {
         time = time - 168 * 60;
+    }
+    if (time === 168 * 60) {
+        switch(flag) {
+            case 'from':
+                time = 0;
+            break;
+            case 'to':
+                time = 168 * 60 - 1;
+            break;
+            default:
+        }
     }
     if (time < 0) {
         time = 0;
