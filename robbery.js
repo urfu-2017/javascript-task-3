@@ -88,7 +88,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return template;
             }
-            if (metka && tryL < intervalsForTry.length ) {
+            if (metka && tryL < intervalsForTry.length) {
                 let obj = normFormTime(intervalsForTry[tryL]);
                 template = template.replace(/%DD/, obj.dayWeek);
                 template = template.replace(/%HH/, obj.hour);
@@ -197,25 +197,25 @@ function parseSchedule(schedulePeople) {
         let timeTo;
         timeFrom = parseTime(dayWeekFrom[1], 'from');
         timeTo = parseTime(dayWeekTo[1], 'to');
-        timeFrom = timeWithWeek(timeFrom, dayWeekFrom[0], 'from');
-        timeTo = timeWithWeek(timeTo, dayWeekTo[0], 'to');
+        timeFrom = timeWithWeek(timeFrom, dayWeekFrom[0]);
+        timeTo = timeWithWeek(timeTo, dayWeekTo[0]);
         linkage(timeFrom, timeTo);
     }
 }
 
 // учитываем день недели для времени
-function timeWithWeek(time, dayWeek, flag) {
+function timeWithWeek(time, dayWeek) {
     for (let i = 0; i < 7; i++) {
         if (dayWeek === week[i]) {
             time += index[i] * 60;
         }
     }
 
-    return withSun(time, flag);
+    return withSun(time);
 }
 
 // проверка с ВС
-function withSun(time, flag) {
+function withSun(time) {
     if (time > 168 * 60) {
         time = time - 168 * 60;
     }
