@@ -88,7 +88,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return template;
             }
-            if (metka && tryL <= intervalsForTry.length) {
+            if (metka && tryL <= intervalsForTry.length && intervalsForTry.length !== 0) {
                 let obj = normFormTime(intervalsForTry[tryL]);
                 template = template.replace(/%DD/, obj.dayWeek);
                 template = template.replace(/%HH/, obj.hour);
@@ -153,6 +153,10 @@ function parseData(schedule, workingHours) {
         let workTime = Object.create(intervalTime);
         workTime.from = fromBank + index[i] * 60;
         workTime.to = toBank + index[i] * 60;
+        if (workTime.to === 0) {
+            freeTime.Bank = [];
+            return;
+        }
         freeTime.Bank.push(workTime);
     }
     parseSchedule(schedule.Danny);
@@ -216,11 +220,8 @@ function timeWithWeek(time, dayWeek) {
 
 // проверка с ВС
 function withSun(time) {
-    if (time > 168 * 60) {
+    if (time >= 168 * 60) {
         time = time - 168 * 60;
-    }
-    if (time === 168 * 60) {
-        time = 0;
     }
     if (time < 0) {
         time = 0;
