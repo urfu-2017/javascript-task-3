@@ -155,6 +155,7 @@ function parseData(schedule, workingHours) {
         workTime.to = toBank + index[i] * 60;
         if (workTime.to === 0) {
             freeTime.Bank = [];
+
             return;
         }
         freeTime.Bank.push(workTime);
