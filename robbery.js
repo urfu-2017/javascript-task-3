@@ -107,6 +107,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
+            if (!this.exists) {
+
+                return false;
+            }
             tryL++;
             metka = true;
             if (intervalsForTry[tryL] !== undefined) {
