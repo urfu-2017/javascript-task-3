@@ -88,7 +88,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
                 return template;
             }
-            if (metka && tryL < intervalsForTry.length) {
+            if (metka && tryL <= intervalsForTry.length) {
                 let obj = normFormTime(intervalsForTry[tryL]);
                 template = template.replace(/%DD/, obj.dayWeek);
                 template = template.replace(/%HH/, obj.hour);
@@ -107,10 +107,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            if (!this.exists) {
-
-                return false;
-            }
             tryL++;
             metka = true;
             if (intervalsForTry[tryL] !== undefined) {
