@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -61,7 +61,9 @@ function checkInterval(duration) {
 }
 
 function confluence(gangTimeFrom, gangTimeTo, i) {
-    if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+    if (gangTimeFrom >= freeTimeIntervalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
+        freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
+    } else if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsTo[i] = gangTimeFrom;
     } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = gangTimeTo;
@@ -105,8 +107,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
     exclude(schedule);
     checkInterval(duration);
-    console.info(appropriateTimeStart);
-    console.info(appropriateTimeEnd);
 
     return {
 
