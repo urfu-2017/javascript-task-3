@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 const halfWeek = {
     'ПН': 0,
@@ -67,22 +67,20 @@ function filterBunkCloseTime(availableMinutes, workingHours) {
 function combimeMinutes(availableMinutes) {
     let startSegment = availableMinutes[0];
     let freeTime = 1;
-    availableMinutes = availableMinutes.reduce(function (freeTimeSegments, currentTime, index) {
-        if (index !== 0) {
-            if (currentTime - availableMinutes[index - 1] === 1) {
-                freeTime ++;
+    let newschedule = [];
+    for (var i = 1; i < availableMinutes.length; i++) {
+        if (availableMinutes[i] - availableMinutes[i - 1] === 1) {
+            freeTime ++;
 
-            } else {
-                freeTimeSegments.push({ start: startSegment, time: freeTime });
-                startSegment = currentTime;
-                freeTime = 1;
-            }
+        } else {
+            newschedule.push({ start: startSegment, time: freeTime });
+            startSegment = availableMinutes[i];
+            freeTime = 1;
         }
+    }
+    newschedule.push({ start: startSegment, time: freeTime });
 
-        return freeTimeSegments;
-    }, []);
-
-    return availableMinutes;
+    return newschedule;
 }
 
 function toNormalTime(time) {
@@ -160,10 +158,11 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return false;
             }
             let later = beginingTime + 30;
-            let index = availableMinutes.findIndex(time => (time.start >= later &&
-                time.time >= duration) || time.start + time.time >= duration + later);
+            let index = availableMinutes.findIndex(time =>
+                (time.start >= later && time.time >= duration) ||
+                (time.start + time.time >= duration + later) && (time.start <= beginingTime));
             if (index !== -1) {
-                if (beginingTime === availableMinutes[index].start) {
+                if (beginingTime >= availableMinutes[index].start) {
                     beginingTime = later;
                 } else {
                     beginingTime = availableMinutes[index].start;
