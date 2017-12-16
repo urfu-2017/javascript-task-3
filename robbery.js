@@ -7,6 +7,7 @@
 exports.isStar = false;
 let week = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 let index = [0, 24, 48, 72, 96, 120, 144];
+const MINUTES_IN_WEEK = 7 * 24 * 60;
 
 let timeZone;
 
@@ -50,10 +51,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     parseData(schedule, workingHours);
     // необходимо урезать интервалы в зависимости от времени работы банка
     trimAnIntervals();
-    intervalsForRobbery.sort(function (a, b) {
-
-        return sortIntervals(a, b);
-    });
+    intervalsForRobbery.sort(sortIntervals);
     intervalsForRobbery = selection(duration);
     if (intervalsForRobbery.length !== 0) {
         ifCalltryLater(duration);
@@ -80,20 +78,18 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {String}
          */
         format: function (template) {
+            let obj = {};
             if (intervalsForRobbery.length > tryL && !metka) {
-                let obj = normFormTime(intervalsForRobbery[0]);
-                template = template.replace(/%DD/, obj.dayWeek);
-                template = template.replace(/%HH/, obj.hour);
-                template = template.replace(/%MM/, obj.min);
-
-                return template;
+                obj = normFormTime(intervalsForRobbery[0]);
             }
             if (metka && tryL <= intervalsForTry.length && intervalsForTry.length !== 0) {
-                let obj = normFormTime(intervalsForTry[tryL]);
+                obj = normFormTime(intervalsForTry[tryL]);
+                metka = false;
+            }
+            if (Object.keys(obj).length) {
                 template = template.replace(/%DD/, obj.dayWeek);
                 template = template.replace(/%HH/, obj.hour);
                 template = template.replace(/%MM/, obj.min);
-                metka = false;
 
                 return template;
             }
@@ -221,8 +217,8 @@ function timeWithWeek(time, dayWeek) {
 
 // проверка с ВС
 function withSun(time) {
-    if (time >= 168 * 60) {
-        time = time - 168 * 60;
+    if (time >= MINUTES_IN_WEEK) {
+        time = time - MINUTES_IN_WEEK;
     }
     if (time < 0) {
         time = 0;
@@ -234,12 +230,12 @@ function withSun(time) {
 // добавление интервалов с занятым временем в массив
 function linkage(timeFrom, timeTo) {
     let intervalTimePeople = Object.create(intervalTime);
-    intervalTimePeople = check (timeFrom, timeTo, intervalTimePeople);
+    intervalTimePeople = checkIntervalIntercection (timeFrom, timeTo, intervalTimePeople);
     busyTime.push(intervalTimePeople);
 }
 
 // объединение пересекающихся интервалов с занятым временем
-function check(timeFrom, timeTo, intervalCh) {
+function checkIntervalIntercection(timeFrom, timeTo, intervalCh) {
     for (let i = 0; i < busyTime.length; i++) {
         if (timeFrom >= busyTime[i].from && timeTo <= busyTime[i].to ||
             timeFrom <= busyTime[i].from && timeTo >= busyTime[i].to) {
@@ -269,7 +265,7 @@ function check(timeFrom, timeTo, intervalCh) {
 function interpretatorIntervals() {
     let busyTimeSort = busyTime.filter(function (item) {
 
-        return isEmpty(item);
+        return Object.keys(item).length !== 0;
     })
         .sort(function (a, b) {
             return sortIntervals(a, b);
@@ -283,18 +279,6 @@ function interpretatorIntervals() {
     if (busyTimeSort[busyTimeSort.length - 1].to < 168 * 60 - 1) {
         addNormInterval(busyTimeSort[busyTimeSort.length - 1].to, 168 * 60 - 1);
     }
-}
-
-// проверка пустой ли объект
-function isEmpty(obj) {
-    for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
-
-            return true;
-        }
-    }
-
-    return false;
 }
 
 function sortIntervals(a, b) {
