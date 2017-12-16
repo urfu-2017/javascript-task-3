@@ -14,8 +14,8 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
-const MINUTES_IN_DAY = 1440;
 const MINUTES_IN_HOUR = 60;
+const MINUTES_IN_DAY = 24 * MINUTES_IN_HOUR;
 const DAYS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 let bankTimeZone = 0;
 let endBankWork = 0;
@@ -63,9 +63,9 @@ function checkInterval(duration) {
 function confluence(gangTimeFrom, gangTimeTo, i) {
     if (gangTimeFrom >= freeTimeIntervalsTo[i] || gangTimeTo <= freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = freeTimeIntervalsFrom[i];
-    } else if (gangTimeTo > freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
+    } else if (gangTimeTo >= freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsTo[i] = gangTimeFrom;
-    } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom < freeTimeIntervalsFrom[i]) {
+    } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom <= freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsFrom[i] = gangTimeTo;
     } else if (gangTimeTo < freeTimeIntervalsTo[i] && gangTimeFrom > freeTimeIntervalsFrom[i]) {
         freeTimeIntervalsTo.push(freeTimeIntervalsTo[i]);
@@ -91,7 +91,9 @@ function exclude(schedule) {
             let gangTimeTo = splitGangTime(item.to);
             intervals(gangTimeFrom, gangTimeTo);
         });
+
     }
+
 }
 
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
@@ -107,6 +109,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     }
     exclude(schedule);
     checkInterval(duration);
+
 
     return {
 

@@ -4,7 +4,7 @@ var robbery = require('./robbery');
 
 var gangSchedule = {
     Danny: [
-        { from: 'ПН 09:00+5', to: 'ПН 19:00+5' },
+        { from: 'ПН 12:00+5', to: 'ПН 17:00+5' },
         { from: 'ВТ 13:00+5', to: 'ВТ 16:00+5' }
     ],
     Rusty: [
@@ -22,7 +22,6 @@ var bankWorkingHours = {
     from: '10:00+5',
     to: '18:00+5'
 };
-
 
 // Время не существует
 var longMoment = robbery.getAppropriateMoment(gangSchedule, 121, bankWorkingHours);
