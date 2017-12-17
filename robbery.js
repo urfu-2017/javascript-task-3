@@ -177,7 +177,15 @@ function getFreeIntervals(combinedIntervalsInMinutes) {
     let start = 0;
     let end = 0;
     let freeIntervals = [];
-    for (let interval of combinedIntervalsInMinutes) {
+    let rightIntervals = combinedIntervalsInMinutes.filter(x => x.start < rightTimeLimit)
+        .map(x => {
+            if (x.end > rightTimeLimit) {
+                x.end = rightTimeLimit;
+            }
+
+            return x;
+        });
+    for (let interval of rightIntervals) {
         end = interval.start;
         freeIntervals.push({ start, end });
         start = interval.end;
