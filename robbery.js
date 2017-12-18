@@ -22,15 +22,14 @@ function toMinutes(time, shift) {
 }
 
 function filterRobbers(availableMinutes, schedule, workingHours) {
+    let robbers = Object.keys(schedule);
     let bankTimeZone = parseInt(workingHours.from.split('+')[1]);
-    let shift = 0;
+    let shift = bankTimeZone;
 
-    for (let robber in schedule) {
-        if (Object.prototype.hasOwnProperty.call(schedule, robber)) {
-            shift = bankTimeZone - parseInt(schedule[robber][0].from.split('+')[1]);
-            schedule[robber].forEach(filterTimeSegment);
-        }
-
+    for (let i = 0; i < robbers.length; i++) {
+        let robber = robbers[i];
+        shift = bankTimeZone - parseInt(schedule[robber][0].from.split('+')[1]);
+        schedule[robber].forEach(filterTimeSegment);
     }
 
     function filterTimeSegment(timeSegment) {
