@@ -23,12 +23,12 @@ function toMinutes(time, shift) {
 
 function filterRobbers(availableMinutes, schedule, workingHours) {
     let bankTimeZone = parseInt(workingHours.from.split('+')[1]);
-    let robbers = Object.keys(schedule);
     let shift = 0;
+    let busySegment = Object.values(schedule);
 
-    robbers.forEach(function (robber) {
-        shift = bankTimeZone - parseInt(schedule[robber][0].from.split('+')[1]);
-        schedule[robber].forEach(filterTimeSegment);
+    busySegment.forEach(function (robberSchedule) {
+        shift = bankTimeZone - parseInt(robberSchedule[0].from.split('+')[1]);
+        robberSchedule.forEach(filterTimeSegment);
     });
 
     function filterTimeSegment(timeSegment) {
