@@ -23,14 +23,17 @@ function toMinutes(time, shift) {
 
 function filterRobbers(availableMinutes, schedule, workingHours) {
     let bankTimeZone = parseInt(workingHours.from.split('+')[1]);
+    let shift = bankTimeZone - parseInt(schedule.Danny[0].from.split('+')[1]);
 
-    schedule = Object.values(schedule);
-    schedule.forEach(function (robberSchedule) {
-        let shift = bankTimeZone - parseInt(robberSchedule[0].from.split('+')[1]);
-        robberSchedule.forEach(segment => filterTimeSegment(segment, shift));
-    });
+    schedule.Danny.forEach(filterTimeSegment);
 
-    function filterTimeSegment(timeSegment, shift) {
+    shift = bankTimeZone - parseInt(schedule.Rusty[0].from.split('+')[1]);
+    schedule.Rusty.forEach(filterTimeSegment);
+
+    shift = bankTimeZone - parseInt(schedule.Linus[0].from.split('+')[1]);
+    schedule.Linus.forEach(filterTimeSegment);
+
+    function filterTimeSegment(timeSegment) {
         let start = timeSegment.from;
         let finish = timeSegment.to;
 
@@ -43,17 +46,16 @@ function filterRobbers(availableMinutes, schedule, workingHours) {
 }
 
 function filterBunkCloseTime(availableMinutes, workingHours) {
-    let openMonday = toMinutes('ПН ' + workingHours.from, 0);
-    let openTuesday = toMinutes('ВТ ' + workingHours.from, 0);
-    let openWednesday = toMinutes('СР ' + workingHours.from, 0);
-    let closeMonday = toMinutes('ПН ' + workingHours.to, 0);
-    let closeTuesday = toMinutes('ВТ ' + workingHours.to, 0);
-    let closeWednesday = toMinutes('СР ' + workingHours.to, 0);
+    availableMinutes = Object.keys(availableDays).reduce(function (freeTime, day) {
+        var open = toMinutes(day + ' ' + workingHours.from, 0);
+        var close = toMinutes(day + ' ' + workingHours.to, 0);
+        var startOfDay = availableDays[day] * 24 * 60;
+        var endOfDay = (availableDays[day] + 1) * 24 * 60;
+        freeTime = freeTime.filter(time => ((time >= open && time < close) ||
+            (time >= endOfDay) || (time < startOfDay)));
 
-    availableMinutes = availableMinutes.filter(time =>
-        ((time >= openMonday && time < closeMonday) ||
-        (time >= openTuesday && time < closeTuesday) ||
-        (time >= openWednesday && time < closeWednesday)));
+        return freeTime;
+    }, availableMinutes);
 
     return availableMinutes;
 }
