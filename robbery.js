@@ -6,35 +6,26 @@
  */
 exports.isStar = true;
 
-const halfWeek = {
+const availableDays = {
     'ПН': 0,
     'ВТ': 1,
-    'СР': 2,
-    0: 'ПН',
-    1: 'ВТ',
-    2: 'СР'
+    'СР': 2
 };
+
 var minutesForRobbery = 3 * 24 * 60;
 
 function toMinutes(time, shift) {
     let minutes = time.split(' ');
-    minutes = (halfWeek[minutes[0]] * 24 + parseInt(minutes[1].split(':')[0]) + shift) * 60 +
+    minutes = (availableDays[minutes[0]] * 24 + parseInt(minutes[1].split(':')[0]) + shift) * 60 +
         parseInt(minutes[1].split(':')[1].slice(0, 2));
 
     return minutes;
 }
 
-function filterRobbers(availableMinutes, schedule, workingHours) {
-    let bankTimeZone = parseInt(workingHours.from.split('+')[1]);
-    let shift = bankTimeZone - parseInt(schedule.Danny[0].from.split('+')[1]);
+function filterRobber(availableMinutes, schedule, bankTimeZone) {
+    let shift = bankTimeZone - parseInt(schedule[0].from.split('+')[1]);
 
-    schedule.Danny.forEach(filterTimeSegment);
-
-    shift = bankTimeZone - parseInt(schedule.Rusty[0].from.split('+')[1]);
-    schedule.Rusty.forEach(filterTimeSegment);
-
-    shift = bankTimeZone - parseInt(schedule.Linus[0].from.split('+')[1]);
-    schedule.Linus.forEach(filterTimeSegment);
+    schedule.forEach(filterTimeSegment);
 
     function filterTimeSegment(timeSegment) {
         let start = timeSegment.from;
@@ -49,17 +40,16 @@ function filterRobbers(availableMinutes, schedule, workingHours) {
 }
 
 function filterBunkCloseTime(availableMinutes, workingHours) {
-    let openMonday = toMinutes('ПН ' + workingHours.from, 0);
-    let openTuesday = toMinutes('ВТ ' + workingHours.from, 0);
-    let openWednesday = toMinutes('СР ' + workingHours.from, 0);
-    let closeMonday = toMinutes('ПН ' + workingHours.to, 0);
-    let closeTuesday = toMinutes('ВТ ' + workingHours.to, 0);
-    let closeWednesday = toMinutes('СР ' + workingHours.to, 0);
+    availableMinutes = Object.keys(availableDays).reduce(function (freeTime, day) {
+        var open = toMinutes(day + ' ' + workingHours.from, 0);
+        var close = toMinutes(day + ' ' + workingHours.to, 0);
+        var startOfDay = availableDays[day] * 24 * 60;
+        var endOfDay = (availableDays[day] + 1) * 24 * 60;
+        freeTime = freeTime.filter(time => ((time >= open && time < close) ||
+            (time >= endOfDay) || (time < startOfDay)));
 
-    availableMinutes = availableMinutes.filter(time =>
-        ((time >= openMonday && time < closeMonday) ||
-        (time >= openTuesday && time < closeTuesday) ||
-        (time >= openWednesday && time < closeWednesday)));
+        return freeTime;
+    }, availableMinutes);
 
     return availableMinutes;
 }
@@ -85,7 +75,7 @@ function combimeMinutes(availableMinutes) {
 
 function toNormalTime(time) {
     var normalTime = {};
-    normalTime.day = halfWeek[parseInt(time / 1440)];
+    normalTime.day = Object.keys(availableDays)[parseInt(time / 1440)];
     time = time - parseInt(time / 1440) * 1440;
     normalTime.hours = parseInt(time / 60);
     if (normalTime.hours < 10) {
@@ -110,8 +100,11 @@ function toNormalTime(time) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var availableMinutes = Array.from({ length: minutesForRobbery }, (v, k) => k);
+    var bankTimeZone = parseInt(workingHours.from.split('+')[1]);
     availableMinutes = filterBunkCloseTime(availableMinutes, workingHours);
-    availableMinutes = filterRobbers(availableMinutes, schedule, workingHours);
+    availableMinutes = Object.values(schedule).reduce(function (freeTime, robberShedule) {
+        return filterRobber(freeTime, robberShedule, bankTimeZone);
+    }, availableMinutes);
     availableMinutes = combimeMinutes(availableMinutes);
     var beginingTime = availableMinutes.find(timeSegment => timeSegment.time >= duration);
     if (beginingTime !== undefined) {
