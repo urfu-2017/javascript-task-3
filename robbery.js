@@ -11,7 +11,6 @@ const availableDays = {
     'ВТ': 1,
     'СР': 2
 };
-
 var minutesForRobbery = 3 * 24 * 60;
 
 function toMinutes(time, shift) {
@@ -22,12 +21,16 @@ function toMinutes(time, shift) {
     return minutes;
 }
 
-function filterRobber(availableMinutes, schedule, bankTimeZone) {
-    let shift = bankTimeZone - parseInt(schedule[0].from.split('+')[1]);
+function filterRobbers(availableMinutes, schedule, workingHours) {
+    let bankTimeZone = parseInt(workingHours.from.split('+')[1]);
 
-    schedule.forEach(filterTimeSegment);
+    schedule = Object.values(schedule);
+    schedule.forEach(function (robberSchedule) {
+        let shift = bankTimeZone - parseInt(robberSchedule[0].from.split('+')[1]);
+        robberSchedule.forEach(segment => filterTimeSegment(segment, shift));
+    });
 
-    function filterTimeSegment(timeSegment) {
+    function filterTimeSegment(timeSegment, shift) {
         let start = timeSegment.from;
         let finish = timeSegment.to;
 
@@ -54,7 +57,7 @@ function filterBunkCloseTime(availableMinutes, workingHours) {
     return availableMinutes;
 }
 
-function combimeMinutes(availableMinutes) {
+function combineMinutes(availableMinutes) {
     let startSegment = availableMinutes[0];
     let freeTime = 1;
     let newschedule = [];
@@ -100,12 +103,9 @@ function toNormalTime(time) {
  */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var availableMinutes = Array.from({ length: minutesForRobbery }, (v, k) => k);
-    var bankTimeZone = parseInt(workingHours.from.split('+')[1]);
     availableMinutes = filterBunkCloseTime(availableMinutes, workingHours);
-    availableMinutes = Object.values(schedule).reduce(function (freeTime, robberShedule) {
-        return filterRobber(freeTime, robberShedule, bankTimeZone);
-    }, availableMinutes);
-    availableMinutes = combimeMinutes(availableMinutes);
+    availableMinutes = filterRobbers(availableMinutes, schedule, workingHours);
+    availableMinutes = combineMinutes(availableMinutes);
     var beginingTime = availableMinutes.find(timeSegment => timeSegment.time >= duration);
     if (beginingTime !== undefined) {
         beginingTime = beginingTime.start;
